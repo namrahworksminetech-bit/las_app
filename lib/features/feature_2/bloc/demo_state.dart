@@ -9,7 +9,6 @@ class DemoLoaded extends DemoState {
   @override List<Object?> get props => [posts];
 }
 class DemoError extends DemoState {
-  final String name;
   final String message;
   DemoError(this.message);
   @override List<Object?> get props => [message];
