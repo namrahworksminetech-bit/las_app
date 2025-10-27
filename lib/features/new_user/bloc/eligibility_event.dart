@@ -1,0 +1,124 @@
+part of 'eligibility_bloc.dart';
+
+abstract class EligibilityEvent extends Equatable {
+  const EligibilityEvent();
+  @override
+  List<Object?> get props => [];
+}
+
+class InvestmentTypeUpdated extends EligibilityEvent {
+  final InvestmentType type;
+  const InvestmentTypeUpdated(this.type);
+  @override
+  List<Object?> get props => [type];
+}
+
+class ToggleKycStep extends EligibilityEvent {
+  final int index;
+  const ToggleKycStep(this.index);
+
+  @override
+  List<Object?> get props => [index];
+}
+
+class PanNumberUpdated extends EligibilityEvent {
+  final String pan;
+  const PanNumberUpdated(this.pan);
+  @override
+  List<Object?> get props => [pan];
+}
+
+class PanFullNameUpdated extends EligibilityEvent {
+  final String fullName;
+  const PanFullNameUpdated(this.fullName);
+  @override
+  List<Object?> get props => [fullName];
+}
+
+class PanDobUpdated extends EligibilityEvent {
+  final String dob;
+  const PanDobUpdated(this.dob);
+  @override
+  List<Object?> get props => [dob];
+}
+
+class FetchStep2Data extends EligibilityEvent {}
+
+class LenderSelected extends EligibilityEvent {
+  final String? lenderId;
+  const LenderSelected(this.lenderId);
+  @override
+  List<Object?> get props => [lenderId];
+}
+
+class ViewDetailsToggled extends EligibilityEvent {}
+
+class RefreshPortfolioPressed extends EligibilityEvent {}
+
+class BreakdownCategoryTapped extends EligibilityEvent {
+  final String categoryId;
+  const BreakdownCategoryTapped(this.categoryId);
+  @override
+  List<Object?> get props => [categoryId];
+}
+
+class EditLoanAmountPressed extends EligibilityEvent {
+  final String lenderId;
+  const EditLoanAmountPressed(this.lenderId);
+  @override
+  List<Object?> get props => [lenderId];
+}
+
+class SaveEditedLoanAmount extends EligibilityEvent {
+  final String lenderId;
+  final double amount;
+  const SaveEditedLoanAmount(this.lenderId, this.amount);
+  @override
+  List<Object?> get props => [lenderId, amount];
+}
+
+class LenderContinuePressed extends EligibilityEvent {
+  final String lenderId;
+  const LenderContinuePressed(this.lenderId);
+  @override
+  List<Object?> get props => [lenderId];
+}
+
+class ToggleFundSelection extends EligibilityEvent {
+  final String fundId;
+  const ToggleFundSelection(this.fundId);
+  @override
+  List<Object?> get props => [fundId];
+}
+
+class ConfirmFundSelection extends EligibilityEvent {}
+
+class ProceedToLenderSelection extends EligibilityEvent {}
+
+class NextStepPressed extends EligibilityEvent {}
+
+class PreviousStepPressed extends EligibilityEvent {}
+
+class ErrorMessageCleared extends EligibilityEvent {}
+
+class OtpChanged extends EligibilityEvent {
+  final String otp;
+  const OtpChanged(this.otp);
+
+  @override
+  List<Object?> get props => [otp];
+}
+
+class SubmitOtp extends EligibilityEvent {
+  const SubmitOtp();
+
+  @override
+  List<Object?> get props => [];
+}
+
+class ResendOtp extends EligibilityEvent {
+  const ResendOtp();
+
+  @override
+  List<Object?> get props => [];
+}

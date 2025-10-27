@@ -1,6 +1,6 @@
-import '../../core/network/api_client.dart';
-import '../../core/network/api_constants.dart';
-import '../../core/results/result.dart';
+import 'package:las_app/core/network/api_client.dart';
+import 'package:las_app/core/network/api_constants.dart';
+import 'package:las_app/core/results/result.dart';
 
 class DemoRepository {
 

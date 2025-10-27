@@ -1,22 +1,91 @@
 import 'package:flutter/material.dart';
-import '../core/theme/app_colors.dart';
+import 'package:las_app/core/theme/app_colors.dart'; 
+
+enum ButtonType { primary, primaryWhite, secondary, secondaryBlack, secondaryGrey }
 
 class CButton extends StatelessWidget {
-  final String label;
-  final VoidCallback? onPressed;
-  final bool loading;
-  const CButton({super.key, required this.label, this.onPressed, this.loading=false});
+  final String text;
+  final VoidCallback onPressed;
+  final ButtonType type;
+  final Widget? suffixIcon;
+
+  const CButton({
+    super.key,
+    required this.text,
+    required this.onPressed,
+    this.type = ButtonType.primary,
+    this.suffixIcon,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return FilledButton(
-      onPressed: loading ? null : onPressed,
-      style: FilledButton.styleFrom(
-        backgroundColor: AppColors.primary,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    Color backgroundColor;
+    Color foregroundColor;
+    BorderSide side = BorderSide.none;
+
+    switch (type) {
+      case ButtonType.primary: 
+        backgroundColor = AppColors.bPrimaryColor;
+        foregroundColor = AppColors.white;
+        break;
+      case ButtonType.primaryWhite: 
+        backgroundColor = AppColors.white;
+        foregroundColor = AppColors.black;
+        break;
+      case ButtonType.secondary: 
+        backgroundColor = Colors.transparent;
+        foregroundColor = AppColors.white;
+        side = const BorderSide(color: AppColors.white, width: 1.5);
+        break;
+      case ButtonType.secondaryBlack: 
+        backgroundColor = Colors.transparent;
+        foregroundColor = AppColors.black;
+        side = const BorderSide(color: AppColors.black, width: 1.5);
+        break;
+      case ButtonType.secondaryGrey: 
+        backgroundColor = AppColors.bSecondaryColor.withOpacity(0.5); 
+        foregroundColor = AppColors.white; 
+        
+        break;
+    }
+
+    final style = ElevatedButton.styleFrom(
+      backgroundColor: backgroundColor,
+      foregroundColor: foregroundColor,
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      shape: RoundedRectangleBorder(
+       
+        borderRadius: BorderRadius.circular(5),
       ),
-      child: loading ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2,)) : Text(label),
+      elevation: 0,
+      side: side,
+    );
+
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: style,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              text,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (suffixIcon != null) ...[
+              const SizedBox(width: 8),
+              IconTheme(
+                data: IconThemeData(color: foregroundColor, size: 18),
+                child: suffixIcon!,
+              )
+            ]
+          ],
+        ),
+      ),
     );
   }
 }
