@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import 'package:las_app/core/theme/app_colors.dart'; 
+import 'package:get/get.dart';
+import 'package:las_app/common_widgets/c_text.dart';
+import 'package:las_app/core/theme/app_colors.dart';
+import 'package:las_app/core/theme/app_spacing.dart';
+import 'package:las_app/core/theme/app_typography.dart';
 
 class PortfolioFetchingOverlay extends StatefulWidget {
   const PortfolioFetchingOverlay({super.key});
@@ -19,7 +23,7 @@ class _PortfolioFetchingOverlayState extends State<PortfolioFetchingOverlay>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2), 
+      duration: const Duration(seconds: 2),
     )..repeat();
   }
 
@@ -32,139 +36,120 @@ class _PortfolioFetchingOverlayState extends State<PortfolioFetchingOverlay>
   @override
   Widget build(BuildContext context) {
     return Container(
-      
-      padding: const EdgeInsets.symmetric(vertical: 24.0),
+      padding: const EdgeInsets.symmetric(vertical: Gaps.xl),
       decoration: const BoxDecoration(
-        color: AppColors.white, 
+        color: AppColors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      
       width: double.infinity,
       child: Column(
-        mainAxisSize: MainAxisSize.min, 
+        mainAxisSize: MainAxisSize.min,
         children: [
-          
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            padding: const EdgeInsets.symmetric(horizontal: Gaps.xl),
             child: Column(
               children: [
-                const Text(
-                  'Almost there!',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.black,
-                  ),
+                CText(
+                  'almostThere'.tr,
+                  style: AppTypography.h2.copyWith(color: AppColors.black),
+                  textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Fetching your Mutual Funds...',
-                  textAlign: TextAlign.center, 
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppColors.black, 
-                  ),
+                Gaps.hXs,
+                CText(
+                  'fetchingMutualFunds'.tr,
+                  style: AppTypography.bodyMedium
+                      .copyWith(color: AppColors.black),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24), 
 
-          
+          Gaps.hXxl,
+
           SizedBox(
-            
             width: 240,
             height: 240,
             child: Stack(
               alignment: Alignment.center,
               children: [
-                
                 AnimatedBuilder(
                   animation: _controller,
                   builder: (context, child) {
                     return CustomPaint(
-                      size: const Size(240, 240), 
+                      size: const Size(240, 240),
                       painter: _RupeeAnimationPainter(_controller.value),
                     );
                   },
                 ),
-                
                 Container(
-                  width: 60, 
+                  width: 60,
                   height: 60,
                   decoration: const BoxDecoration(
-                    color: AppColors.bPrimaryColor, 
+                    color: AppColors.bPrimaryColor,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
-                    Icons.flash_on, 
+                    Icons.flash_on,
                     color: AppColors.white,
-                    size: 35, 
+                    size: 35,
                   ),
                 ),
               ],
             ),
           ),
 
-          const SizedBox(height: 24), 
+          Gaps.hXxl,
+
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: const Text(
-              'Relax, this won\'t affect your CIBIL score.',
-               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.kIndicatorInactiveColor, 
-              ),
+            padding: const EdgeInsets.symmetric(horizontal: Gaps.xl),
+            child: CText(
+              'cibilNote'.tr,
+              textAlign: TextAlign.center,
+              style: AppTypography.bodySmall
+                  .copyWith(color: AppColors.kIndicatorInactiveColor),
             ),
           ),
-          
         ],
       ),
     );
   }
 }
 
-
 class _RupeeAnimationPainter extends CustomPainter {
   final double animationValue;
-
   _RupeeAnimationPainter(this.animationValue);
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
 
-    
     const double outerRadius = 110;
     const double middleRadius = 80;
     const double outerSymbolPathRadius = 95;
     const double innerSymbolPathRadius = 65;
 
-
-    
     final outerPaint = Paint()
       ..color = AppColors.bPrimaryColor.withOpacity(0.2)
       ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, outerRadius, outerPaint); 
+    canvas.drawCircle(center, outerRadius, outerPaint);
 
     final middlePaint = Paint()
       ..color = AppColors.bPrimaryColor.withOpacity(0.4)
       ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, middleRadius, middlePaint); 
+    canvas.drawCircle(center, middleRadius, middlePaint);
 
-    
     _drawRupeeSymbol(
       canvas,
       center,
-      outerSymbolPathRadius, 
+      outerSymbolPathRadius,
       animationValue * math.pi * 2,
       AppColors.bPrimaryColor,
     );
     _drawRupeeSymbol(
       canvas,
       center,
-      innerSymbolPathRadius, 
+      innerSymbolPathRadius,
       (animationValue + 0.5) * math.pi * 2,
       AppColors.bPrimaryColor,
     );
@@ -177,7 +162,7 @@ class _RupeeAnimationPainter extends CustomPainter {
     final symbolCenter = Offset(x, y);
 
     final backgroundPaint = Paint()..color = bgColor;
-    canvas.drawCircle(symbolCenter, 15, backgroundPaint); 
+    canvas.drawCircle(symbolCenter, 15, backgroundPaint);
 
     final textPainter = TextPainter(
       text: const TextSpan(
@@ -191,8 +176,10 @@ class _RupeeAnimationPainter extends CustomPainter {
       textDirection: TextDirection.ltr,
     );
     textPainter.layout();
-    textPainter.paint(canvas,
-        symbolCenter - Offset(textPainter.width / 2, textPainter.height / 2));
+    textPainter.paint(
+      canvas,
+      symbolCenter - Offset(textPainter.width / 2, textPainter.height / 2),
+    );
   }
 
   @override

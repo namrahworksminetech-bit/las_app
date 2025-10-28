@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:las_app/core/theme/app_colors.dart';
+import 'package:las_app/core/theme/app_spacing.dart';
+import 'package:las_app/core/theme/app_typography.dart';
+import 'package:las_app/common_widgets/c_text.dart';
 
 class LoanSuccessScreen extends StatefulWidget {
   const LoanSuccessScreen({super.key});
@@ -13,7 +17,6 @@ class _LoanSuccessScreenState extends State<LoanSuccessScreen>
   late AnimationController _tickController;
   late AnimationController _confettiController;
   late Animation<double> _scaleAnimation;
-
 
   @override
   void initState() {
@@ -34,9 +37,8 @@ class _LoanSuccessScreenState extends State<LoanSuccessScreen>
       curve: Curves.easeOutBack,
     );
 
-    
     _tickController.forward();
-    _confettiController.repeat(reverse: false);
+    _confettiController.repeat();
   }
 
   @override
@@ -58,82 +60,64 @@ class _LoanSuccessScreenState extends State<LoanSuccessScreen>
             children: [
               const Spacer(),
 
-              
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  
-                
-
-                  
-                  ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: Image.asset(
-                      'assets/images/successPledge.png',
-                      width: 140,
-                      height: 140,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                ],
+              /// ✅ Success Image
+              ScaleTransition(
+                scale: _scaleAnimation,
+                child: Image.asset(
+                  'assets/images/successPledge.png',
+                  width: 140,
+                  height: 140,
+                  fit: BoxFit.contain,
+                ),
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: Gaps.xl),
 
-              const Text(
-                "Congratulations!",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+              /// ✅ Title
+              CText(
+                "congratulations".tr,
+                style: AppTypography.h2.copyWith(color: AppColors.white),
                 textAlign: TextAlign.center,
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: Gaps.sm),
 
-              const Text(
-                "Your loan application has been submitted successfully and is being processed.",
-                style: TextStyle(
-                  color: Color(0xFFB0B0B0),
-                  fontSize: 14,
-                  height: 1.5,
+              /// ✅ Subtitle
+              CText(
+                "loanSuccessMessage".tr,
+                style: AppTypography.bodySecondary.copyWith(
+                  color: const Color(0xFFB0B0B0),
                 ),
                 textAlign: TextAlign.center,
               ),
 
               const Spacer(),
 
-              
+              /// ✅ Button
               SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
+                    backgroundColor: AppColors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   onPressed: () {
-                    
-                    
+                    // TODO: Navigate to dashboard
                   },
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Text(
-                        "Go to Dashboard",
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    children: [
+                      CText(
+                        'goToDashboard'.tr,
+                        style: AppTypography.buttonPrimary,
                       ),
-                      SizedBox(width: 8),
-                      Icon(
+                      const SizedBox(width: Gaps.xs),
+                      const Icon(
                         Icons.arrow_right_alt,
-                        color: Colors.black,
+                        color: AppColors.black,
                         size: 24,
                       ),
                     ],
@@ -141,16 +125,16 @@ class _LoanSuccessScreenState extends State<LoanSuccessScreen>
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: Gaps.md),
 
+              /// ✅ Footer
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
+                  CText(
                     "Powered by ",
-                    style: TextStyle(
-                      color: Color(0xFF888888),
-                      fontSize: 12,
+                    style: AppTypography.caption.copyWith(
+                      color: const Color(0xFF888888),
                     ),
                   ),
                   Image.asset(
@@ -161,7 +145,7 @@ class _LoanSuccessScreenState extends State<LoanSuccessScreen>
                 ],
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: Gaps.lg),
             ],
           ),
         ),

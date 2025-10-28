@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get/get.dart';
 import 'package:las_app/common_widgets/c_button.dart';
+import 'package:las_app/common_widgets/c_text.dart';
 import 'package:las_app/core/theme/app_colors.dart';
+import 'package:las_app/core/theme/app_typography.dart';
+import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
 import 'package:las_app/features/new_user/view/widgets/four_pledge/pledge_otp_view.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
@@ -12,32 +16,32 @@ class KycVerificationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<String> steps = [
-      "Fill your basic info",
-      "Aadhar and PAN verification",
-      "Link account & set mandate",
-      "Loan agreement signing",
+      "fillBasicInfo".tr,
+      "aadharPanVerification".tr,
+      "linkAccountMandate".tr,
+      "loanAgreementSigning".tr,
     ];
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.black,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 24),
+              Gaps.hXl,
 
+              // ===== Progress Indicator =====
               Row(
                 children: [
                   CircularPercentIndicator(
                     radius: 35.0,
                     lineWidth: 8.0,
                     percent: 3 / 4.0,
-                    center: const Text(
+                    center: CText(
                       "3/4",
-                      style: TextStyle(
-                        color: AppColors.white,
+                      style: AppTypography.bodyWhite.copyWith(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -46,70 +50,63 @@ class KycVerificationScreen extends StatelessWidget {
                     backgroundColor: AppColors.bSecondaryColor,
                     circularStrokeCap: CircularStrokeCap.round,
                   ),
-                  const SizedBox(width: 16),
-                  const Column(
+                  Gaps.wMd,
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'KYC Verification',
-                        style: TextStyle(
-                          color: AppColors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      CText(
+                        'kycVerification'.tr,
+                        style: AppTypography.h2,
                       ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Next: Pledge Funds',
-                        style: TextStyle(
-                          color: AppColors.bSecondaryColor,
-                          fontSize: 14,
-                        ),
+                      Gaps.hXxs,
+                      CText(
+                        'nextPledgeFunds'.tr,
+                        style: AppTypography.bodySecondary,
                       ),
                     ],
                   ),
                 ],
               ),
 
-              const SizedBox(height: 24),
+              Gaps.hXl,
               const Divider(thickness: 1.5, color: AppColors.bSecondaryColor),
-              const SizedBox(height: 16),
+              Gaps.hMd,
 
+              // ===== Back Button =====
               GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.arrow_back, color: AppColors.white, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      'Go Back',
-                      style: TextStyle(color: AppColors.white, fontSize: 14),
+                    const Icon(Icons.arrow_back,
+                        color: AppColors.white, size: 20),
+                    Gaps.wSm,
+                    CText(
+                      'goBack'.tr,
+                      style: AppTypography.bodyWhite,
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 24),
+              Gaps.hXl,
 
-              const Text(
-                'Verify details to proceed securely',
-                style: TextStyle(
-                  color: AppColors.white,
-                  fontSize: 16,
+              // ===== Header Text =====
+              CText(
+                'verifyDetails'.tr,
+                style: AppTypography.bodyWhite.copyWith(
                   fontWeight: FontWeight.w600,
+                  fontSize: 16,
                 ),
               ),
-              const SizedBox(height: 4),
-              const Text(
-                'Safe & Secure • Your data is encrypted',
-                style: TextStyle(
-                  color: AppColors.bSecondaryColor,
-                  fontSize: 12,
-                ),
+              Gaps.hXxs,
+              CText(
+                'safeSecure'.tr,
+                style: AppTypography.caption,
               ),
 
-              const SizedBox(height: 24),
+              Gaps.hXl,
 
+              // ===== Step List =====
               Expanded(
                 child: BlocBuilder<EligibilityBloc, EligibilityState>(
                   builder: (context, state) {
@@ -117,29 +114,23 @@ class KycVerificationScreen extends StatelessWidget {
 
                     return ListView.separated(
                       itemCount: steps.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      separatorBuilder: (_, __) => Gaps.hSm,
                       itemBuilder: (context, index) {
                         final isChecked = checks[index];
 
                         return GestureDetector(
-                          onTap: () {
-                            context.read<EligibilityBloc>().add(
-                              ToggleKycStep(index),
-                            );
-                          },
+                          onTap: () => context
+                              .read<EligibilityBloc>()
+                              .add(ToggleKycStep(index)),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
-                            ),
+                                horizontal: 16, vertical: 14),
                             decoration: BoxDecoration(
                               color: const Color(0xFF1C1C1C),
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
-                                color: AppColors.bSecondaryColor.withOpacity(
-                                  0.3,
-                                ),
+                                color: AppColors.bSecondaryColor.withOpacity(0.3),
                               ),
                             ),
                             child: Row(
@@ -148,9 +139,8 @@ class KycVerificationScreen extends StatelessWidget {
                                 Row(
                                   children: [
                                     AnimatedContainer(
-                                      duration: const Duration(
-                                        milliseconds: 200,
-                                      ),
+                                      duration:
+                                          const Duration(milliseconds: 200),
                                       height: 22,
                                       width: 22,
                                       decoration: BoxDecoration(
@@ -164,19 +154,14 @@ class KycVerificationScreen extends StatelessWidget {
                                         ),
                                       ),
                                       child: isChecked
-                                          ? const Icon(
-                                              Icons.check,
-                                              size: 16,
-                                              color: Colors.black,
-                                            )
+                                          ? const Icon(Icons.check,
+                                              size: 16, color: Colors.black)
                                           : null,
                                     ),
-                                    const SizedBox(width: 12),
-                                    Text(
+                                    Gaps.wMd,
+                                    CText(
                                       steps[index],
-                                      style: const TextStyle(
-                                        color: AppColors.white,
-                                        fontSize: 14,
+                                      style: AppTypography.bodyWhite.copyWith(
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -197,16 +182,16 @@ class KycVerificationScreen extends StatelessWidget {
                 ),
               ),
 
+              // ===== Bottom Section =====
               Padding(
                 padding: const EdgeInsets.only(top: 8, bottom: 16),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     CButton(
-                      text: 'Proceed to Final Step',
+                      text: 'proceedToFinalStep'.tr,
                       onPressed: () {
                         final bloc = context.read<EligibilityBloc>();
-
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -224,18 +209,15 @@ class KycVerificationScreen extends StatelessWidget {
                         size: 18,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    Gaps.hSm,
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text(
+                        CText(
                           'Powered by',
-                          style: TextStyle(
-                            color: AppColors.bSecondaryColor,
-                            fontSize: 12,
-                          ),
+                          style: AppTypography.caption,
                         ),
-                        const SizedBox(width: 8),
+                        Gaps.wSm,
                         Image.asset(
                           'assets/images/value_enable_logo.png',
                           height: 20,

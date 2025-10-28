@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
+import 'package:las_app/common_widgets/c_text.dart';
 import 'package:las_app/core/theme/app_colors.dart';
+import 'package:las_app/core/theme/app_spacing.dart';
+import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/features/welcome_screens/view/widgets/on_boarding_widget.dart';
-import 'package:smooth_page_indicator/smooth_page_indicator.dart'; 
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../../../common_widgets/c_button.dart';
 
 class WelcomeView extends StatelessWidget {
@@ -24,22 +28,18 @@ class WelcomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-   
-    
     return Scaffold(
-      backgroundColor:AppColors.black,
+      backgroundColor: AppColors.black,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             children: [
-             
+
               Expanded(
                 flex: 5,
-                child: Stack( 
+                child: Stack(
                   children: [
-              
                     PageView.builder(
                       controller: pageController,
                       onPageChanged: onPageChanged,
@@ -55,12 +55,10 @@ class WelcomeView extends StatelessWidget {
                       },
                     ),
 
-                   
                     Align(
                       alignment: Alignment.bottomLeft,
                       child: Padding(
-                      
-                        padding: const EdgeInsets.only(bottom: 20.0), 
+                        padding: const EdgeInsets.only(bottom: 20.0),
                         child: SmoothPageIndicator(
                           controller: pageController,
                           count: onboardingPages.length,
@@ -80,29 +78,32 @@ class WelcomeView extends StatelessWidget {
 
               const SizedBox(height: 30),
 
+  
               Padding(
                 padding: const EdgeInsets.only(bottom: 24.0),
                 child: Row(
                   children: [
-                    const Spacer(), 
+                    const Spacer(),
                     SizedBox(
                       width: 90,
                       child: CButton(
-                        text: "Skip",
+                        text: "Skip".tr,
                         onPressed: onSkip,
                         type: ButtonType.secondary,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    Gaps.wMd,
                     SizedBox(
                       width: 130,
                       child: CButton(
-                        text: isLastPage ? "Get Started" : "Next",
+                        text: isLastPage ? "GetStarted".tr : "Next".tr,
                         onPressed: onNext,
-        
                         suffixIcon: isLastPage
                             ? null
-                            : const Icon(Icons.arrow_forward, size: 18),
+                            : const Icon(
+                                Icons.arrow_forward,
+                                size: 18,
+                              ),
                       ),
                     ),
                   ],

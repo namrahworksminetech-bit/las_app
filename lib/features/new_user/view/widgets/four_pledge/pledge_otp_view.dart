@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get/get.dart';
 import 'package:las_app/common_widgets/c_button.dart';
 import 'package:las_app/common_widgets/c_input.dart';
+import 'package:las_app/common_widgets/c_text.dart';
 import 'package:las_app/core/theme/app_colors.dart';
+import 'package:las_app/core/theme/app_spacing.dart';
+import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
 import 'package:las_app/features/new_user/view/succcess_pledge_view.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
@@ -22,82 +26,75 @@ class PledgeFundsOtpScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 24),
+              Gaps.hXs,
 
+              // Progress Header
               Row(
                 children: [
                   CircularPercentIndicator(
                     radius: 35.0,
                     lineWidth: 8.0,
                     percent: 1.0,
-                    center: const Text(
+                    center: CText(
                       "4/4",
-                      style: TextStyle(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+                      style: AppTypography.bodyMedium
+                          .copyWith(color: AppColors.white),
                     ),
                     progressColor: AppColors.bPrimaryColor,
                     backgroundColor: AppColors.bSecondaryColor,
                     circularStrokeCap: CircularStrokeCap.round,
                   ),
-                  const SizedBox(width: 16),
-                  const Column(
+                  Gaps.wXs,
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Pledge Funds',
-                        style: TextStyle(
-                          color: AppColors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      CText(
+                        'pledgeFunds'.tr,
+                        style: AppTypography.h4
+                            .copyWith(color: AppColors.white),
                       ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Next: Application Submission',
-                        style: TextStyle(
-                          color: AppColors.bSecondaryColor,
-                          fontSize: 14,
-                        ),
+                      Gaps.hXs,
+                      CText(
+                        'nextApplicationSubmission'.tr,
+                        style: AppTypography.caption
+                            .copyWith(color: AppColors.bSecondaryColor),
                       ),
                     ],
                   ),
                 ],
               ),
 
-              const SizedBox(height: 24),
+              Gaps.hXl,
               const Divider(thickness: 1.5, color: AppColors.bSecondaryColor),
-              const SizedBox(height: 16),
+              Gaps.hXs,
 
+              // Back Navigation
               GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.arrow_back, color: AppColors.white, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      'Go Back',
-                      style: TextStyle(color: AppColors.white, fontSize: 14),
-                    ),
+                    const Icon(Icons.arrow_back,
+                        color: AppColors.white, size: 20),
+                    Gaps.wXs,
+                    CText('goBack'.tr,
+                        style: AppTypography.bodySmall
+                            .copyWith(color: AppColors.white)),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 24),
+              Gaps.hXs,
 
-              const Text(
-                'OTP sent from MFCentral to your registered mobile number ending with XX45',
-                style: TextStyle(
-                  color: AppColors.white,
-                  fontSize: 15,
-                  height: 1.4,
-                ),
+              // OTP Message
+              CText(
+                'otpSentMessage'.tr,
+                style: AppTypography.bodyMedium
+                    .copyWith(color: AppColors.white, height: 1.4),
               ),
 
-              const SizedBox(height: 20),
+              Gaps.hXs,
 
+              // OTP Input
               BlocBuilder<EligibilityBloc, EligibilityState>(
                 builder: (context, state) {
                   otpController.text = state.otp;
@@ -106,28 +103,27 @@ class PledgeFundsOtpScreen extends StatelessWidget {
                   );
 
                   return CInput(
-                    labelText: "Enter 6-digit OTP",
+                    labelText: "EnterOTP".tr,
                     hintText: '******',
                     controller: otpController,
                     keyboardType: TextInputType.number,
                     onChanged: (value) =>
                         context.read<EligibilityBloc>().add(OtpChanged(value)),
-                    errorText: state.otpError
-                        ? "Invalid OTP. Try again."
-                        : null,
+                    errorText: state.otpError ? "InvalidOtp".tr : null,
                   );
                 },
               ),
 
               const Spacer(),
 
+              // Submit + Resend Section
               BlocBuilder<EligibilityBloc, EligibilityState>(
                 builder: (context, state) {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       CButton(
-                        text: "Submit & Complete Application",
+                        text: "submitComplete".tr,
                         type: ButtonType.primaryWhite,
                         suffixIcon: const Icon(
                           Icons.arrow_forward,
@@ -143,36 +139,33 @@ class PledgeFundsOtpScreen extends StatelessWidget {
                           );
                         },
                       ),
-                      const SizedBox(height: 16),
+                      Gaps.hXs,
                       GestureDetector(
                         onTap: state.isSubmitting
                             ? null
-                            : () => context.read<EligibilityBloc>().add(
-                                const ResendOtp(),
-                              ),
+                            : () => context
+                                .read<EligibilityBloc>()
+                                .add(const ResendOtp()),
                         child: RichText(
                           text: TextSpan(
                             children: [
                               TextSpan(
-                                text: "Didn't receive the code? ",
-                                style: const TextStyle(
+                                text: "NoCode?".tr,
+                                style: AppTypography.bodySmall.copyWith(
                                   color: AppColors.bSecondaryColor,
-                                  fontSize: 14,
                                 ),
                               ),
                               TextSpan(
-                                text: "Resend OTP",
-                                style: const TextStyle(
+                                text: "ResendOTP".tr,
+                                style: AppTypography.bodySmall.copyWith(
                                   color: AppColors.bPrimaryColor,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      Gaps.hXs,
                     ],
                   );
                 },

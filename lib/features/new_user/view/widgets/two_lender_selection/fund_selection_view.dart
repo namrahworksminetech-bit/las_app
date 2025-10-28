@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:las_app/common_widgets/c_button.dart';
+import 'package:las_app/common_widgets/c_text.dart';
 import 'package:las_app/core/theme/app_colors.dart';
+import 'package:las_app/core/theme/app_spacing.dart';
+import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
 import 'package:las_app/features/new_user/view/widgets/three_kyc_verification/step_checker_view.dart';
 import 'package:las_app/features/new_user/view/widgets/two_lender_selection/fund_list_item.dart';
@@ -32,7 +36,7 @@ class FundSelectionView extends StatelessWidget {
             controller: amountController,
             keyboardType: const TextInputType.numberWithOptions(decimal: false),
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            style: const TextStyle(color: AppColors.white, fontSize: 24),
+            style: AppTypography.bodyWhite.copyWith(fontSize: 24),
             textAlign: TextAlign.center,
             decoration: const InputDecoration(
               prefixText: '₹ ',
@@ -49,11 +53,14 @@ class FundSelectionView extends StatelessWidget {
           actionsPadding: const EdgeInsets.symmetric(horizontal: 8.0),
           actions: <Widget>[
             TextButton(
-              child: const Text('Cancel', style: TextStyle(color: AppColors.bSecondaryColor)),
+              child: CText('cancel'.tr, style: AppTypography.bodySecondary),
               onPressed: () => Navigator.of(dialogContext).pop(),
             ),
             TextButton(
-              child: const Text('Confirm', style: TextStyle(color: AppColors.bPrimaryColor)),
+              child: CText(
+                'confirm'.tr,
+                style: AppTypography.bodyWhite.copyWith(color: AppColors.bPrimaryColor),
+              ),
               onPressed: () {
                 final enteredAmount = double.tryParse(amountController.text);
                 if (enteredAmount != null && enteredAmount > 0) {
@@ -61,16 +68,16 @@ class FundSelectionView extends StatelessWidget {
                     Navigator.of(dialogContext).pop(enteredAmount);
                   } else {
                     ScaffoldMessenger.of(blocContext).showSnackBar(
-                      const SnackBar(
-                        content: Text('Amount cannot exceed eligible limit.'),
+                      SnackBar(
+                        content: CText('amountExceedLimit'.tr),
                         backgroundColor: Colors.orange,
                       ),
                     );
                   }
                 } else {
                   ScaffoldMessenger.of(blocContext).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please enter a valid positive amount'),
+                    SnackBar(
+                      content: CText('invalidAmount'.tr),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -124,7 +131,6 @@ class FundSelectionView extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      
                       Container(
                         padding: const EdgeInsets.all(16.0),
                         decoration: BoxDecoration(
@@ -161,12 +167,11 @@ class FundSelectionView extends StatelessWidget {
                                         )
                                       : const Icon(Icons.business, color: Colors.grey),
                                 ),
-                                const SizedBox(width: 12),
+                                Gaps.wSm,
                                 Expanded(
-                                  child: Text(
+                                  child: CText(
                                     displayLender.name,
-                                    style: const TextStyle(
-                                      color: AppColors.white,
+                                    style: AppTypography.bodyWhite.copyWith(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -178,9 +183,9 @@ class FundSelectionView extends StatelessWidget {
                                     color: AppColors.bPrimaryColor,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
-                                  child: const Text(
-                                    'Your Selection',
-                                    style: TextStyle(
+                                  child: CText(
+                                    'yourSelection'.tr,
+                                    style: AppTypography.bodyWhite.copyWith(
                                       color: AppColors.black,
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
@@ -189,19 +194,17 @@ class FundSelectionView extends StatelessWidget {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 16),
+                            Gaps.hMd,
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                _buildDetailColumn('Interest Rate', '${displayLender.interestRate}%'),
+                                _buildDetailColumn('interestRate'.tr, '${displayLender.interestRate}%'),
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
-                                      'Loan Amount',
-                                      style: TextStyle(color: AppColors.bSecondaryColor, fontSize: 12),
-                                    ),
-                                    const SizedBox(height: 4),
+                                    CText('loanAmount'.tr,
+                                        style: AppTypography.bodySecondary.copyWith(fontSize: 12)),
+                                    Gaps.hXs,
                                     GestureDetector(
                                       onTap: () => _showEditLoanDialog(
                                         context,
@@ -210,19 +213,18 @@ class FundSelectionView extends StatelessWidget {
                                       ),
                                       child: Row(
                                         children: [
-                                          Text(
+                                          CText(
                                             NumberFormat.currency(
                                               locale: 'en_IN',
                                               symbol: '₹ ',
                                               decimalDigits: 0,
                                             ).format(displayLender.loanAmount),
-                                            style: const TextStyle(
-                                              color: AppColors.white,
+                                            style: AppTypography.bodyWhite.copyWith(
                                               fontSize: 14,
                                               fontWeight: FontWeight.w500,
                                             ),
                                           ),
-                                          const SizedBox(width: 4),
+                                          Gaps.wXs,
                                           const Icon(
                                             Icons.edit_outlined,
                                             color: AppColors.bSecondaryColor,
@@ -233,19 +235,19 @@ class FundSelectionView extends StatelessWidget {
                                     ),
                                   ],
                                 ),
-                                _buildDetailColumn('Pledgeable MFs', '${displayLender.pledgeableMFs}'),
+                                _buildDetailColumn('pledgeableMFs'.tr, '${displayLender.pledgeableMFs}'),
                               ],
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      Gaps.hLg,
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Choose the Funds you wish to pledge, click to edit',
-                            style: TextStyle(color: AppColors.bSecondaryColor, fontSize: 12),
+                          CText(
+                            'chooseFundsHint'.tr,
+                            style: AppTypography.bodySecondary.copyWith(fontSize: 12),
                           ),
                           const Icon(Icons.info_outline, color: AppColors.bSecondaryColor, size: 16),
                         ],
@@ -253,8 +255,6 @@ class FundSelectionView extends StatelessWidget {
                     ],
                   ),
                 ),
-
-                
                 ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -266,13 +266,10 @@ class FundSelectionView extends StatelessWidget {
                     return FundListItem(
                       fund: fund,
                       isSelected: isSelected,
-                      onToggle: () =>
-                          context.read<EligibilityBloc>().add(ToggleFundSelection(fund.id)),
+                      onToggle: () => context.read<EligibilityBloc>().add(ToggleFundSelection(fund.id)),
                     );
                   },
                 ),
-
-                
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
                   child: Column(
@@ -280,13 +277,13 @@ class FundSelectionView extends StatelessWidget {
                     children: [
                       Builder(
                         builder: (blocContext) => CButton(
-                          text: 'Continue with ${selectedLender.name}',
+                          text: 'continueWith'.trParams({'lenderName': selectedLender.name}),
                           onPressed: () {
                             Navigator.push(
                               blocContext,
                               MaterialPageRoute(
                                 builder: (context) => BlocProvider.value(
-                                  value: blocContext.read<EligibilityBloc>(), 
+                                  value: blocContext.read<EligibilityBloc>(),
                                   child: const KycVerificationScreen(),
                                 ),
                               ),
@@ -300,18 +297,15 @@ class FundSelectionView extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      Gaps.hSm,
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text(
+                          CText(
                             'Powered by',
-                            style: TextStyle(
-                              color: AppColors.bSecondaryColor,
-                              fontSize: 12,
-                            ),
+                            style: AppTypography.bodySecondary.copyWith(fontSize: 12),
                           ),
-                          const SizedBox(width: 8),
+                          Gaps.wSm,
                           Image.asset(
                             'assets/images/value_enable_logo.png',
                             height: 20,
@@ -333,12 +327,12 @@ class FundSelectionView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title,
-            style: const TextStyle(color: AppColors.bSecondaryColor, fontSize: 12)),
-        const SizedBox(height: 4),
-        Text(value,
-            style: const TextStyle(
-                color: AppColors.white, fontSize: 14, fontWeight: FontWeight.w500)),
+        CText(title, style: AppTypography.bodySecondary.copyWith(fontSize: 12)),
+        Gaps.hXs,
+        CText(
+          value,
+          style: AppTypography.bodyWhite.copyWith(fontSize: 14, fontWeight: FontWeight.w500),
+        ),
       ],
     );
   }

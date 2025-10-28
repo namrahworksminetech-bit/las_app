@@ -12,7 +12,7 @@ class SliqApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: 'SLiQ',
+      title: 'sdddddddLiQ'.tr,
       debugShowCheckedModeBanner: false,
       translations: LocalizationService(),
       locale: const Locale('en', 'US'),

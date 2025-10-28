@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import '../core/theme/app_typography.dart';
 
 class CText extends StatelessWidget {
@@ -6,8 +6,25 @@ class CText extends StatelessWidget {
   final TextStyle? style;
   final int? maxLines;
   final TextOverflow? overflow;
-  const CText(this.text, {super.key, this.style, this.maxLines, this.overflow});
+  final TextAlign? textAlign;
+
+  const CText(
+    this.text, {
+    super.key,
+    this.style,
+    this.maxLines,
+    this.overflow,
+    this.textAlign,
+  });
 
   @override
-  Widget build(BuildContext context) => Text(text, style: style ?? AppTypography.body, maxLines: maxLines, overflow: overflow);
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: style ?? AppTypography.body,
+      maxLines: maxLines,
+      overflow: overflow ?? TextOverflow.visible,
+      textAlign: textAlign,
+    );
+  }
 }

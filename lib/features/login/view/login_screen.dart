@@ -1,7 +1,11 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get/get.dart';
+import 'package:las_app/common_widgets/c_text.dart';
 import 'package:las_app/core/theme/app_colors.dart';
+import 'package:las_app/core/theme/app_spacing.dart';
+import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/features/new_user/view/eligibility_form.dart';
 
 import '../../../common_widgets/c_button.dart';
@@ -25,9 +29,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void initState() {
     super.initState();
     _emailController.text = 'namrah@gmail.com';
-
     _otpController.text = '123456';
-
     _mobileController.text = '1234567789';
   }
 
@@ -51,15 +53,15 @@ class _LoginScreenState extends State<LoginScreen> {
               CSnackBar.show(
                 context,
                 state.snackbarMessage!,
-                isError:
-                    state.otpError != null ||
+                isError: state.otpError != null ||
                     state.emailError != null ||
                     state.mobileError != null ||
                     state.snackbarMessage!.contains('Failed'),
               );
               context.read<LoginBloc>().add(LoginSnackbarCleared());
             }
-            if (state.snackbarMessage == 'Login Successful!') {
+
+            if (state.snackbarMessage == 'LoginSuccessful!'.tr) {
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
                   builder: (context) => const EligibilityScreen(),
@@ -75,21 +77,21 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 24),
+                  Gaps.hXl,
 
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
                     child: Image.asset('assets/images/sliQ.png', height: 50),
                   ),
 
-                  const SizedBox(height: 24),
+                  Gaps.hXl,
 
                   const Divider(
                     thickness: 1.5,
                     color: AppColors.bSecondaryColor,
                   ),
 
-                  const SizedBox(height: 24),
+                  Gaps.hXl,
 
                   Expanded(
                     child: SingleChildScrollView(
@@ -97,17 +99,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Enter Details Below',
-                            style: TextStyle(
-                              color: AppColors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          CText(
+                            'EnterDetailsBelow'.tr,
+                            style: AppTypography.h1.copyWith(color: AppColors.white),
                           ),
-                          const SizedBox(height: 32),
+                          Gaps.hXxl,
+
                           CInput(
-                            labelText: 'Email Address',
+                            labelText: 'EmailAddress'.tr,
                             controller: _emailController,
                             errorText: state.emailError,
                             keyboardType: TextInputType.emailAddress,
@@ -117,9 +116,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               size: 20,
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          Gaps.hXl,
+
                           CInput(
-                            labelText: 'Mobile Number',
+                            labelText: 'MobileNumber'.tr,
                             controller: _mobileController,
                             errorText: state.mobileError,
                             keyboardType: TextInputType.phone,
@@ -130,17 +130,18 @@ class _LoginScreenState extends State<LoginScreen> {
                               size: 20,
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          Gaps.hXl,
+
                           if (isOtpView)
                             CInput(
-                              labelText: 'Enter 6-digit OTP',
+                              labelText: 'EnterOTP'.tr,
                               controller: _otpController,
                               errorText: state.otpError,
                               hintText: '******',
                               keyboardType: TextInputType.number,
                               obscureText: true,
                             ),
-                          const SizedBox(height: 24),
+                          Gaps.hXl,
                         ],
                       ),
                     ),
@@ -152,7 +153,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         if (!isOtpView) ...[
                           CButton(
-                            text: 'Send OTP',
+                            text: 'SendOTP'.tr,
                             onPressed: () {
                               context.read<LoginBloc>().add(
                                 LoginSendOtpPressed(
@@ -168,15 +169,15 @@ class _LoginScreenState extends State<LoginScreen> {
                               size: 18,
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          Gaps.hMd,
                           CButton(
-                            text: 'Login',
+                            text: 'login'.tr,
                             onPressed: () {},
                             type: ButtonType.secondary,
                           ),
                         ] else ...[
                           CButton(
-                            text: 'Continue',
+                            text: 'Continue'.tr,
                             onPressed: () {
                               context.read<LoginBloc>().add(
                                 LoginContinuePressed(otp: _otpController.text),
@@ -189,18 +190,18 @@ class _LoginScreenState extends State<LoginScreen> {
                               size: 18,
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          Gaps.hXl,
                           Center(
                             child: RichText(
                               text: TextSpan(
-                                text: "Didn't get the code? ",
+                                text: "NoCode?".tr,
                                 style: const TextStyle(
                                   color: AppColors.bSecondaryColor,
                                   fontSize: 14,
                                 ),
                                 children: [
                                   TextSpan(
-                                    text: 'Resend OTP',
+                                    text: 'ResendOTP'.tr,
                                     style: const TextStyle(
                                       color: AppColors.bPrimaryColor,
                                       fontWeight: FontWeight.bold,

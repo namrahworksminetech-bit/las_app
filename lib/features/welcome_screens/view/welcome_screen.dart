@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:las_app/features/login/view/login_screen.dart';
 import 'welcome_view.dart';
 
@@ -13,25 +14,24 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   final PageController _pageController = PageController();
   bool _isLastPage = false;
 
-  static const List<Map<String, String>> onboardingPages = [
-    {
+  static  List<Map<String, String>> onboardingPages = [
+   {
       "image": "assets/images/welcome_one.png",
       "iconAsset": "assets/icons/compass.png",
-      "subtitle": "Unlock Funds Instantly",
-      "title":
-          "Get Easy, Fast, & secured loans without selling your investments.",
+      "subtitle": 'welcome1_subtitle'.tr, // <-- CHANGED
+      "title": 'welcome1_title'.tr, // <-- CHANGED
     },
     {
       "image": "assets/images/welcome_two.png",
       "iconAsset": "assets/icons/bar.png",
-      "subtitle": "Smart & Transparent Borrowing",
-      "title": "Competitive Rates. Flexible. Transparent.",
+      "subtitle": 'welcome2_subtitle'.tr, // <-- CHANGED
+      "title": 'welcome2_title'.tr, // <-- CHANGED
     },
     {
       "image": "assets/images/welcome_three.png",
       "iconAsset": "assets/icons/lock.png",
-      "subtitle": "Keep Your Assets, Unlock Value",
-      "title": "Liquidate funds while your investments continue to grow.",
+      "subtitle": 'welcome3_subtitle'.tr, // <-- CHANGED
+      "title": 'welcome3_title'.tr, // <-- CHANGED
     },
   ];
   @override

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get/get.dart';
 import 'package:las_app/common_widgets/c_button.dart';
 import 'package:las_app/common_widgets/c_input.dart';
+import 'package:las_app/common_widgets/c_text.dart';
 import 'package:las_app/core/theme/app_colors.dart';
+import 'package:las_app/core/theme/app_spacing.dart';
+import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
 
 class Step1PanPage extends StatefulWidget {
@@ -46,9 +50,8 @@ class _Step1PanPageState extends State<Step1PanPage> {
     );
 
     if (picked != null) {
-      String formattedDate =
+      final formattedDate =
           "${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}";
-
       _dobController.text = formattedDate;
       context.read<EligibilityBloc>().add(PanDobUpdated(formattedDate));
     }
@@ -66,36 +69,35 @@ class _Step1PanPageState extends State<Step1PanPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 32),
+                    SizedBox(height: Gaps.xxl),
 
                     CInput(
-                      labelText: 'PAN Card Number',
-                      hintText: 'Enter PAN Number',
+                      labelText: 'panCardNumberLabel'.tr,
+                      hintText: 'panCardNumberHint'.tr,
                       controller: _panController,
-                      onChanged: (value) {
-                        context.read<EligibilityBloc>().add(
-                          PanNumberUpdated(value),
-                        );
-                      },
+                      onChanged: (value) => context
+                          .read<EligibilityBloc>()
+                          .add(PanNumberUpdated(value)),
                       errorText: state.panNumberError,
                     ),
-                    const SizedBox(height: 16),
-                    CInput(
-                      labelText: 'Name as Per PAN',
-                      hintText: 'Enter Full Name',
-                      controller: _nameController,
-                      onChanged: (value) {
-                        context.read<EligibilityBloc>().add(
-                          PanFullNameUpdated(value),
-                        );
-                      },
-                      errorText: state.panFullNameError,
-                    ),
-                    const SizedBox(height: 16),
+
+                    SizedBox(height: Gaps.md),
 
                     CInput(
-                      labelText: 'Date of Birth',
-                      hintText: 'DD/MM/YYYY',
+                      labelText: 'nameAsPerPanLabel'.tr,
+                      hintText: 'nameAsPerPanHint'.tr,
+                      controller: _nameController,
+                      onChanged: (value) => context
+                          .read<EligibilityBloc>()
+                          .add(PanFullNameUpdated(value)),
+                      errorText: state.panFullNameError,
+                    ),
+
+                    SizedBox(height: Gaps.md),
+
+                    CInput(
+                      labelText: 'dateOfBirthLabel'.tr,
+                      hintText: 'dateOfBirthHint'.tr,
                       controller: _dobController,
                       readOnly: true,
                       onTap: () => _selectDate(context),
@@ -114,14 +116,13 @@ class _Step1PanPageState extends State<Step1PanPage> {
             Padding(
               padding: const EdgeInsets.all(24.0),
               child: CButton(
-                text: state.isLoading
-                    ? 'Checking...'
-                    : 'Check Loan Eligibility',
+                text:
+                    state.isLoading ? 'checking'.tr : 'checkLoanEligibility'.tr,
                 onPressed: state.isLoading
                     ? () {}
                     : () => context.read<EligibilityBloc>().add(
-                        NextStepPressed(),
-                      ),
+                          NextStepPressed(),
+                        ),
                 type: ButtonType.primaryWhite,
                 suffixIcon: state.isLoading
                     ? null
@@ -132,20 +133,20 @@ class _Step1PanPageState extends State<Step1PanPage> {
                       ),
               ),
             ),
+
             Padding(
               padding: const EdgeInsets.only(bottom: 24.0),
               child: Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
+                    CText(
                       'Powered by',
-                      style: TextStyle(
+                      style: AppTypography.caption.copyWith(
                         color: AppColors.bSecondaryColor,
-                        fontSize: 12,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: Gaps.xs),
                     Image.asset(
                       'assets/images/value_enable_logo.png',
                       height: 20,

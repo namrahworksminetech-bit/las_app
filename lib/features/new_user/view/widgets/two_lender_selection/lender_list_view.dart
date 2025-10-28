@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:las_app/common_widgets/c_text.dart';
 import 'package:las_app/helper_widgets/lender_card.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:las_app/core/theme/app_colors.dart';
@@ -17,9 +19,9 @@ class LenderListView extends StatelessWidget {
       );
     }
     if (state.lenders.isEmpty && !state.isLoading) {
-      return const Center(
-        child: Text(
-          'No lenders available.',
+      return Center(
+        child: CText(
+          'Nolendersavailable'.tr,
           style: TextStyle(color: AppColors.bSecondaryColor),
         ),
       );

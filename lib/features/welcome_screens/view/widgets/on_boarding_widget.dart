@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:las_app/common_widgets/c_text.dart';
+import 'package:las_app/core/theme/app_colors.dart';
+import 'package:las_app/core/theme/app_spacing.dart';
+import 'package:las_app/core/theme/app_typography.dart';
+
 
 class OnboardingPageContent extends StatelessWidget {
   final String imagePath;
@@ -16,22 +21,27 @@ class OnboardingPageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color kPrimaryColor = Color(0xFFFF6600);
+    const Color kPrimaryColor = AppColors.bPrimaryColor;
     const Color kSubtitleTextColor = Color(0x80E5E7EB);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        
+
         Expanded(
-          flex: 4, 
+          flex: 4,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 3.0),
-            child: Image.asset(imagePath, fit: BoxFit.contain),
+            child: Image.asset(
+              imagePath,
+              fit: BoxFit.contain,
+            ),
           ),
         ),
-        SizedBox(height: 15),
 
+        Gaps.hMd, 
+
+  
         Expanded(
           flex: 2,
           child: Column(
@@ -45,23 +55,24 @@ class OnboardingPageContent extends StatelessWidget {
                     width: 20,
                     height: 20,
                   ),
-                  const SizedBox(width: 8),
-                  Text(
+                  Gaps.wXs, 
+                  CText(
                     subtitle,
-                    style: const TextStyle(
+                    style: AppTypography.body.copyWith(
                       color: kSubtitleTextColor,
-                      fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Text(
+
+              Gaps.hMd, 
+
+              CText(
                 title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 30,
+                style: AppTypography.h1.copyWith(
+                  color: AppColors.white,
+                  fontSize: 30, // same as before
                   fontWeight: FontWeight.bold,
                   height: 1.3,
                 ),
