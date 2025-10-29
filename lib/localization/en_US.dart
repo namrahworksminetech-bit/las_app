@@ -30,8 +30,6 @@ final Map<String, String> enUS = {
   'welcome2_title': 'Competitive Rates. Flexible. Transparent.',
   'welcome3_subtitle': 'Keep Your Assets, Unlock Value',
   'welcome3_title': 'Liquidate funds while your investments continue to grow.',
-  'skip': 'Skip',
-  'next': 'Next',
 
   //successs pledge
   'congratulations': 'Congratulations!',

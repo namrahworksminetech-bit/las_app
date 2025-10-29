@@ -96,27 +96,26 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    onTap: () => context.read<EligibilityBloc>().add(PreviousStepPressed()),
-                                    borderRadius: BorderRadius.circular(6),
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(Icons.arrow_back, color: AppColors.white, size: 20),
-                                          Gaps.wXs,
-                                          CText(
-                                            'goBack'.tr,
-                                            style: AppTypography.bodyWhite,
-                                          ),
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  children: [
+    GestureDetector(
+      onTap: () => Navigator.pop(context), // ✅ Go back to previous screen
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.arrow_back, color: AppColors.white, size: 20),
+          Gaps.wXs,
+          CText(
+            'Go Back',
+            style: AppTypography.bodyWhite.copyWith(
+              decoration: TextDecoration.underline,
+            ),
+  onTap: () => Navigator.pop(context), // ✅ Pops previous page
+),
+
                                         ],
-                                      ),
-                                    ),
+                                      
+                                    
                                   ),
                                 ),
                                 RichText(

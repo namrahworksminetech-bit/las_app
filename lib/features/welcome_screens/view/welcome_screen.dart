@@ -14,26 +14,29 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   final PageController _pageController = PageController();
   bool _isLastPage = false;
 
-  static  List<Map<String, String>> onboardingPages = [
-   {
-      "image": "assets/images/welcome_one.png",
-      "iconAsset": "assets/icons/compass.png",
-      "subtitle": 'welcome1_subtitle'.tr, // <-- CHANGED
-      "title": 'welcome1_title'.tr, // <-- CHANGED
-    },
-    {
-      "image": "assets/images/welcome_two.png",
-      "iconAsset": "assets/icons/bar.png",
-      "subtitle": 'welcome2_subtitle'.tr, // <-- CHANGED
-      "title": 'welcome2_title'.tr, // <-- CHANGED
-    },
-    {
-      "image": "assets/images/welcome_three.png",
-      "iconAsset": "assets/icons/lock.png",
-      "subtitle": 'welcome3_subtitle'.tr, // <-- CHANGED
-      "title": 'welcome3_title'.tr, // <-- CHANGED
-    },
-  ];
+
+  List<Map<String, String>> get _onboardingPages => [
+        {
+          "image": "assets/images/welcome_one.png",
+          "iconAsset": "assets/icons/compass.png",
+          "subtitle": 'welcome1_subtitle'.tr,
+          "title": 'welcome1_title'.tr,
+        },
+        {
+          "image": "assets/images/welcome_two.png",
+          "iconAsset": "assets/icons/bar.png",
+          "subtitle": 'welcome2_subtitle'.tr,
+          "title": 'welcome2_title'.tr,
+        },
+        {
+          "image": "assets/images/welcome_three.png",
+          "iconAsset": "assets/icons/lock.png",
+          "subtitle": 'welcome3_subtitle'.tr,
+          "title": 'welcome3_title'.tr,
+        },
+      ];
+
+
   @override
   void dispose() {
     _pageController.dispose();
@@ -42,16 +45,17 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   void _onPageChanged(int page) {
     setState(() {
-      _isLastPage = page == onboardingPages.length - 1;
+      _isLastPage = page == _onboardingPages.length - 1;
     });
   }
 
   void _skip() {
-Navigator.of(context).push(
+    Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const LoginScreen(),
       ),
-    );  }
+    );
+  }
 
   void _next() {
     if (_isLastPage) {
@@ -69,7 +73,7 @@ Navigator.of(context).push(
     return WelcomeView(
       pageController: _pageController,
       onPageChanged: _onPageChanged,
-      onboardingPages: onboardingPages,
+      onboardingPages: _onboardingPages, // Call the getter
       isLastPage: _isLastPage,
       onSkip: _skip,
       onNext: _next,
