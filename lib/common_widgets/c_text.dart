@@ -8,7 +8,7 @@ class CText extends StatelessWidget {
   final int? maxLines;
   final TextOverflow? overflow;
   final TextAlign? textAlign;
-  final VoidCallback? onTap; // ✅ Add this
+  final VoidCallback? onTap;
 
   const CText(
     this.text, {

@@ -99,7 +99,7 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
   mainAxisAlignment: MainAxisAlignment.spaceBetween,
   children: [
     GestureDetector(
-      onTap: () => Navigator.pop(context), // ✅ Go back to previous screen
+      onTap: () => Navigator.pop(context), 
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -110,7 +110,7 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
             style: AppTypography.bodyWhite.copyWith(
               decoration: TextDecoration.underline,
             ),
-  onTap: () => Navigator.pop(context), // ✅ Pops previous page
+  onTap: () => Navigator.pop(context), 
 ),
 
                                         ],
