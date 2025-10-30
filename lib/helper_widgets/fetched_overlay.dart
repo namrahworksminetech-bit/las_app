@@ -30,19 +30,17 @@ class EligibilityResultOverlay extends StatelessWidget {
           ),
           Gaps.hXxl,
 
-          Container(
-            width: 80,
-            height: 80,
-            decoration: const BoxDecoration(
-              color: AppColors.success,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.flash_on,
-              color: AppColors.white,
-              size: 40,
-            ),
-          ),
+        SizedBox(
+  width: 150, // or 120 for even bigger
+  height: 150, // or 120 for even bigger
+  child: ClipOval(
+    child: Image.asset(
+      'assets/images/fetchedFunds.png', // Update with your asset path
+      fit: BoxFit.cover, // Ensures the image fills the container
+    ),
+  ),
+),
+
 
           Gaps.hXl,
 

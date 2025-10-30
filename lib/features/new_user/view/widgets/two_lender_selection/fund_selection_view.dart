@@ -120,204 +120,205 @@ class FundSelectionView extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        return SingleChildScrollView(
-          key: const ValueKey('fund_selection_view'),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+        return Column(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(16.0),
-                        decoration: BoxDecoration(
-                          color: AppColors.black,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.borderPrimaryColor, width: 1.5),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.borderPrimaryColor.withOpacity(0.4),
-                              blurRadius: 8.0,
-                              spreadRadius: 1.0,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(4),
+                            Container(
+                              padding: const EdgeInsets.all(16.0),
+                              decoration: BoxDecoration(
+                                color: AppColors.black,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: AppColors.borderPrimaryColor, width: 1.5),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.borderPrimaryColor.withOpacity(0.4),
+                                    blurRadius: 8.0,
+                                    spreadRadius: 1.0,
+                                    offset: const Offset(0, 2),
                                   ),
-                                  clipBehavior: Clip.antiAlias,
-                                  child: displayLender.logoAsset.isNotEmpty
-                                      ? Image.network(
-                                          displayLender.logoAsset,
-                                          errorBuilder: (_, __, ___) =>
-                                              const Icon(Icons.business, color: Colors.grey),
-                                        )
-                                      : const Icon(Icons.business, color: Colors.grey),
-                                ),
-                                Gaps.wSm,
-                                Expanded(
-                                  child: CText(
-                                    displayLender.name,
-                                    style: AppTypography.bodyWhite.copyWith(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.bPrimaryColor,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: CText(
-                                    'yourSelection'.tr,
-                                    style: AppTypography.bodyWhite.copyWith(
-                                      color: AppColors.black,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Gaps.hMd,
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                _buildDetailColumn('interestRate'.tr, '${displayLender.interestRate}%'),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    CText('loanAmount'.tr,
-                                        style: AppTypography.bodySecondary.copyWith(fontSize: 12)),
-                                    Gaps.hXs,
-                                    GestureDetector(
-                                      onTap: () => _showEditLoanDialog(
-                                        context,
-                                        selectedLender,
-                                        displayAmount,
+                                ],
+                              ),
+                              child: Column(
+                                children: [
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        clipBehavior: Clip.antiAlias,
+                                        child: displayLender.logoAsset.isNotEmpty
+                                            ? Image.network(
+                                                displayLender.logoAsset,
+                                                errorBuilder: (_, __, ___) => const Icon(Icons.business, color: Colors.grey),
+                                              )
+                                            : const Icon(Icons.business, color: Colors.grey),
                                       ),
-                                      child: Row(
-                                        children: [
-                                          CText(
-                                            NumberFormat.currency(
-                                              locale: 'en_IN',
-                                              symbol: '₹ ',
-                                              decimalDigits: 0,
-                                            ).format(displayLender.loanAmount),
-                                            style: AppTypography.bodyWhite.copyWith(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w500,
-                                            ),
+                                      Gaps.wSm,
+                                      Expanded(
+                                        child: CText(
+                                          displayLender.name,
+                                          style: AppTypography.bodyWhite.copyWith(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
                                           ),
-                                          Gaps.wXs,
-                                          const Icon(
-                                            Icons.edit_outlined,
-                                            color: AppColors.bSecondaryColor,
-                                            size: 14,
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.bPrimaryColor,
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: CText(
+                                          'yourSelection'.tr,
+                                          style: AppTypography.bodyWhite.copyWith(
+                                            color: AppColors.black,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Gaps.hMd,
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      _buildDetailColumn('interestRate'.tr, '${displayLender.interestRate}%'),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          CText('loanAmount'.tr, style: AppTypography.bodySecondary.copyWith(fontSize: 12)),
+                                          Gaps.hXs,
+                                          GestureDetector(
+                                            onTap: () => _showEditLoanDialog(
+                                              context,
+                                              selectedLender,
+                                              displayAmount,
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                CText(
+                                                  NumberFormat.currency(
+                                                    locale: 'en_IN',
+                                                    symbol: '₹ ',
+                                                    decimalDigits: 0,
+                                                  ).format(displayLender.loanAmount),
+                                                  style: AppTypography.bodyWhite.copyWith(fontSize: 14, fontWeight: FontWeight.w500),
+                                                ),
+                                                Gaps.wXs,
+                                                const Icon(
+                                                  Icons.edit_outlined,
+                                                  color: AppColors.bSecondaryColor,
+                                                  size: 14,
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ],
                                       ),
-                                    ),
-                                  ],
+                                      _buildDetailColumn('pledgeableMFs'.tr, '${displayLender.pledgeableMFs}'),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Gaps.hLg,
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                CText(
+                                  'chooseFundsHint'.tr,
+                                  style: AppTypography.bodySecondary.copyWith(fontSize: 12),
                                 ),
-                                _buildDetailColumn('pledgeableMFs'.tr, '${displayLender.pledgeableMFs}'),
+                                const Icon(Icons.info_outline, color: AppColors.bSecondaryColor, size: 16),
                               ],
                             ),
                           ],
                         ),
                       ),
-                      Gaps.hLg,
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          CText(
-                            'chooseFundsHint'.tr,
-                            style: AppTypography.bodySecondary.copyWith(fontSize: 12),
-                          ),
-                          const Icon(Icons.info_outline, color: AppColors.bSecondaryColor, size: 16),
-                        ],
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: EdgeInsets.zero,
+                        itemCount: state.pledgeableFunds.length,
+                        itemBuilder: (context, index) {
+                          final fund = state.pledgeableFunds[index];
+                          final bool isSelected = state.selectedFundIds.contains(fund.id);
+                          return FundListItem(
+                            fund: fund,
+                            isSelected: isSelected,
+                            onToggle: () => context.read<EligibilityBloc>().add(ToggleFundSelection(fund.id)),
+                          );
+                        },
                       ),
                     ],
                   ),
                 ),
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  itemCount: state.pledgeableFunds.length,
-                  itemBuilder: (context, index) {
-                    final fund = state.pledgeableFunds[index];
-                    final bool isSelected = state.selectedFundIds.contains(fund.id);
-                    return FundListItem(
-                      fund: fund,
-                      isSelected: isSelected,
-                      onToggle: () => context.read<EligibilityBloc>().add(ToggleFundSelection(fund.id)),
-                    );
-                  },
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Builder(
-                        builder: (blocContext) => CButton(
-                          text: 'continueWith'.trParams({'lenderName': selectedLender.name}),
-                          onPressed: () {
-                            Navigator.push(
-                              blocContext,
-                              MaterialPageRoute(
-                                builder: (context) => BlocProvider.value(
-                                  value: blocContext.read<EligibilityBloc>(),
-                                  child: const KycVerificationScreen(),
-                                ),
-                              ),
-                            );
-                          },
-                          type: ButtonType.primaryWhite,
-                          suffixIcon: const Icon(
-                            Icons.arrow_forward,
-                            color: AppColors.black,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                      Gaps.hSm,
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CText(
-                            'Powered by',
-                            style: AppTypography.bodySecondary.copyWith(fontSize: 12),
-                          ),
-                          Gaps.wSm,
-                          Image.asset(
-                            'assets/images/value_enable_logo.png',
-                            height: 20,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Builder(
+                    builder: (blocContext) => CButton(
+                      text: 'continueWith'.trParams({'lenderName': selectedLender.name}),
+                      onPressed: () {
+                        Navigator.push(
+                          blocContext,
+                          MaterialPageRoute(
+                            builder: (context) => BlocProvider.value(
+                              value: blocContext.read<EligibilityBloc>(),
+                              child: const KycVerificationScreen(),
+                            ),
+                          ),
+                        );
+                      },
+                      type: ButtonType.primaryWhite,
+                      suffixIcon: const Icon(
+                        Icons.arrow_forward,
+                        color: AppColors.black,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                  Gaps.hSm,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CText(
+                        'Powered by',
+                        style: AppTypography.bodySecondary.copyWith(fontSize: 12),
+                      ),
+                      Gaps.wSm,
+                      Image.asset(
+                        'assets/images/value_enable_logo.png',
+                        height: 20,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
         );
       },
     );

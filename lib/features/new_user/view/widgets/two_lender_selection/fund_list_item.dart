@@ -69,14 +69,14 @@ class _FundListItemState extends State<FundListItem> {
             child: _isExpanded
                 ? Padding(
                     padding: const EdgeInsets.only(
-                        left: 48.0, right: 16.0, top: 8.0, bottom: 8.0),
+                        left: 40.0, right: 1.0, top: 8.0, bottom: 8.0),
                     child: Column(
                       children: [
                         _buildDetailRow(
                           'totalUnits'.tr,
                           '${widget.fund.units}',
                         ),
-                        const SizedBox(height: Gaps.xs),
+                        const SizedBox(height: Gaps.md),
                         _buildDetailRow(
                           'totalFundValue'.trParams(
                               {'perUnit': '${widget.fund.perUnitValue}'}),

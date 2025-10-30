@@ -45,54 +45,49 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => LoginBloc(),
-      child: Scaffold(
-        backgroundColor: AppColors.black,
-        body: BlocConsumer<LoginBloc, LoginState>(
-          listener: (context, state) {
-            if (state.snackbarMessage != null) {
-              CSnackBar.show(
-                context,
-                state.snackbarMessage!,
-                isError: state.otpError != null ||
-                    state.emailError != null ||
-                    state.mobileError != null ||
-                    state.snackbarMessage!.contains('Failed'),
-              );
-              context.read<LoginBloc>().add(LoginSnackbarCleared());
-            }
+      child: BlocConsumer<LoginBloc, LoginState>(
+        listener: (context, state) {
+          if (state.snackbarMessage != null) {
+            CSnackBar.show(
+              context,
+              state.snackbarMessage!,
+              isError: state.otpError != null ||
+                  state.emailError != null ||
+                  state.mobileError != null ||
+                  state.snackbarMessage!.contains('Failed'),
+            );
+            context.read<LoginBloc>().add(LoginSnackbarCleared());
+          }
 
-            if (state.snackbarMessage == 'LoginSuccessful!'.tr) {
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(
-                  builder: (context) => const EligibilityScreen(),
-                ),
-              );
-            }
-          },
+          if (state.snackbarMessage == 'LoginSuccessful!'.tr) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => const EligibilityScreen(),
+              ),
+            );
+          }
+        },
+        builder: (context, state) {
+          final bool isOtpView = state.viewStatus == LoginViewStatus.otpSent;
+          return Scaffold(
+              resizeToAvoidBottomInset: false,
 
-          builder: (context, state) {
-            final bool isOtpView = state.viewStatus == LoginViewStatus.otpSent;
-
-            return SafeArea(
+            backgroundColor: AppColors.black,
+            body: SafeArea(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Gaps.hXl,
-
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
                     child: Image.asset('assets/images/sliQ.png', height: 50),
                   ),
-
                   Gaps.hXl,
-
                   const Divider(
                     thickness: 1.5,
                     color: AppColors.bSecondaryColor,
                   ),
-
                   Gaps.hXl,
-
                   Expanded(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -104,7 +99,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: AppTypography.h1.copyWith(color: AppColors.white),
                           ),
                           Gaps.hXxl,
-
                           CInput(
                             labelText: 'EmailAddress'.tr,
                             controller: _emailController,
@@ -117,7 +111,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           Gaps.hXl,
-
                           CInput(
                             labelText: 'MobileNumber'.tr,
                             controller: _mobileController,
@@ -131,7 +124,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           Gaps.hXl,
-
                           if (isOtpView)
                             CInput(
                               labelText: 'EnterOTP'.tr,
@@ -141,91 +133,96 @@ class _LoginScreenState extends State<LoginScreen> {
                               keyboardType: TextInputType.number,
                               obscureText: true,
                             ),
-                          Gaps.hXl,
+                          if (isOtpView) Gaps.hXl,
                         ],
                       ),
                     ),
                   ),
-
-                  Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      children: [
-                        if (!isOtpView) ...[
-                          CButton(
-                            text: 'SendOTP'.tr,
-                            onPressed: () {
-                              context.read<LoginBloc>().add(
-                                LoginSendOtpPressed(
-                                  email: _emailController.text,
-                                  mobile: _mobileController.text,
-                                ),
-                              );
-                            },
-                            type: ButtonType.primaryWhite,
-                            suffixIcon: const Icon(
-                              Icons.arrow_forward,
-                              color: AppColors.black,
-                              size: 18,
-                            ),
-                          ),
-                          Gaps.hMd,
-                          CButton(
-                            text: 'login'.tr,
-                            onPressed: () {},
-                            type: ButtonType.secondary,
-                          ),
-                        ] else ...[
-                          CButton(
-                            text: 'Continue'.tr,
-                            onPressed: () {
-                              context.read<LoginBloc>().add(
-                                LoginContinuePressed(otp: _otpController.text),
-                              );
-                            },
-                            type: ButtonType.primaryWhite,
-                            suffixIcon: const Icon(
-                              Icons.arrow_forward,
-                              color: AppColors.black,
-                              size: 18,
-                            ),
-                          ),
-                          Gaps.hXl,
-                          Center(
-                            child: RichText(
-                              text: TextSpan(
-                                text: "NoCode?".tr,
-                                style: const TextStyle(
-                                  color: AppColors.bSecondaryColor,
-                                  fontSize: 14,
-                                ),
-                                children: [
-                                  TextSpan(
-                                    text: 'ResendOTP'.tr,
-                                    style: const TextStyle(
-                                      color: AppColors.bPrimaryColor,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    recognizer: TapGestureRecognizer()
-                                      ..onTap = () {
-                                        context.read<LoginBloc>().add(
-                                          LoginResendOtpPressed(),
-                                        );
-                                      },
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
                 ],
               ),
-            );
-          },
-        ),
+            ),
+            bottomNavigationBar: SafeArea(
+              
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                
+                child: Column(
+                  
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!isOtpView) ...[
+                      CButton(
+                        text: 'SendOTP'.tr,
+                        onPressed: () {
+                          context.read<LoginBloc>().add(
+                            LoginSendOtpPressed(
+                              email: _emailController.text,
+                              mobile: _mobileController.text,
+                            ),
+                          );
+                        },
+                        type: ButtonType.primaryWhite,
+                        suffixIcon: const Icon(
+                          Icons.arrow_forward,
+                          color: AppColors.black,
+                          size: 18,
+                        ),
+                      ),
+                      Gaps.hMd,
+                      CButton(
+                        text: 'login'.tr,
+                        onPressed: () {},
+                        type: ButtonType.secondary,
+                      ),
+                    ] else ...[
+                      CButton(
+                        text: 'Continue'.tr,
+                        onPressed: () {
+                          context.read<LoginBloc>().add(
+                            LoginContinuePressed(otp: _otpController.text),
+                          );
+                        },
+                        type: ButtonType.primaryWhite,
+                        suffixIcon: const Icon(
+                          Icons.arrow_forward,
+                          color: AppColors.black,
+                          size: 18,
+                        ),
+                      ),
+                      Gaps.hXl,
+                      Center(
+                        child: RichText(
+                          text: TextSpan(
+                            text: "NoCode?".tr,
+                            style: const TextStyle(
+                              color: AppColors.bSecondaryColor,
+                              fontSize: 14,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: 'ResendOTP'.tr,
+                                style: const TextStyle(
+                                  color: AppColors.bPrimaryColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap = () {
+                                    context.read<LoginBloc>().add(
+                                      LoginResendOtpPressed(),
+                                    );
+                                  },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
