@@ -2,16 +2,20 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
+
+// Common widgets & themes
+import 'package:las_app/common_widgets/c_button.dart';
+import 'package:las_app/common_widgets/c_input.dart';
 import 'package:las_app/common_widgets/c_text.dart';
+import 'package:las_app/common_widgets/c_snackbar.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
-import 'package:las_app/features/new_user/view/eligibility_form.dart';
 
-import '../../../common_widgets/c_button.dart';
-import '../../../common_widgets/c_input.dart';
-import '../../../common_widgets/c_snackbar.dart';
+// Bloc & repository imports
+import '../../../core/network/api_client.dart';
 import '../bloc/login_bloc.dart';
+import '../repository/login_repository.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,21 +25,17 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _mobileController = TextEditingController();
   final TextEditingController _otpController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _emailController.text = 'namrah@gmail.com';
-    _otpController.text = '123456';
-    _mobileController.text = '1234567789';
+    // _mobileController.text = '+918392865130';
   }
 
   @override
   void dispose() {
-    _emailController.dispose();
     _mobileController.dispose();
     _otpController.dispose();
     super.dispose();
@@ -44,188 +44,214 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => LoginBloc(),
-      child: Scaffold(
-        backgroundColor: AppColors.black,
-        body: BlocConsumer<LoginBloc, LoginState>(
-          listener: (context, state) {
-            if (state.snackbarMessage != null) {
-              CSnackBar.show(
-                context,
-                state.snackbarMessage!,
-                isError: state.otpError != null ||
-                    state.emailError != null ||
-                    state.mobileError != null ||
-                    state.snackbarMessage!.contains('Failed'),
-              );
-              context.read<LoginBloc>().add(LoginSnackbarCleared());
-            }
+      create: (_) => LoginBloc(
+        repository: LoginRepository(ApiClient()),
+      ),
+      child: BlocConsumer<LoginBloc, LoginState>(
+        listenWhen: (previous, current) =>
+        previous.snackbarMessage != current.snackbarMessage ||
+            previous.token != current.token ||
+            previous.viewStatus != current.viewStatus,
+        listener: (context, state) {
+          // ✅ Show custom snackbar
+          if (state.snackbarMessage != null &&
+              state.snackbarMessage!.isNotEmpty) {
+            CSnackBar.show(
+              context,
+              state.snackbarMessage!,
+              isError: state.otpError != null ||
+                  state.mobileError != null ||
+                  state.snackbarMessage!.contains('Failed') ||
+                  state.snackbarMessage!.contains('Invalid') ||
+                  state.snackbarMessage!.contains('Forbidden'),
+            );
 
-            if (state.snackbarMessage == 'LoginSuccessful!'.tr) {
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(
-                  builder: (context) => const EligibilityScreen(),
-                ),
-              );
-            }
-          },
+            // Clear snackbar
+            context.read<LoginBloc>().add(LoginSnackbarCleared());
+          }
 
-          builder: (context, state) {
-            final bool isOtpView = state.viewStatus == LoginViewStatus.otpSent;
+          // ✅ Navigate after OTP verification success
+          if (state.token != null && state.token!.isNotEmpty) {
+            Future.delayed(const Duration(milliseconds: 500), () {
+              Navigator.pushReplacementNamed(context, '/dashboard');
+            });
+          }
+        },
+        builder: (context, state) {
+          final bloc = context.read<LoginBloc>();
+          final bool isOtpView =
+              state.viewStatus == LoginViewStatus.otpSent;
 
-            return SafeArea(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          return Scaffold(
+            backgroundColor: AppColors.black,
+            body: SafeArea(
+              child: Stack(
                 children: [
-                  Gaps.hXl,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Gaps.hXl,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                        child: Image.asset(
+                          'assets/images/sliQ.png',
+                          height: 50,
+                        ),
+                      ),
+                      Gaps.hXl,
+                      const Divider(
+                        thickness: 1.5,
+                        color: AppColors.bSecondaryColor,
+                      ),
+                      Gaps.hXl,
 
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: Image.asset('assets/images/sliQ.png', height: 50),
+                      /// ---------- Form Section ----------
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding:
+                          const EdgeInsets.symmetric(horizontal: 24.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CText(
+                                isOtpView
+                                    ? 'EnterOTPBelow'.tr
+                                    : 'EnterDetailsBelow'.tr,
+                                style: AppTypography.h1
+                                    .copyWith(color: AppColors.white),
+                              ),
+                              Gaps.hXxl,
+
+                              /// Mobile field
+                              if (!isOtpView)
+                                CInput(
+                                  labelText: 'MobileNumber'.tr,
+                                  controller: _mobileController,
+                                  errorText: state.mobileError,
+                                  keyboardType: TextInputType.phone,
+                                  suffixIcon: const Icon(
+                                    Icons.phone_outlined,
+                                    color: AppColors.white,
+                                    size: 20,
+                                  ),
+                                ),
+
+                              /// OTP field
+                              if (isOtpView)
+                                CInput(
+                                  labelText: 'Enter 6-digit OTP'.tr,
+                                  controller: _otpController,
+                                  errorText: state.otpError,
+                                  hintText: '******',
+                                  keyboardType: TextInputType.number,
+                                  obscureText: true,
+                                ),
+                              Gaps.hXl,
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      /// ---------- Buttons ----------
+                      Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          children: [
+                            if (!isOtpView) ...[
+                              CButton(
+                                text: 'SendOTP'.tr,
+                                onPressed: () {
+                                  bloc.add(
+                                    LoginSendOtpPressed(
+                                      mobile:
+                                      _mobileController.text.trim(),
+                                    ),
+                                  );
+                                },
+                                type: ButtonType.primaryWhite,
+                                suffixIcon: const Icon(
+                                  Icons.arrow_forward,
+                                  color: AppColors.black,
+                                  size: 18,
+                                ),
+                              ),
+                            ] else ...[
+                              CButton(
+                                text: 'Continue'.tr,
+                                onPressed: () {
+                                  if (state.otpRef == null ||
+                                      state.otpRef!.isEmpty) {
+                                    CSnackBar.show(
+                                      context,
+                                      'Missing OTP reference. Please resend OTP.',
+                                      isError: true,
+                                    );
+                                    return;
+                                  }
+
+                                  bloc.add(
+                                    LoginVerifyOtpPressed(
+                                      mobile: _mobileController.text.trim(),
+                                      otpRef: state.otpRef!,
+                                      otp: _otpController.text.trim(),
+                                    ),
+                                  );
+                                },
+                                type: ButtonType.primaryWhite,
+                                suffixIcon: const Icon(
+                                  Icons.arrow_forward,
+                                  color: AppColors.black,
+                                  size: 18,
+                                ),
+                              ),
+                              Gaps.hXl,
+                              Center(
+                                child: RichText(
+                                  text: TextSpan(
+                                    text: "NoCode?".tr,
+                                    style: const TextStyle(
+                                      color: AppColors.bSecondaryColor,
+                                      fontSize: 14,
+                                    ),
+                                    children: [
+                                      TextSpan(
+                                        text: 'ResendOTP'.tr,
+                                        style: const TextStyle(
+                                          color: AppColors.bPrimaryColor,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        recognizer: TapGestureRecognizer()
+                                          ..onTap = () {
+                                            bloc.add(
+                                                const LoginResendOtpPressed());
+                                          },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
 
-                  Gaps.hXl,
-
-                  const Divider(
-                    thickness: 1.5,
-                    color: AppColors.bSecondaryColor,
-                  ),
-
-                  Gaps.hXl,
-
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CText(
-                            'EnterDetailsBelow'.tr,
-                            style: AppTypography.h1.copyWith(color: AppColors.white),
-                          ),
-                          Gaps.hXxl,
-
-                          CInput(
-                            labelText: 'EmailAddress'.tr,
-                            controller: _emailController,
-                            errorText: state.emailError,
-                            keyboardType: TextInputType.emailAddress,
-                            suffixIcon: const Icon(
-                              Icons.email_outlined,
-                              color: AppColors.white,
-                              size: 20,
-                            ),
-                          ),
-                          Gaps.hXl,
-
-                          CInput(
-                            labelText: 'MobileNumber'.tr,
-                            controller: _mobileController,
-                            errorText: state.mobileError,
-                            keyboardType: TextInputType.phone,
-                            prefixText: '+91 ',
-                            suffixIcon: const Icon(
-                              Icons.phone_outlined,
-                              color: AppColors.white,
-                              size: 20,
-                            ),
-                          ),
-                          Gaps.hXl,
-
-                          if (isOtpView)
-                            CInput(
-                              labelText: 'EnterOTP'.tr,
-                              controller: _otpController,
-                              errorText: state.otpError,
-                              hintText: '******',
-                              keyboardType: TextInputType.number,
-                              obscureText: true,
-                            ),
-                          Gaps.hXl,
-                        ],
+                  /// ---------- Loader ----------
+                  if (state.isLoading)
+                    Container(
+                      color: Colors.black.withOpacity(0.4),
+                      child: const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.bPrimaryColor,
+                        ),
                       ),
                     ),
-                  ),
-
-                  Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      children: [
-                        if (!isOtpView) ...[
-                          CButton(
-                            text: 'SendOTP'.tr,
-                            onPressed: () {
-                              context.read<LoginBloc>().add(
-                                LoginSendOtpPressed(
-                                  email: _emailController.text,
-                                  mobile: _mobileController.text,
-                                ),
-                              );
-                            },
-                            type: ButtonType.primaryWhite,
-                            suffixIcon: const Icon(
-                              Icons.arrow_forward,
-                              color: AppColors.black,
-                              size: 18,
-                            ),
-                          ),
-                          Gaps.hMd,
-                          CButton(
-                            text: 'login'.tr,
-                            onPressed: () {},
-                            type: ButtonType.secondary,
-                          ),
-                        ] else ...[
-                          CButton(
-                            text: 'Continue'.tr,
-                            onPressed: () {
-                              context.read<LoginBloc>().add(
-                                LoginContinuePressed(otp: _otpController.text),
-                              );
-                            },
-                            type: ButtonType.primaryWhite,
-                            suffixIcon: const Icon(
-                              Icons.arrow_forward,
-                              color: AppColors.black,
-                              size: 18,
-                            ),
-                          ),
-                          Gaps.hXl,
-                          Center(
-                            child: RichText(
-                              text: TextSpan(
-                                text: "NoCode?".tr,
-                                style: const TextStyle(
-                                  color: AppColors.bSecondaryColor,
-                                  fontSize: 14,
-                                ),
-                                children: [
-                                  TextSpan(
-                                    text: 'ResendOTP'.tr,
-                                    style: const TextStyle(
-                                      color: AppColors.bPrimaryColor,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    recognizer: TapGestureRecognizer()
-                                      ..onTap = () {
-                                        context.read<LoginBloc>().add(
-                                          LoginResendOtpPressed(),
-                                        );
-                                      },
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
                 ],
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }

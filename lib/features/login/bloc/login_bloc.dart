@@ -1,108 +1,108 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../repository/login_repository.dart';
 
 part 'login_event.dart';
 part 'login_state.dart';
 
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
-  LoginBloc() : super(const LoginState()) {
+  final LoginRepository repository;
+
+  LoginBloc({required this.repository}) : super(const LoginState()) {
     on<LoginSendOtpPressed>(_onSendOtpPressed);
-    on<LoginContinuePressed>(_onContinuePressed);
-    on<LoginResendOtpPressed>(_onResendOtpPressed);
+    on<LoginVerifyOtpPressed>(_onVerifyOtpPressed);
     on<LoginSnackbarCleared>(_onSnackbarCleared);
+    on<LoginResendOtpPressed>(_onResendOtpPressed);
   }
 
+  /// 🔹 Send OTP
   Future<void> _onSendOtpPressed(
-    LoginSendOtpPressed event,
-    Emitter<LoginState> emit,
-  ) async {
-    String? emailError;
+      LoginSendOtpPressed event,
+      Emitter<LoginState> emit,
+      ) async {
     String? mobileError;
 
-    if (event.email.isEmpty || !event.email.contains('@')) {
-      emailError = 'Please enter a valid email address.';
-    }
     if (event.mobile.isEmpty || event.mobile.length < 10) {
-      mobileError = 'Please enter a valid 10-digit mobile number.';
+      mobileError = 'Please enter a valid phone number.';
     }
 
-    if (emailError != null || mobileError != null) {
-      emit(state.copyWith(emailError: emailError, mobileError: mobileError));
+    if (mobileError != null) {
+      emit(state.copyWith(mobileError: mobileError));
       return;
     }
 
-    emit(state.copyWith(isLoading: true, emailError: null, mobileError: null));
+    emit(state.copyWith(isLoading: true, mobileError: null));
 
-    await Future.delayed(const Duration(seconds: 1));
-    bool success = true;
+    final response = await repository.sendOtp(event.mobile);
 
-    if (success) {
+    emit(state.copyWith(isLoading: false));
+
+    if (response.success) {
       emit(
         state.copyWith(
-          isLoading: false,
           viewStatus: LoginViewStatus.otpSent,
-          snackbarMessage: 'OTP sent successfully!',
+          otpRef: response.otpRef,
+          snackbarMessage: response.message ?? 'OTP sent successfully!',
         ),
       );
     } else {
       emit(
         state.copyWith(
-          isLoading: false,
-          snackbarMessage: 'Failed to send OTP. Please try again.',
+          snackbarMessage: response.message ?? 'Failed to send OTP.',
         ),
       );
     }
   }
 
-  Future<void> _onContinuePressed(
-    LoginContinuePressed event,
-    Emitter<LoginState> emit,
-  ) async {
-    if (event.otp.length != 6) {
-      emit(
-        state.copyWith(
-          otpError: 'OTP must be 6 digits.',
-          snackbarMessage: 'Please enter a valid 6-digit OTP.',
-        ),
-      );
-      return;
-    }
-
+  /// 🔹 Verify OTP
+  Future<void> _onVerifyOtpPressed(
+      LoginVerifyOtpPressed event,
+      Emitter<LoginState> emit,
+      ) async {
     emit(state.copyWith(isLoading: true, otpError: null));
 
-    await Future.delayed(const Duration(seconds: 1));
-    bool success = event.otp == "123456";
+    final response = await repository.verifyOtp(
+      phoneNumber: event.mobile,
+      otpRef: event.otpRef,
+      otp: event.otp,
+    );
 
-    if (success) {
+    emit(state.copyWith(isLoading: false));
+
+    if (response.token != null && response.token!.isNotEmpty) {
       emit(
-        state.copyWith(isLoading: false, snackbarMessage: 'Login Successful!'),
+        state.copyWith(
+          token: response.token,
+          snackbarMessage: 'OTP verified successfully!',
+        ),
       );
     } else {
       emit(
         state.copyWith(
-          isLoading: false,
-          otpError: 'Invalid OTP. Please try again.',
-          snackbarMessage: 'Invalid OTP. Please try again.',
+          otpError: response.message ?? 'Invalid OTP',
+          snackbarMessage: response.message ?? 'OTP verification failed.',
         ),
       );
     }
   }
 
+  /// 🔹 Resend OTP (no API call, just UI feedback)
   Future<void> _onResendOtpPressed(
-    LoginResendOtpPressed event,
-    Emitter<LoginState> emit,
-  ) async {
-    emit(state.copyWith(isLoading: true));
-    await Future.delayed(const Duration(seconds: 1));
+      LoginResendOtpPressed event,
+      Emitter<LoginState> emit,
+      ) async {
     emit(
-      state.copyWith(isLoading: false, snackbarMessage: 'OTP has been resent.'),
+      state.copyWith(
+        snackbarMessage: 'A new OTP has been sent to your registered number.',
+      ),
     );
   }
 
+  /// 🔹 Clear Snackbar Message
   void _onSnackbarCleared(
-    LoginSnackbarCleared event,
-    Emitter<LoginState> emit,
-  ) {
+      LoginSnackbarCleared event,
+      Emitter<LoginState> emit,
+      ) {
     emit(state.copyWith(clearSnackbar: true));
   }
 }

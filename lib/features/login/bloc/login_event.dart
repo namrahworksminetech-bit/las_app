@@ -2,25 +2,36 @@ part of 'login_bloc.dart';
 
 abstract class LoginEvent extends Equatable {
   const LoginEvent();
+
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class LoginSendOtpPressed extends LoginEvent {
-  final String email;
   final String mobile;
-  const LoginSendOtpPressed({required this.email, required this.mobile});
+  const LoginSendOtpPressed({required this.mobile});
+
   @override
-  List<Object> get props => [email, mobile];
+  List<Object?> get props => [mobile];
 }
 
-class LoginContinuePressed extends LoginEvent {
+class LoginVerifyOtpPressed extends LoginEvent {
+  final String mobile;
+  final String otpRef;
   final String otp;
-  const LoginContinuePressed({required this.otp});
+
+  const LoginVerifyOtpPressed({
+    required this.mobile,
+    required this.otpRef,
+    required this.otp,
+  });
+
   @override
-  List<Object> get props => [otp];
+  List<Object?> get props => [mobile, otpRef, otp];
 }
 
-class LoginResendOtpPressed extends LoginEvent {}
+class LoginResendOtpPressed extends LoginEvent {
+  const LoginResendOtpPressed();
+}
 
 class LoginSnackbarCleared extends LoginEvent {}
