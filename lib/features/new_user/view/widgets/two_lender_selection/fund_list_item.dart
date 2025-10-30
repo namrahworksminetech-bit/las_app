@@ -98,7 +98,7 @@ class _FundListItemState extends State<FundListItem> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        CText(title, style: AppTypography.bodySecondary),
+        Expanded(child: CText(title, style: AppTypography.bodySecondary)),
         Row(
           children: [
             CText(
