@@ -28,12 +28,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           "subtitle": 'welcome2_subtitle'.tr,
           "title": 'welcome2_title'.tr,
         },
-        {
-          "image": "assets/images/welcome_three.png",
-          "iconAsset": "assets/icons/lock.png",
-          "subtitle": 'welcome3_subtitle'.tr,
-          "title": 'welcome3_title'.tr,
-        },
+        
       ];
 
 

@@ -20,15 +20,16 @@ class _Step1PanPageState extends State<Step1PanPage> {
   late TextEditingController _panController;
   late TextEditingController _nameController;
   late TextEditingController _dobController;
+  late TextEditingController _otpController;
 
   @override
   void initState() {
     super.initState();
-
     final state = context.read<EligibilityBloc>().state;
     _panController = TextEditingController(text: state.formData.panNumber);
     _nameController = TextEditingController(text: state.formData.panFullName);
     _dobController = TextEditingController(text: state.formData.panDob);
+    _otpController = TextEditingController();
   }
 
   @override
@@ -36,12 +37,12 @@ class _Step1PanPageState extends State<Step1PanPage> {
     _panController.dispose();
     _nameController.dispose();
     _dobController.dispose();
+    _otpController.dispose();
     super.dispose();
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    FocusScope.of(context).requestFocus(FocusNode());
-
+    FocusScope.of(context).unfocus();
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime(2000, 1, 1),
@@ -57,107 +58,172 @@ class _Step1PanPageState extends State<Step1PanPage> {
     }
   }
 
+  void _onButtonPressed(EligibilityState state) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    final bloc = context.read<EligibilityBloc>();
+
+    // 🔹 Step 1: Verify PAN
+    if (state.otpStatus == PanOtpStatus.initial ||
+        state.otpStatus == PanOtpStatus.failed) {
+      bloc.add(
+        VerifyPanPressed(
+          pan: _panController.text.trim(),
+          dob: _dobController.text.trim(),
+          name: _nameController.text.trim(),
+          email: 'manish@valuenable.in', // Replace dynamically if needed
+        ),
+      );
+      return;
+    }
+
+    // 🔹 Step 2: Verify OTP
+    if (state.otpStatus == PanOtpStatus.sent) {
+      bloc.add(
+        VerifyPanOtpPressed(
+          otp: _otpController.text.trim(),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<EligibilityBloc, EligibilityState>(
-      builder: (context, state) {
-        return Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: Gaps.xxl),
-
-                    CInput(
-                      labelText: 'panCardNumberLabel'.tr,
-                      hintText: 'panCardNumberHint'.tr,
-                      controller: _panController,
-                      onChanged: (value) => context
-                          .read<EligibilityBloc>()
-                          .add(PanNumberUpdated(value)),
-                      errorText: state.panNumberError,
-                    ),
-
-                    SizedBox(height: Gaps.md),
-
-                    CInput(
-                      labelText: 'nameAsPerPanLabel'.tr,
-                      hintText: 'nameAsPerPanHint'.tr,
-                      controller: _nameController,
-                      onChanged: (value) => context
-                          .read<EligibilityBloc>()
-                          .add(PanFullNameUpdated(value)),
-                      errorText: state.panFullNameError,
-                    ),
-
-                    SizedBox(height: Gaps.md),
-
-                    CInput(
-                      labelText: 'dateOfBirthLabel'.tr,
-                      hintText: 'dateOfBirthHint'.tr,
-                      controller: _dobController,
-                      readOnly: true,
-                      onTap: () => _selectDate(context),
-                      errorText: state.panDobError,
-                      suffixIcon: const Icon(
-                        Icons.calendar_today_outlined,
-                        color: AppColors.bSecondaryColor,
-                        size: 20,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: CButton(
-                text:
-                    state.isLoading ? 'checking'.tr : 'checkLoanEligibility'.tr,
-                onPressed: state.isLoading
-                    ? () {}
-                    : () => context.read<EligibilityBloc>().add(
-                          NextStepPressed(),
-                        ),
-                type: ButtonType.primaryWhite,
-                suffixIcon: state.isLoading
-                    ? null
-                    : const Icon(
-                        Icons.arrow_forward,
-                        color: AppColors.black,
-                        size: 18,
-                      ),
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.only(bottom: 24.0),
-              child: Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CText(
-                      'Powered by',
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.bSecondaryColor,
-                      ),
-                    ),
-                    SizedBox(width: Gaps.xs),
-                    Image.asset(
-                      'assets/images/value_enable_logo.png',
-                      height: 20,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+    return BlocListener<EligibilityBloc, EligibilityState>(
+      listenWhen: (prev, curr) =>
+          curr.snackbarMessage != null && curr.snackbarMessage != prev.snackbarMessage,
+      listener: (context, state) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(state.snackbarMessage!)),
         );
+
+        // ✅ Move to next step automatically after OTP verified
+        if (state.otpStatus == PanOtpStatus.verified) {
+          context.read<EligibilityBloc>().add(NextStepPressed());
+        }
       },
+      child: BlocBuilder<EligibilityBloc, EligibilityState>(
+        builder: (context, state) {
+          final showOtpField = state.otpStatus == PanOtpStatus.sent ||
+              state.otpStatus == PanOtpStatus.sending ||
+              state.otpStatus == PanOtpStatus.verified;
+
+          return Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(height: Gaps.xxl),
+
+                      // PAN
+                      CInput(
+                        labelText: 'panCardNumberLabel'.tr,
+                        hintText: 'panCardNumberHint'.tr,
+                        controller: _panController,
+                        onChanged: (value) => context
+                            .read<EligibilityBloc>()
+                            .add(PanNumberUpdated(value)),
+                        errorText: state.panNumberError,
+                      ),
+
+                      SizedBox(height: Gaps.md),
+
+                      // Name
+                      CInput(
+                        labelText: 'nameAsPerPanLabel'.tr,
+                        hintText: 'nameAsPerPanHint'.tr,
+                        controller: _nameController,
+                        onChanged: (value) => context
+                            .read<EligibilityBloc>()
+                            .add(PanFullNameUpdated(value)),
+                        errorText: state.panFullNameError,
+                      ),
+
+                      SizedBox(height: Gaps.md),
+
+                      // DOB
+                      CInput(
+                        labelText: 'dateOfBirthLabel'.tr,
+                        hintText: 'dateOfBirthHint'.tr,
+                        controller: _dobController,
+                        readOnly: true,
+                        onTap: () => _selectDate(context),
+                        errorText: state.panDobError,
+                        suffixIcon: const Icon(
+                          Icons.calendar_today_outlined,
+                          color: AppColors.bSecondaryColor,
+                          size: 20,
+                        ),
+                      ),
+
+                      if (showOtpField) ...[
+                        SizedBox(height: Gaps.lg),
+                        CInput(
+                          labelText: 'Enter OTP',
+                          hintText: 'Enter the 6-digit code',
+                          controller: _otpController,
+                          keyboardType: TextInputType.number,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: CButton(
+                  text: _getButtonText(state),
+                  onPressed: () => _onButtonPressed(state),
+                  isLoading: state.panStatus == PanVerificationStatus.verifying ||
+                      state.otpStatus == PanOtpStatus.sending,
+                  type: ButtonType.primaryWhite,
+                  suffixIcon: const Icon(
+                    Icons.arrow_forward,
+                    color: AppColors.black,
+                    size: 18,
+                  ),
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.only(bottom: 24.0),
+                child: Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CText(
+                        'Powered by',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.bSecondaryColor,
+                        ),
+                      ),
+                      SizedBox(width: Gaps.xs),
+                      Image.asset(
+                        'assets/images/value_enable_logo.png',
+                        height: 20,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
+  }
+
+  String _getButtonText(EligibilityState state) {
+    switch (state.otpStatus) {
+      case PanOtpStatus.sent:
+        return 'Verify OTP';
+      case PanOtpStatus.verified:
+        return 'Verified ✓';
+      default:
+        return 'Check Loan Eligibility';
+    }
   }
 }

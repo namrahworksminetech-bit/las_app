@@ -4,9 +4,12 @@ import 'package:get/get.dart';
 import 'package:las_app/common_widgets/c_button.dart';
 import 'package:las_app/common_widgets/c_snackbar.dart';
 import 'package:las_app/common_widgets/c_text.dart';
+import 'package:las_app/core/network/api_client.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
+import 'package:las_app/features/new_user/repository/lenders_data_repo.dart';
+import 'package:las_app/features/new_user/repository/pan_veirfy_repo.dart';
 import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/step_fund_type.dart';
 import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/step_pan.dart';
 import 'package:las_app/helper_widgets/fetched_overlay.dart';
@@ -53,7 +56,7 @@ class _EligibilityScreenState extends State<EligibilityScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => EligibilityBloc(),
+      create: (context) => EligibilityBloc(repository: PanRepository(ApiClient()),lenderRepository: LenderRepository(ApiClient())),
       child: Scaffold(
         backgroundColor: AppColors.black,
         body: BlocConsumer<EligibilityBloc, EligibilityState>(

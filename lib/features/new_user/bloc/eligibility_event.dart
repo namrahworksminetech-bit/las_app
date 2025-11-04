@@ -109,6 +109,44 @@ class OtpChanged extends EligibilityEvent {
   List<Object?> get props => [otp];
 }
 
+
+class VerifyPanPressed extends EligibilityEvent {
+  final String pan;
+  final String dob;
+  final String name;
+  final String email;
+
+  VerifyPanPressed({
+    
+    required this.pan,
+    required this.dob,
+    required this.name,
+    required this.email,
+  });
+}
+
+
+class SendPanOtpPressed extends EligibilityEvent {
+  // no args required — repo will use AppStateProvider.reqId
+  const SendPanOtpPressed();
+
+  @override
+  List<Object?> get props => [];
+}
+/// Step 3
+class VerifyPanOtpPressed extends EligibilityEvent {
+
+  final String otp;
+
+  const VerifyPanOtpPressed({ required this.otp});
+
+  @override
+  List<Object?> get props => [ otp];
+}
+
+/// Snackbar clear
+class EligibilitySnackbarCleared extends EligibilityEvent {}
+
 class SubmitOtp extends EligibilityEvent {
   const SubmitOtp();
 

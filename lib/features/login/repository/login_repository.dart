@@ -42,7 +42,7 @@ class LoginRepository {
       final response = await _apiClient.post(
         '/customer/login',
         data: {
-          'phone_number': phoneNumber,
+          'phone_number': '+91${phoneNumber}',
           'otp_ref': otpRef,
           'otp': otp,
         },
@@ -51,6 +51,10 @@ class LoginRepository {
           'Content-Type': 'application/json',
         }),
       );
+print('VERIFYING OTP WITH:');
+print('  phone: ${phoneNumber}');
+print('  otpRef: ${otpRef}');
+print('  otp: ${otp}');
 
       print('✅ VERIFY OTP RESPONSE: ${response.data}');
       return VerifyOtpResponse.fromJson(response.data);

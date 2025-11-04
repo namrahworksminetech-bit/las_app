@@ -66,28 +66,31 @@ class EligibilityResultOverlay extends StatelessWidget {
           Gaps.hXxl,
 
           CButton(
-            text: 'seeLoanOffers'.tr,
-            onPressed: () {
-              final eligibilityBloc = context.read<EligibilityBloc>();
-              eligibilityBloc.add(FetchStep2Data());
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => BlocProvider.value(
-                    value: eligibilityBloc,
-                    child: const LenderSelectionScreen(),
-                  ),
-                ),
-              );
-            },
-            type: ButtonType.secondaryBlack,
-            suffixIcon: const Icon(
-              Icons.arrow_forward,
-              color: AppColors.black,
-              size: 18,
-            ),
-          ),
+  text: 'seeLoanOffers'.tr,
+  onPressed: () {
+    final eligibilityBloc = context.read<EligibilityBloc>();
 
+    // 🔹 Correct: Fetch lender list + portfolio data here
+    eligibilityBloc.add(FetchStep2Data());
+
+    // 🔹 Navigate to lender selection screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BlocProvider.value(
+          value: eligibilityBloc,
+          child: const LenderSelectionScreen(),
+        ),
+      ),
+    );
+  },
+  type: ButtonType.secondaryBlack,
+  suffixIcon: const Icon(
+    Icons.arrow_forward,
+    color: AppColors.black,
+    size: 18,
+  ),
+),
           Gaps.hMd,
         ],
       ),

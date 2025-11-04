@@ -16,6 +16,7 @@ import 'package:las_app/core/theme/app_typography.dart';
 import '../../../core/network/api_client.dart';
 import '../bloc/login_bloc.dart';
 import '../repository/login_repository.dart';
+import '../../new_user/view/eligibility_form.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -25,17 +26,22 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _mobileController = TextEditingController();
   final TextEditingController _otpController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    // _mobileController.text = '+918392865130';
+    // Prefilled for testing
+    _emailController.text = 'namrah@gmail.com';
+    _mobileController.text = '9876543210';
+    _otpController.text = '123456';
   }
 
   @override
   void dispose() {
+    _emailController.dispose();
     _mobileController.dispose();
     _otpController.dispose();
     super.dispose();
@@ -49,11 +55,11 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       child: BlocConsumer<LoginBloc, LoginState>(
         listenWhen: (previous, current) =>
-        previous.snackbarMessage != current.snackbarMessage ||
+            previous.snackbarMessage != current.snackbarMessage ||
             previous.token != current.token ||
             previous.viewStatus != current.viewStatus,
         listener: (context, state) {
-          // ✅ Show custom snackbar
+          // ✅ Snackbar
           if (state.snackbarMessage != null &&
               state.snackbarMessage!.isNotEmpty) {
             CSnackBar.show(
@@ -65,22 +71,23 @@ class _LoginScreenState extends State<LoginScreen> {
                   state.snackbarMessage!.contains('Invalid') ||
                   state.snackbarMessage!.contains('Forbidden'),
             );
-
-            // Clear snackbar
             context.read<LoginBloc>().add(LoginSnackbarCleared());
           }
 
           // ✅ Navigate after OTP verification success
           if (state.token != null && state.token!.isNotEmpty) {
             Future.delayed(const Duration(milliseconds: 500), () {
-              Navigator.pushReplacementNamed(context, '/dashboard');
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => const EligibilityScreen(),
+                ),
+              );
             });
           }
         },
         builder: (context, state) {
           final bloc = context.read<LoginBloc>();
-          final bool isOtpView =
-              state.viewStatus == LoginViewStatus.otpSent;
+          final bool isOtpView = state.viewStatus == LoginViewStatus.otpSent;
 
           return Scaffold(
             backgroundColor: AppColors.black,
@@ -109,44 +116,57 @@ class _LoginScreenState extends State<LoginScreen> {
                       Expanded(
                         child: SingleChildScrollView(
                           padding:
-                          const EdgeInsets.symmetric(horizontal: 24.0),
+                              const EdgeInsets.symmetric(horizontal: 24.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               CText(
-                                isOtpView
-                                    ? 'EnterOTPBelow'.tr
-                                    : 'EnterDetailsBelow'.tr,
+                                'EnterDetailsBelow'.tr,
                                 style: AppTypography.h1
                                     .copyWith(color: AppColors.white),
                               ),
                               Gaps.hXxl,
 
-                              /// Mobile field
-                              if (!isOtpView)
-                                CInput(
-                                  labelText: 'MobileNumber'.tr,
-                                  controller: _mobileController,
-                                  errorText: state.mobileError,
-                                  keyboardType: TextInputType.phone,
-                                  suffixIcon: const Icon(
-                                    Icons.phone_outlined,
-                                    color: AppColors.white,
-                                    size: 20,
-                                  ),
+                              /// Email field
+                              CInput(
+                                labelText: 'EmailAddress'.tr,
+                                controller: _emailController,
+                            
+                                keyboardType: TextInputType.emailAddress,
+                                suffixIcon: const Icon(
+                                  Icons.email_outlined,
+                                  color: AppColors.white,
+                                  size: 20,
                                 ),
+                              ),
+                              Gaps.hXl,
 
-                              /// OTP field
+                              /// Mobile field
+                              CInput(
+                                labelText: 'MobileNumber'.tr,
+                                controller: _mobileController,
+                                errorText: state.mobileError,
+                                keyboardType: TextInputType.phone,
+                                prefixText: '+91 ',
+                                suffixIcon: const Icon(
+                                  Icons.phone_outlined,
+                                  color: AppColors.white,
+                                  size: 20,
+                                ),
+                              ),
+                              Gaps.hXl,
+
+                              /// OTP field (shown below existing)
                               if (isOtpView)
                                 CInput(
-                                  labelText: 'Enter 6-digit OTP'.tr,
+                                  labelText: 'EnterOTP'.tr,
                                   controller: _otpController,
                                   errorText: state.otpError,
                                   hintText: '******',
                                   keyboardType: TextInputType.number,
                                   obscureText: true,
                                 ),
-                              Gaps.hXl,
+                              if (isOtpView) Gaps.hXl,
                             ],
                           ),
                         ),
@@ -163,8 +183,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 onPressed: () {
                                   bloc.add(
                                     LoginSendOtpPressed(
-                                      mobile:
-                                      _mobileController.text.trim(),
+                                      mobile: _mobileController.text.trim(),
+                                      
                                     ),
                                   );
                                 },

@@ -8,7 +8,6 @@ import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
 import 'package:las_app/features/new_user/view/succcess_pledge_view.dart';
-import 'package:las_app/features/new_user/view/widgets/four_pledge/pledge_otp_view.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
 class KycVerificationScreen extends StatelessWidget {
