@@ -1,7 +1,9 @@
 part of 'eligibility_bloc.dart';
 
 enum InvestmentType { insurancePolicy, mutualFund, shares, none }
+
 enum PanVerificationStatus { initial, verifying, verified, failed }
+
 enum PanOtpStatus { initial, sending, sent, verified, failed }
 
 enum EligibilityOverlayType { none, fetchingPortfolio, eligibilityResult }
@@ -12,7 +14,6 @@ enum LenderSelectionView {
   pledgeableDetail,
   fundSelection,
 }
-
 
 class PledgeableFund extends Equatable {
   final String id;
@@ -41,6 +42,7 @@ class Lender extends Equatable {
   final double loanAmount;
   final int pledgeableMFs;
   final String tag;
+  final String lender_code;
 
   const Lender({
     required this.id,
@@ -50,6 +52,7 @@ class Lender extends Equatable {
     required this.loanAmount,
     required this.pledgeableMFs,
     required this.tag,
+    required this.lender_code,
   });
 
   @override
@@ -63,6 +66,7 @@ class Lender extends Equatable {
     double? loanAmount,
     int? pledgeableMFs,
     String? tag,
+    String? lender_code,
   }) {
     return Lender(
       id: id ?? this.id,
@@ -72,6 +76,7 @@ class Lender extends Equatable {
       loanAmount: loanAmount ?? this.loanAmount,
       pledgeableMFs: pledgeableMFs ?? this.pledgeableMFs,
       tag: tag ?? this.tag,
+      lender_code: lender_code ?? this.lender_code,
     );
   }
 }
@@ -121,6 +126,7 @@ class EligibilityFormData extends Equatable {
   @override
   List<Object?> get props => [investmentType, panNumber, panFullName, panDob];
 }
+
 class EligibilityState extends Equatable {
   const EligibilityState({
     this.majorStep = 1,
@@ -215,18 +221,22 @@ class EligibilityState extends Equatable {
       pageIndex: pageIndex ?? this.pageIndex,
       formData: formData ?? this.formData,
       isLoading: isLoading ?? this.isLoading,
-      generalErrorMessage:
-          clearErrors ? null : generalErrorMessage ?? this.generalErrorMessage,
-      panNumberError:
-          clearErrors ? null : panNumberError ?? this.panNumberError,
-      panFullNameError:
-          clearErrors ? null : panFullNameError ?? this.panFullNameError,
+      generalErrorMessage: clearErrors
+          ? null
+          : generalErrorMessage ?? this.generalErrorMessage,
+      panNumberError: clearErrors
+          ? null
+          : panNumberError ?? this.panNumberError,
+      panFullNameError: clearErrors
+          ? null
+          : panFullNameError ?? this.panFullNameError,
       panDobError: clearErrors ? null : panDobError ?? this.panDobError,
       currentOverlay: currentOverlay ?? this.currentOverlay,
       lenderSelectionView: lenderSelectionView ?? this.lenderSelectionView,
       lenders: lenders ?? this.lenders,
-      selectedLenderId:
-          clearSelectedLender ? null : selectedLenderId ?? this.selectedLenderId,
+      selectedLenderId: clearSelectedLender
+          ? null
+          : selectedLenderId ?? this.selectedLenderId,
       portfolioData: portfolioData ?? this.portfolioData,
       isPortfolioRefreshing:
           isPortfolioRefreshing ?? this.isPortfolioRefreshing,
@@ -240,37 +250,38 @@ class EligibilityState extends Equatable {
       otpResent: otpResent ?? this.otpResent,
       panStatus: panStatus ?? this.panStatus,
       otpStatus: otpStatus ?? this.otpStatus,
-      snackbarMessage:
-          clearSnackbar ? null : snackbarMessage ?? this.snackbarMessage,
+      snackbarMessage: clearSnackbar
+          ? null
+          : snackbarMessage ?? this.snackbarMessage,
     );
   }
 
   @override
   List<Object?> get props => [
-        majorStep,
-        pageIndex,
-        formData,
-        isLoading,
-        generalErrorMessage,
-        panNumberError,
-        panFullNameError,
-        panDobError,
-        currentOverlay,
-        lenderSelectionView,
-        lenders,
-        selectedLenderId,
-        portfolioData,
-        isPortfolioRefreshing,
-        editedLoanAmounts,
-        pledgeableFunds,
-        selectedFundIds,
-        kycStepChecks,
-        otp,
-        isSubmitting,
-        otpError,
-        otpResent,
-        panStatus,
-        otpStatus,
-        snackbarMessage,
-      ];
+    majorStep,
+    pageIndex,
+    formData,
+    isLoading,
+    generalErrorMessage,
+    panNumberError,
+    panFullNameError,
+    panDobError,
+    currentOverlay,
+    lenderSelectionView,
+    lenders,
+    selectedLenderId,
+    portfolioData,
+    isPortfolioRefreshing,
+    editedLoanAmounts,
+    pledgeableFunds,
+    selectedFundIds,
+    kycStepChecks,
+    otp,
+    isSubmitting,
+    otpError,
+    otpResent,
+    panStatus,
+    otpStatus,
+    snackbarMessage,
+  ];
 }

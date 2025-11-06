@@ -13,7 +13,7 @@ part 'eligibility_state.dart';
 class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
   final PanRepository repository;
   final LenderRepository lenderRepository;
-  EligibilityBloc({required this.repository,required this.lenderRepository})
+  EligibilityBloc({required this.repository, required this.lenderRepository})
     : super(const EligibilityState()) {
     on<InvestmentTypeUpdated>(_onInvestmentTypeUpdated);
 
@@ -39,7 +39,7 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     on<ConfirmFundSelection>(_onConfirmFundSelection);
     on<ToggleKycStep>(_onToggleKycStep);
 
-//pledging otp
+    //pledging otp
     on<OtpChanged>(_onOtpChanged);
     on<SubmitOtp>(_onSubmitOtp);
     on<ResendOtp>(_onResendOtp);
@@ -49,7 +49,7 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     on<ErrorMessageCleared>(_onErrorMessageCleared);
   }
 
-  //kyc 
+  //kyc
   void _onToggleKycStep(ToggleKycStep event, Emitter<EligibilityState> emit) {
     final updated = List<bool>.from(state.kycStepChecks);
     updated[event.index] = !updated[event.index];
@@ -63,8 +63,7 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     emit(state.copyWith(clearSnackbar: true));
   }
 
-
-//pledge funds
+  //pledge funds
   void _onOtpChanged(OtpChanged event, Emitter<EligibilityState> emit) {
     emit(state.copyWith(otp: event.otp, otpError: false));
   }
@@ -106,8 +105,7 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     );
   }
 
-
-// pan
+  // pan
   void _onPanNumberUpdated(
     PanNumberUpdated event,
     Emitter<EligibilityState> emit,
@@ -141,75 +139,87 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     );
   }
 
-Future<void> _onVerifyPanPressed(
-  VerifyPanPressed event,
-  Emitter<EligibilityState> emit,
-) async {
-  emit(state.copyWith(
-    panStatus: PanVerificationStatus.verifying,
-    generalErrorMessage: null,
-  ));
- final reqId = getIt<AppStateProvider>().reqId;
+  Future<void> _onVerifyPanPressed(
+    VerifyPanPressed event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        panStatus: PanVerificationStatus.verifying,
+        generalErrorMessage: null,
+      ),
+    );
+    final reqId = getIt<AppStateProvider>().reqId;
 
-if (reqId == null || reqId.isEmpty) {
-  emit(state.copyWith(
-    panStatus: PanVerificationStatus.failed,
-    generalErrorMessage: 'Missing reqId. Please login again.',
-  ));
-  return;
-}
-
-final result = await repository.verifyPan(
-  reqId: reqId, // ✅ safe now
-  pan: event.pan,
-  dob: event.dob,
-  name: event.name,
-  email: event.email,
-);
-
-  await result.when(
-    success: (panResponse) async {
-      final reqId = panResponse.reqId;
-
-      if (reqId == null) {
-        emit(state.copyWith(
+    if (reqId == null || reqId.isEmpty) {
+      emit(
+        state.copyWith(
           panStatus: PanVerificationStatus.failed,
-          generalErrorMessage: 'Missing reqId in response.',
-        ));
-        return;
-      }
-
-      // ✅ Save reqId globally
-      getIt<AppStateProvider>().setReqId(reqId);
-
-      // ✅ Now generate OTP
-      final otpResult = await repository.generateOtp();
-
-      otpResult.when(
-        success: (otpResponse) {
-          emit(state.copyWith(
-            panStatus: PanVerificationStatus.verified,
-            otpStatus: PanOtpStatus.sent,
-            generalErrorMessage:
-                otpResponse.message ?? 'OTP sent successfully.',
-          ));
-        },
-        failure: (error) {
-          emit(state.copyWith(
-            otpStatus: PanOtpStatus.failed,
-            generalErrorMessage: error,
-          ));
-        },
+          generalErrorMessage: 'Missing reqId. Please login again.',
+        ),
       );
-    },
-    failure: (error) {
-      emit(state.copyWith(
-        panStatus: PanVerificationStatus.failed,
-        generalErrorMessage: error,
-      ));
-    },
-  );
-}
+      return;
+    }
+
+    final result = await repository.verifyPan(
+      reqId: reqId, // ✅ safe now
+      pan: event.pan,
+      dob: event.dob,
+      name: event.name,
+      email: event.email,
+    );
+
+    await result.when(
+      success: (panResponse) async {
+        final reqId = panResponse.reqId;
+
+        if (reqId == null) {
+          emit(
+            state.copyWith(
+              panStatus: PanVerificationStatus.failed,
+              generalErrorMessage: 'Missing reqId in response.',
+            ),
+          );
+          return;
+        }
+
+        // ✅ Save reqId globally
+        getIt<AppStateProvider>().setReqId(reqId);
+
+        // ✅ Now generate OTP
+        final otpResult = await repository.generateOtp();
+
+        otpResult.when(
+          success: (otpResponse) {
+            emit(
+              state.copyWith(
+                panStatus: PanVerificationStatus.verified,
+                otpStatus: PanOtpStatus.sent,
+                generalErrorMessage:
+                    otpResponse.message ?? 'OTP sent successfully.',
+              ),
+            );
+          },
+          failure: (error) {
+            emit(
+              state.copyWith(
+                otpStatus: PanOtpStatus.failed,
+                generalErrorMessage: error,
+              ),
+            );
+          },
+        );
+      },
+      failure: (error) {
+        emit(
+          state.copyWith(
+            panStatus: PanVerificationStatus.failed,
+            generalErrorMessage: error,
+          ),
+        );
+      },
+    );
+  }
 
   Future<void> _onSendPanOtpPressed(
     SendPanOtpPressed event,
@@ -307,74 +317,80 @@ final result = await repository.verifyPan(
     }
   }
 
+  //fetch funds data
+  Future<void> _onFetchStep2Data(
+    FetchStep2Data event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    if (state.isLoading || state.isPortfolioRefreshing) return;
 
-//fetch funds data
-Future<void> _onFetchStep2Data(
-  FetchStep2Data event,
-  Emitter<EligibilityState> emit,
-) async {
-  if (state.isLoading || state.isPortfolioRefreshing) return;
+    emit(state.copyWith(isLoading: true, generalErrorMessage: null));
 
-  emit(state.copyWith(isLoading: true, generalErrorMessage: null));
+    try {
+      final reqId = getIt<AppStateProvider>().reqId;
+      if (reqId == null) {
+        emit(
+          state.copyWith(
+            isLoading: false,
+            generalErrorMessage:
+                "Missing request ID. Please restart the process.",
+          ),
+        );
+        return;
+      }
 
-  try {
-    final reqId = getIt<AppStateProvider>().reqId;
-    if (reqId == null) {
-      emit(state.copyWith(
-        isLoading: false,
-        generalErrorMessage: "Missing request ID. Please restart the process.",
-      ));
-      return;
+      final result = await lenderRepository.fetchLendersAndPortfolio(
+        reqId: reqId,
+      );
+
+      await result.when(
+        success: (mfResponse) async {
+          final lenders = mfResponse.lenders.map((l) {
+            return Lender(
+              id: l.id.toString(),
+              name: l.name ?? '-',
+              logoAsset: l.logo ?? '',
+              interestRate: l.loanInterest ?? 0.0,
+              loanAmount: l.loanAmount ?? 0.0,
+              pledgeableMFs: l.eligibleFundsCount ?? 0,
+              tag: '',
+              lender_code: l.lender_code ?? 'BFL',
+            );
+          }).toList();
+
+          // Compute aggregated portfolio data (optional)
+          final totalEligiblePortfolio = lenders.fold<double>(
+            0.0,
+            (sum, l) => sum + (l.loanAmount),
+          );
+
+          final portfolio = PortfolioData(
+            totalValue: totalEligiblePortfolio,
+            eligibleCreditLimit: totalEligiblePortfolio,
+            pledgeableFunds: totalEligiblePortfolio,
+          );
+
+          emit(
+            state.copyWith(
+              isLoading: false,
+              lenders: lenders,
+              portfolioData: portfolio,
+            ),
+          );
+        },
+        failure: (error) {
+          emit(state.copyWith(isLoading: false, generalErrorMessage: error));
+        },
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          isLoading: false,
+          generalErrorMessage: "Failed to fetch lender data.",
+        ),
+      );
     }
-
-    final result = await lenderRepository.fetchLendersAndPortfolio(reqId: reqId);
-
-    await result.when(
-      success: (mfResponse) async {
-       final lenders = mfResponse.lenders.map((l) {
-  return Lender(
-    id: l.id.toString(),
-    name: l.name ?? '-',
-    logoAsset: l.logo ?? '',
-    interestRate: l.loanInterest ?? 0.0,
-    loanAmount: l.loanAmount ?? 0.0,
-    pledgeableMFs: l.eligibleFundsCount ?? 0,
-    tag: '',
-  );
-}).toList();
-
-        // Compute aggregated portfolio data (optional)
-        final totalEligiblePortfolio = lenders.fold<double>(
-          0.0,
-          (sum, l) => sum + (l.loanAmount),
-        );
-
-        final portfolio = PortfolioData(
-          totalValue: totalEligiblePortfolio,
-          eligibleCreditLimit: totalEligiblePortfolio,
-          pledgeableFunds: totalEligiblePortfolio,
-        );
-
-        emit(state.copyWith(
-          isLoading: false,
-          lenders: lenders,
-          portfolioData: portfolio,
-        ));
-      },
-      failure: (error) {
-        emit(state.copyWith(
-          isLoading: false,
-          generalErrorMessage: error,
-        ));
-      },
-    );
-  } catch (e) {
-    emit(state.copyWith(
-      isLoading: false,
-      generalErrorMessage: "Failed to fetch lender data.",
-    ));
   }
-}
 
   void _onLenderSelected(LenderSelected event, Emitter<EligibilityState> emit) {
     final newSelectedId = (state.selectedLenderId == event.lenderId)
@@ -563,7 +579,7 @@ Future<void> _onFetchStep2Data(
     );
   }
 
-//steps pressed
+  //steps pressed
   Future<void> _onNextStepPressed(
     NextStepPressed event,
     Emitter<EligibilityState> emit,
@@ -625,12 +641,12 @@ Future<void> _onFetchStep2Data(
 
         bool panIsEligible = true;
 
-          emit(
-            state.copyWith(
-              isLoading: false,
-              currentOverlay: EligibilityOverlayType.eligibilityResult,
-            ),
-          );
+        emit(
+          state.copyWith(
+            isLoading: false,
+            currentOverlay: EligibilityOverlayType.eligibilityResult,
+          ),
+        );
       }
       return;
     } else if (state.pageIndex == 2) {

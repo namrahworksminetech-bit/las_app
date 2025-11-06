@@ -22,11 +22,11 @@ class ApiClient {
     );
 
     _dio.interceptors.add(ApiInterceptor());
-    _loadToken(); // 🔹 Automatically loads token at startup
+    loadToken(); // 🔹 Automatically loads token at startup
   }
 
   /// 🔹 Load saved token from secure storage
-  Future<void> _loadToken() async {
+  Future<void> loadToken() async {
     try {
       final savedToken = await _secureStorage.read(key: 'auth_token');
       if (savedToken != null && savedToken.isNotEmpty) {

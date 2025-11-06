@@ -4,7 +4,6 @@ import 'package:las_app/core/network/api_client.dart';
 import 'package:las_app/core/results/result.dart';
 import 'package:las_app/models/funds/mf_details_response_model.dart';
 
-
 class LenderRepository {
   final ApiClient _apiClient;
   final _storage = const FlutterSecureStorage();
@@ -21,28 +20,29 @@ class LenderRepository {
       }
 
       //final response = await _apiClient.post(
-    //     'customer/get-mf-details',
-    //     data: {'req_id': reqId},
-    //     options: Options(
-    //        sendTimeout: const Duration(seconds: 60),
-    // receiveTimeout: const Duration(minutes: 2),
-    //       headers: {
-            
-    //         'Authorization': 'Bearer $token',
-    //         'Accept': 'application/json',
-    //         'Content-Type': 'application/json',
-    //       },
-    //     ),
-    //   );
+      //     'customer/get-mf-details',
+      //     data: {'req_id': reqId},
+      //     options: Options(
+      //        sendTimeout: const Duration(seconds: 60),
+      // receiveTimeout: const Duration(minutes: 2),
+      //       headers: {
+      //         'Authorization': 'Bearer $token',
+      //         'Accept': 'application/json',
+      //         'Content-Type': 'application/json',
+      //       },
+      //     ),
+      //   );
 
       //return Success(MfDetailsResponse.fromJson(response.data['data']));
-      
-      return Success(MfDetailsResponse.fromJson({
-    "status": "success",
-    "data": {
-        "fund_details": [
-            {
-                "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+
+      return Success(
+        MfDetailsResponse.fromJson({
+          "status": "success",
+          "data": {
+            "fund_details": [
+              {
+                "fund_name":
+                    "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
                 "fund_value": "5000000.00",
                 "fund_eligible": 4734971.4,
                 "fund_code": "INF179K01CR2",
@@ -60,9 +60,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
                 "fund_value": "25000000.00",
                 "fund_eligible": 24658507,
@@ -81,10 +81,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Asset Allocator Fund of Funds Regular Growth",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Asset Allocator Fund of Funds Regular Growth",
                 "fund_value": "2500000.00",
                 "fund_eligible": 108056,
                 "fund_code": "INF179KC1BD7",
@@ -102,10 +103,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Banking and Financial Services Fund Regular Growth",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Banking and Financial Services Fund Regular Growth",
                 "fund_value": "5000000.00",
                 "fund_eligible": 4998400,
                 "fund_code": "INF179KC1BJ4",
@@ -123,9 +125,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Ultra Short Term Fund - Regular Growth",
                 "fund_value": "5000000.00",
                 "fund_eligible": 4067692.9,
@@ -144,9 +146,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Dividend Yield Regular Growth",
                 "fund_value": "110000000.00",
                 "fund_eligible": 109964800,
@@ -165,10 +167,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
                 "fund_value": "5000000.00",
                 "fund_eligible": 4998400,
                 "fund_code": "INF179K01814",
@@ -186,10 +189,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
                 "fund_value": "5000000.00",
                 "fund_eligible": 4026250,
                 "fund_code": "INF179K01CR2",
@@ -207,10 +211,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Banking and PSU Debt Fund - Regular Plan - Growth Option",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Banking and PSU Debt Fund - Regular Plan - Growth Option",
                 "fund_value": "7842650.00",
                 "fund_eligible": 7004606.694126,
                 "fund_code": "INF179KA1JC4",
@@ -228,10 +233,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
                 "fund_value": "5000000.00",
                 "fund_eligible": 4998400,
                 "fund_code": "INF179K01CR2",
@@ -249,10 +255,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Medium Term Debt Fund - Regular Plan - Growth",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Medium Term Debt Fund - Regular Plan - Growth",
                 "fund_value": "5000000.00",
                 "fund_eligible": 0,
                 "fund_code": "INF179K01913",
@@ -270,9 +277,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
                 "fund_value": "25000000.00",
                 "fund_eligible": 24941800,
@@ -291,10 +298,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Credit Risk Debt Fund - Regular Plan  - Growth",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Credit Risk Debt Fund - Regular Plan  - Growth",
                 "fund_value": "5000000.00",
                 "fund_eligible": 4069820,
                 "fund_code": "INF179KA1GC0",
@@ -312,10 +320,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
                 "fund_value": "75000000.00",
                 "fund_eligible": 74809335,
                 "fund_code": "INF179K01XQ0",
@@ -333,9 +342,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Gold Fund - Regular Plan - Growth",
                 "fund_value": "80370000.00",
                 "fund_eligible": 78867639.25002,
@@ -354,10 +363,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Index Fund - Sensex Plan - Direct Plan - Growth Option",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Index Fund - Sensex Plan - Direct Plan - Growth Option",
                 "fund_value": "400000.00",
                 "fund_eligible": 0.2,
                 "fund_code": "INF179K01WN9",
@@ -375,9 +385,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Index Fund-NIFTY 50 Plan - Direct Plan",
                 "fund_value": "100000000.00",
                 "fund_eligible": 97805140,
@@ -396,9 +406,9 @@ class LenderRepository {
                 "modeOfHolding": "Anyone or Survivor",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Ultra Short Term Fund - Direct Growth",
                 "fund_value": "5418200.00",
                 "fund_eligible": 5416466.176,
@@ -417,10 +427,11 @@ class LenderRepository {
                 "modeOfHolding": "Anyone or Survivor",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Corporate Bond Fund - Direct Plan - Growth Option",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Corporate Bond Fund - Direct Plan - Growth Option",
                 "fund_value": "4251000.00",
                 "fund_eligible": 4249639.680000001,
                 "fund_code": "INF179K01XD8",
@@ -438,9 +449,9 @@ class LenderRepository {
                 "modeOfHolding": "Anyone or Survivor",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Gold Fund - Regular Plan - Growth",
                 "fund_value": "80370000.00",
                 "fund_eligible": 78950093.56560001,
@@ -459,9 +470,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Index Fund-NIFTY 50 Plan - Regular Plan",
                 "fund_value": "25000000.00",
                 "fund_eligible": 24532000,
@@ -480,10 +491,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
                 "fund_value": "5000000.00",
                 "fund_eligible": 4998400,
                 "fund_code": "INF179K01CR2",
@@ -501,10 +513,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
                 "fund_value": "5000000.00",
                 "fund_eligible": 4664907,
                 "fund_code": "INF179K01CR2",
@@ -522,9 +535,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Small Cap Fund - Regular Plan - Growth Plan",
                 "fund_value": "5000000.00",
                 "fund_eligible": 4840410,
@@ -543,10 +556,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
                 "fund_value": "5000000.00",
                 "fund_eligible": 4500781.3,
                 "fund_code": "INF179K01CR2",
@@ -564,9 +578,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Liquid Fund - Regular Plan - Growth ",
                 "fund_value": "100000000.00",
                 "fund_eligible": 99968000,
@@ -585,9 +599,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
                 "fund_value": "25000000.00",
                 "fund_eligible": 24952000,
@@ -606,10 +620,11 @@ class LenderRepository {
                 "modeOfHolding": "Anyone or Survivor",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Banking and Financial Services Fund Regular Growth",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Banking and Financial Services Fund Regular Growth",
                 "fund_value": "5000000.00",
                 "fund_eligible": 4998400,
                 "fund_code": "INF179KC1BJ4",
@@ -627,10 +642,11 @@ class LenderRepository {
                 "modeOfHolding": "Anyone or Survivor",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC NIFTY50 Equal Weight Index Fund Regular Growth",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC NIFTY50 Equal Weight Index Fund Regular Growth",
                 "fund_value": "100000000.00",
                 "fund_eligible": 99908000,
                 "fund_code": "INF179KC1BN6",
@@ -648,10 +664,11 @@ class LenderRepository {
                 "modeOfHolding": "Anyone or Survivor",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
                 "fund_value": "5000000.00",
                 "fund_eligible": 4998400,
                 "fund_code": "INF179K01814",
@@ -669,9 +686,9 @@ class LenderRepository {
                 "modeOfHolding": "Anyone or Survivor",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Corporate Bond Fund - Regular Plan - Growth",
                 "fund_value": "185000000.00",
                 "fund_eligible": 183068138.23999998,
@@ -690,9 +707,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
                 "fund_value": "25000000.00",
                 "fund_eligible": 24492080,
@@ -711,9 +728,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Small Cap Fund - Regular Plan - Growth Plan",
                 "fund_value": "5000000.00",
                 "fund_eligible": 4736410,
@@ -732,10 +749,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
                 "fund_value": "5000000.00",
                 "fund_eligible": 4998400,
                 "fund_code": "INF179K01814",
@@ -753,9 +771,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Small Cap Fund - Regular Plan - Growth Plan",
                 "fund_value": "5000000.00",
                 "fund_eligible": 4681849,
@@ -774,10 +792,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Credit Risk Debt Fund - Regular Plan  - Growth",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Credit Risk Debt Fund - Regular Plan  - Growth",
                 "fund_value": "5000000.00",
                 "fund_eligible": 4641257.100000001,
                 "fund_code": "INF179KA1GC0",
@@ -795,9 +814,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Corporate Bond Fund - Regular Plan - Growth",
                 "fund_value": "185000000.00",
                 "fund_eligible": 183174136.95,
@@ -816,9 +835,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Flexi Cap Fund - Regular Plan - IDCW",
                 "fund_value": "5000000.00",
                 "fund_eligible": 5000000,
@@ -837,10 +856,11 @@ class LenderRepository {
                 "modeOfHolding": "Anyone or Survivor",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Dynamic Debt Fund - Regular Plan - Quarterly IDCW",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Dynamic Debt Fund - Regular Plan - Quarterly IDCW",
                 "fund_value": "100000000.00",
                 "fund_eligible": 99969000,
                 "fund_code": "INF179K01871",
@@ -858,9 +878,9 @@ class LenderRepository {
                 "modeOfHolding": "Anyone or Survivor",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Prudence Fund -  Regular Plan - IDCW ",
                 "fund_value": "14633500.00",
                 "fund_eligible": 13233027.574004,
@@ -879,9 +899,9 @@ class LenderRepository {
                 "modeOfHolding": "Anyone or Survivor",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Prudence Fund - Regular Plan - Growth ",
                 "fund_value": "245991000.00",
                 "fund_eligible": 240175821.466218,
@@ -900,9 +920,9 @@ class LenderRepository {
                 "modeOfHolding": "Anyone or Survivor",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Balanced Fund - Regular Plan - IDCW ",
                 "fund_value": "15325500.00",
                 "fund_eligible": 14755520.900475,
@@ -921,10 +941,11 @@ class LenderRepository {
                 "modeOfHolding": "Anyone or Survivor",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
                 "fund_value": "5000000.00",
                 "fund_eligible": 4998450,
                 "fund_code": "INF179K01814",
@@ -942,9 +963,9 @@ class LenderRepository {
                 "modeOfHolding": "Anyone or Survivor",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Hybrid Debt Fund - Regular Plan - Growth",
                 "fund_value": "35810000.00",
                 "fund_eligible": 34998469.196320005,
@@ -963,9 +984,9 @@ class LenderRepository {
                 "modeOfHolding": "Anyone or Survivor",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Hybrid Equity Fund - Regular Plan - IDCW",
                 "fund_value": "40000000.00",
                 "fund_eligible": 39087200,
@@ -984,10 +1005,11 @@ class LenderRepository {
                 "modeOfHolding": "Anyone or Survivor",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - Growth",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Balanced Advantage Fund - Regular Plan - Growth",
                 "fund_value": "2500000000.00",
                 "fund_eligible": 440,
                 "fund_code": "INF179K01830",
@@ -1005,9 +1027,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Corporate Bond Fund - Regular Plan - Growth",
                 "fund_value": "185000000.00",
                 "fund_eligible": 182960325.04999998,
@@ -1026,10 +1048,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Capital Builder Value Fund - Regular Plan - Growth",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Capital Builder Value Fund - Regular Plan - Growth",
                 "fund_value": "7909.03",
                 "fund_eligible": 0,
                 "fund_code": "INF179K01426",
@@ -1047,9 +1070,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Small Cap Fund - Regular Plan - Growth Plan",
                 "fund_value": "5017.37",
                 "fund_eligible": 0.97,
@@ -1068,9 +1091,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Dividend Yield Regular Growth",
                 "fund_value": "721869.28",
                 "fund_eligible": 664669.28,
@@ -1089,10 +1112,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Developed World Indexes Fund of Fund Regular Growth",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Developed World Indexes Fund of Fund Regular Growth",
                 "fund_value": "1012449.38",
                 "fund_eligible": 819420.975,
                 "fund_code": "INF179KC1BP1",
@@ -1110,9 +1134,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Multi Cap Fund Regular Growth",
                 "fund_value": "749962.50",
                 "fund_eligible": 725962.5,
@@ -1131,10 +1155,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
                 "fund_value": "7555.37",
                 "fund_eligible": 0,
                 "fund_code": "INF179K01CR2",
@@ -1152,9 +1177,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC NIFTY Next50 Index Fund Regular Growth",
                 "fund_value": "624968.75",
                 "fund_eligible": 605593.75,
@@ -1173,10 +1198,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
                 "fund_value": "75000000.00",
                 "fund_eligible": 74343481.95,
                 "fund_code": "INF179K01XQ0",
@@ -1194,10 +1220,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
                 "fund_value": "5000000.00",
                 "fund_eligible": 4498565,
                 "fund_code": "INF179K01CR2",
@@ -1215,10 +1242,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
                 "fund_value": "75000000.00",
                 "fund_eligible": 74476819.95,
                 "fund_code": "INF179K01XQ0",
@@ -1236,10 +1264,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Cash Management Fund - Savings Plan - Daily IDCW Reinvestment ",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Cash Management Fund - Savings Plan - Daily IDCW Reinvestment ",
                 "fund_value": "500318200.00",
                 "fund_eligible": 500318200,
                 "fund_code": "",
@@ -1257,10 +1286,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Overnight Fund - Direct Plan - Growth Option",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Overnight Fund - Direct Plan - Growth Option",
                 "fund_value": "5000000.00",
                 "fund_eligible": 4998450,
                 "fund_code": "INF179KB1HT1",
@@ -1278,10 +1308,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "HDFC Floating Rate Debt Fund - Direct Plan - Growth Option",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "HDFC Floating Rate Debt Fund - Direct Plan - Growth Option",
                 "fund_value": "16937800.00",
                 "fund_eligible": 16437800.005818399,
                 "fund_code": "INF179K01VQ4",
@@ -1299,9 +1330,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Liquid Fund - Growth ",
                 "fund_value": "14264250.00",
                 "fund_eligible": 14264250,
@@ -1320,9 +1351,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Liquid Fund - Regular Plan - Growth ",
                 "fund_value": "100000000.00",
                 "fund_eligible": 99968000,
@@ -1341,9 +1372,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Liquid Fund-Direct Plan-Growth Option",
                 "fund_value": "109000000.00",
                 "fund_eligible": 108965120,
@@ -1362,9 +1393,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Liquid Fund - Premium Plan - Growth ",
                 "fund_value": "14509250.00",
                 "fund_eligible": 14509250,
@@ -1383,9 +1414,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
                 "fund_value": "2500000.00",
                 "fund_eligible": 822078.5,
@@ -1404,9 +1435,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "ICICI Prudential Ultra Short Term Fund - Growth",
                 "fund_value": "4395.75",
                 "fund_eligible": 4395.746863199999,
@@ -1425,10 +1456,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "ICICI Prudential Commodities Fund Direct Plan Growth",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "ICICI Prudential Commodities Fund Direct Plan Growth",
                 "fund_value": "64707.81",
                 "fund_eligible": 64707.81296,
                 "fund_code": "INF109KC1F91",
@@ -1446,9 +1478,9 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
+                "kycStatus": "3",
+              },
+              {
                 "fund_name": "ICICI Prudential ELSS Tax Saver Fund - Growth",
                 "fund_value": "5841.33",
                 "fund_eligible": 0,
@@ -1467,10 +1499,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "ICICI Prudential Liquid Fund - Direct Plan - Daily IDCW",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "ICICI Prudential Liquid Fund - Direct Plan - Daily IDCW",
                 "fund_value": "300309.58",
                 "fund_eligible": 0,
                 "fund_code": "INF109K01Q15",
@@ -1488,10 +1521,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "ICICI Prudential Pharma Healthcare and Diagnostics (P.H.D) Fund Direct Plan Growth",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "ICICI Prudential Pharma Healthcare and Diagnostics (P.H.D) Fund Direct Plan Growth",
                 "fund_value": "0.00",
                 "fund_eligible": 0,
                 "fund_code": "INF109KC1GH2",
@@ -1509,10 +1543,11 @@ class LenderRepository {
                 "modeOfHolding": "Single",
                 "mobile": "+919239874560",
                 "taxStatus": "01",
-                "kycStatus": "3"
-            },
-            {
-                "fund_name": "Groww Banking & Financial Services Fund - REGULAR PLAN - Growth",
+                "kycStatus": "3",
+              },
+              {
+                "fund_name":
+                    "Groww Banking & Financial Services Fund - REGULAR PLAN - Growth",
                 "fund_value": 227414.63,
                 "fund_eligible": 227414.6287,
                 "fund_code": "INF666M01HP7",
@@ -1530,13 +1565,13 @@ class LenderRepository {
                 "modeOfHolding": "SINGLE",
                 "mobile": "9239874560",
                 "taxStatus": "01",
-                "kycStatus": "02"
-            }
-        ],
-        "total_portfolio": 2917323838.02,
-        "demat_amount": 0,
-        "eligible_lenders": [
-            {
+                "kycStatus": "02",
+              },
+            ],
+            "total_portfolio": 2917323838.02,
+            "demat_amount": 0,
+            "eligible_lenders": [
+              {
                 "id": 1,
                 "name": "Bajaj Finance Ltd",
                 "logo": "https://valuenable.in/images/bfl_Logo.png",
@@ -1546,330 +1581,371 @@ class LenderRepository {
                 "redirect_url": null,
                 "journey_type": "app",
                 "eligible_funds": [
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01CR2",
-                        "units_pledge": "473497.140",
-                        "folio_no": "17065948"
-                    },
-                    {
-                        "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01442",
-                        "units_pledge": "493170.140",
-                        "folio_no": "17059012"
-                    },
-                    {
-                        "fund_name": "HDFC Asset Allocator Fund of Funds Regular Growth",
-                        "fund_code": "INF179KC1BD7",
-                        "units_pledge": "21611.200",
-                        "folio_no": "17059012"
-                    },
-                    {
-                        "fund_name": "HDFC Banking and Financial Services Fund Regular Growth",
-                        "fund_code": "INF179KC1BJ4",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17059012"
-                    },
-                    {
-                        "fund_name": "HDFC Ultra Short Term Fund - Regular Growth",
-                        "fund_code": "INF179KB11R3",
-                        "units_pledge": "406769.290",
-                        "folio_no": "17059012"
-                    },
-                    {
-                        "fund_name": "HDFC Dividend Yield Regular Growth",
-                        "fund_code": "INF179KC1AR9",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17059012"
-                    },
-                    {
-                        "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
-                        "fund_code": "INF179K01814",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17059012"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01CR2",
-                        "units_pledge": "402625.000",
-                        "folio_no": "17076843"
-                    },
-                    {
-                        "fund_name": "HDFC Banking and PSU Debt Fund - Regular Plan - Growth Option",
-                        "fund_code": "INF179KA1JC4",
-                        "units_pledge": "446571.420",
-                        "folio_no": "17053786"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01CR2",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17085656"
-                    },
-                    {
-                        "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01442",
-                        "units_pledge": "498836.000",
-                        "folio_no": "17052966"
-                    },
-                    {
-                        "fund_name": "HDFC Credit Risk Debt Fund - Regular Plan  - Growth",
-                        "fund_code": "INF179KA1GC0",
-                        "units_pledge": "406982.000",
-                        "folio_no": "17052966"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
-                        "fund_code": "INF179K01XQ0",
-                        "units_pledge": "498728.900",
-                        "folio_no": "17070874"
-                    },
-                    {
-                        "fund_name": "HDFC Gold Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01LC5",
-                        "units_pledge": "490653.473",
-                        "folio_no": "17052966"
-                    },
-                    {
-                        "fund_name": "HDFC Index Fund - Sensex Plan - Direct Plan - Growth Option",
-                        "fund_code": "INF179K01WN9",
-                        "units_pledge": "0.250",
-                        "folio_no": "17057558"
-                    },
-                    {
-                        "fund_name": "HDFC Index Fund-NIFTY 50 Plan - Direct Plan",
-                        "fund_code": "INF179K01WM1",
-                        "units_pledge": "489025.700",
-                        "folio_no": "17074567"
-                    },
-                    {
-                        "fund_name": "HDFC Ultra Short Term Fund - Direct Growth",
-                        "fund_code": "INF179KB15Q6",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17074567"
-                    },
-                    {
-                        "fund_name": "HDFC Corporate Bond Fund - Direct Plan - Growth Option",
-                        "fund_code": "INF179K01XD8",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17074567"
-                    },
-                    {
-                        "fund_name": "HDFC Gold Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01LC5",
-                        "units_pledge": "491166.440",
-                        "folio_no": "17073871"
-                    },
-                    {
-                        "fund_name": "HDFC Index Fund-NIFTY 50 Plan - Regular Plan",
-                        "fund_code": "INF179K01KZ8",
-                        "units_pledge": "490640.000",
-                        "folio_no": "17073871"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01CR2",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17073871"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01CR2",
-                        "units_pledge": "466490.700",
-                        "folio_no": "17053829"
-                    },
-                    {
-                        "fund_name": "HDFC Small Cap Fund - Regular Plan - Growth Plan",
-                        "fund_code": "INF179KA1RZ8",
-                        "units_pledge": "484041.000",
-                        "folio_no": "17053806"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01CR2",
-                        "units_pledge": "450078.130",
-                        "folio_no": "17050735"
-                    },
-                    {
-                        "fund_name": "HDFC Liquid Fund - Regular Plan - Growth ",
-                        "fund_code": "INF179KB1HK0",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17050735"
-                    },
-                    {
-                        "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01442",
-                        "units_pledge": "499040.000",
-                        "folio_no": "17059663"
-                    },
-                    {
-                        "fund_name": "HDFC Banking and Financial Services Fund Regular Growth",
-                        "fund_code": "INF179KC1BJ4",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17059663"
-                    },
-                    {
-                        "fund_name": "HDFC NIFTY50 Equal Weight Index Fund Regular Growth",
-                        "fund_code": "INF179KC1BN6",
-                        "units_pledge": "499540.000",
-                        "folio_no": "17059663"
-                    },
-                    {
-                        "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
-                        "fund_code": "INF179K01814",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17059663"
-                    },
-                    {
-                        "fund_name": "HDFC Corporate Bond Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01DC2",
-                        "units_pledge": "494778.752",
-                        "folio_no": "17070909"
-                    },
-                    {
-                        "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01442",
-                        "units_pledge": "489841.600",
-                        "folio_no": "17058015"
-                    },
-                    {
-                        "fund_name": "HDFC Small Cap Fund - Regular Plan - Growth Plan",
-                        "fund_code": "INF179KA1RZ8",
-                        "units_pledge": "473641.000",
-                        "folio_no": "17058015"
-                    },
-                    {
-                        "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
-                        "fund_code": "INF179K01814",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17052580"
-                    },
-                    {
-                        "fund_name": "HDFC Small Cap Fund - Regular Plan - Growth Plan",
-                        "fund_code": "INF179KA1RZ8",
-                        "units_pledge": "468184.900",
-                        "folio_no": "17059147"
-                    },
-                    {
-                        "fund_name": "HDFC Credit Risk Debt Fund - Regular Plan  - Growth",
-                        "fund_code": "INF179KA1GC0",
-                        "units_pledge": "464125.710",
-                        "folio_no": "17059147"
-                    },
-                    {
-                        "fund_name": "HDFC Corporate Bond Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01DC2",
-                        "units_pledge": "495065.235",
-                        "folio_no": "17059147"
-                    },
-                    {
-                        "fund_name": "HDFC Dynamic Debt Fund - Regular Plan - Quarterly IDCW",
-                        "fund_code": "INF179K01871",
-                        "units_pledge": "499845.000",
-                        "folio_no": "17064577"
-                    },
-                    {
-                        "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
-                        "fund_code": "INF179K01814",
-                        "units_pledge": "499845.000",
-                        "folio_no": "17064577"
-                    },
-                    {
-                        "fund_name": "HDFC Hybrid Debt Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01AE4",
-                        "units_pledge": "488668.936",
-                        "folio_no": "17064577"
-                    },
-                    {
-                        "fund_name": "HDFC Hybrid Equity Fund - Regular Plan - IDCW",
-                        "fund_code": "INF179K01AQ8",
-                        "units_pledge": "488590.000",
-                        "folio_no": "17064577"
-                    },
-                    {
-                        "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01830",
-                        "units_pledge": "0.088",
-                        "folio_no": "17060763"
-                    },
-                    {
-                        "fund_name": "HDFC Corporate Bond Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01DC2",
-                        "units_pledge": "494487.365",
-                        "folio_no": "17060763"
-                    },
-                    {
-                        "fund_name": "HDFC Small Cap Fund - Regular Plan - Growth Plan",
-                        "fund_code": "INF179KA1RZ8",
-                        "units_pledge": "0.097",
-                        "folio_no": "17073385"
-                    },
-                    {
-                        "fund_name": "HDFC Dividend Yield Regular Growth",
-                        "fund_code": "INF179KC1AR9",
-                        "units_pledge": "3021.224",
-                        "folio_no": "17073385"
-                    },
-                    {
-                        "fund_name": "HDFC Developed World Indexes Fund of Fund Regular Growth",
-                        "fund_code": "INF179KC1BP1",
-                        "units_pledge": "6069.785",
-                        "folio_no": "17073385"
-                    },
-                    {
-                        "fund_name": "HDFC Multi Cap Fund Regular Growth",
-                        "fund_code": "INF179KC1BV9",
-                        "units_pledge": "4839.750",
-                        "folio_no": "17073385"
-                    },
-                    {
-                        "fund_name": "HDFC NIFTY Next50 Index Fund Regular Growth",
-                        "fund_code": "INF179KC1BR7",
-                        "units_pledge": "4844.750",
-                        "folio_no": "17073385"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
-                        "fund_code": "INF179K01XQ0",
-                        "units_pledge": "495623.213",
-                        "folio_no": "15716592"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01CR2",
-                        "units_pledge": "449856.500",
-                        "folio_no": "10268268"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
-                        "fund_code": "INF179K01XQ0",
-                        "units_pledge": "496512.133",
-                        "folio_no": "10268268"
-                    },
-                    {
-                        "fund_name": "HDFC Overnight Fund - Direct Plan - Growth Option",
-                        "fund_code": "INF179KB1HT1",
-                        "units_pledge": "499845.000",
-                        "folio_no": "5544587"
-                    },
-                    {
-                        "fund_name": "HDFC Liquid Fund - Regular Plan - Growth ",
-                        "fund_code": "INF179KB1HK0",
-                        "units_pledge": "499840.000",
-                        "folio_no": "5544587"
-                    },
-                    {
-                        "fund_name": "HDFC Liquid Fund-Direct Plan-Growth Option",
-                        "fund_code": "INF179KB1HP9",
-                        "units_pledge": "499840.000",
-                        "folio_no": "5544587"
-                    },
-                    {
-                        "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01442",
-                        "units_pledge": "16441.570",
-                        "folio_no": "15608041"
-                    }
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01CR2",
+                    "units_pledge": "473497.140",
+                    "folio_no": "17065948",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Low Duration Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01442",
+                    "units_pledge": "493170.140",
+                    "folio_no": "17059012",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Asset Allocator Fund of Funds Regular Growth",
+                    "fund_code": "INF179KC1BD7",
+                    "units_pledge": "21611.200",
+                    "folio_no": "17059012",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Banking and Financial Services Fund Regular Growth",
+                    "fund_code": "INF179KC1BJ4",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17059012",
+                  },
+                  {
+                    "fund_name": "HDFC Ultra Short Term Fund - Regular Growth",
+                    "fund_code": "INF179KB11R3",
+                    "units_pledge": "406769.290",
+                    "folio_no": "17059012",
+                  },
+                  {
+                    "fund_name": "HDFC Dividend Yield Regular Growth",
+                    "fund_code": "INF179KC1AR9",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17059012",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
+                    "fund_code": "INF179K01814",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17059012",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01CR2",
+                    "units_pledge": "402625.000",
+                    "folio_no": "17076843",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Banking and PSU Debt Fund - Regular Plan - Growth Option",
+                    "fund_code": "INF179KA1JC4",
+                    "units_pledge": "446571.420",
+                    "folio_no": "17053786",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01CR2",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17085656",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Low Duration Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01442",
+                    "units_pledge": "498836.000",
+                    "folio_no": "17052966",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Credit Risk Debt Fund - Regular Plan  - Growth",
+                    "fund_code": "INF179KA1GC0",
+                    "units_pledge": "406982.000",
+                    "folio_no": "17052966",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
+                    "fund_code": "INF179K01XQ0",
+                    "units_pledge": "498728.900",
+                    "folio_no": "17070874",
+                  },
+                  {
+                    "fund_name": "HDFC Gold Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01LC5",
+                    "units_pledge": "490653.473",
+                    "folio_no": "17052966",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Index Fund - Sensex Plan - Direct Plan - Growth Option",
+                    "fund_code": "INF179K01WN9",
+                    "units_pledge": "0.250",
+                    "folio_no": "17057558",
+                  },
+                  {
+                    "fund_name": "HDFC Index Fund-NIFTY 50 Plan - Direct Plan",
+                    "fund_code": "INF179K01WM1",
+                    "units_pledge": "489025.700",
+                    "folio_no": "17074567",
+                  },
+                  {
+                    "fund_name": "HDFC Ultra Short Term Fund - Direct Growth",
+                    "fund_code": "INF179KB15Q6",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17074567",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Corporate Bond Fund - Direct Plan - Growth Option",
+                    "fund_code": "INF179K01XD8",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17074567",
+                  },
+                  {
+                    "fund_name": "HDFC Gold Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01LC5",
+                    "units_pledge": "491166.440",
+                    "folio_no": "17073871",
+                  },
+                  {
+                    "fund_name": "HDFC Index Fund-NIFTY 50 Plan - Regular Plan",
+                    "fund_code": "INF179K01KZ8",
+                    "units_pledge": "490640.000",
+                    "folio_no": "17073871",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01CR2",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17073871",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01CR2",
+                    "units_pledge": "466490.700",
+                    "folio_no": "17053829",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Small Cap Fund - Regular Plan - Growth Plan",
+                    "fund_code": "INF179KA1RZ8",
+                    "units_pledge": "484041.000",
+                    "folio_no": "17053806",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01CR2",
+                    "units_pledge": "450078.130",
+                    "folio_no": "17050735",
+                  },
+                  {
+                    "fund_name": "HDFC Liquid Fund - Regular Plan - Growth ",
+                    "fund_code": "INF179KB1HK0",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17050735",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Low Duration Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01442",
+                    "units_pledge": "499040.000",
+                    "folio_no": "17059663",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Banking and Financial Services Fund Regular Growth",
+                    "fund_code": "INF179KC1BJ4",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17059663",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC NIFTY50 Equal Weight Index Fund Regular Growth",
+                    "fund_code": "INF179KC1BN6",
+                    "units_pledge": "499540.000",
+                    "folio_no": "17059663",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
+                    "fund_code": "INF179K01814",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17059663",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Corporate Bond Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01DC2",
+                    "units_pledge": "494778.752",
+                    "folio_no": "17070909",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Low Duration Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01442",
+                    "units_pledge": "489841.600",
+                    "folio_no": "17058015",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Small Cap Fund - Regular Plan - Growth Plan",
+                    "fund_code": "INF179KA1RZ8",
+                    "units_pledge": "473641.000",
+                    "folio_no": "17058015",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
+                    "fund_code": "INF179K01814",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17052580",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Small Cap Fund - Regular Plan - Growth Plan",
+                    "fund_code": "INF179KA1RZ8",
+                    "units_pledge": "468184.900",
+                    "folio_no": "17059147",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Credit Risk Debt Fund - Regular Plan  - Growth",
+                    "fund_code": "INF179KA1GC0",
+                    "units_pledge": "464125.710",
+                    "folio_no": "17059147",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Corporate Bond Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01DC2",
+                    "units_pledge": "495065.235",
+                    "folio_no": "17059147",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Dynamic Debt Fund - Regular Plan - Quarterly IDCW",
+                    "fund_code": "INF179K01871",
+                    "units_pledge": "499845.000",
+                    "folio_no": "17064577",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
+                    "fund_code": "INF179K01814",
+                    "units_pledge": "499845.000",
+                    "folio_no": "17064577",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Hybrid Debt Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01AE4",
+                    "units_pledge": "488668.936",
+                    "folio_no": "17064577",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Hybrid Equity Fund - Regular Plan - IDCW",
+                    "fund_code": "INF179K01AQ8",
+                    "units_pledge": "488590.000",
+                    "folio_no": "17064577",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Balanced Advantage Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01830",
+                    "units_pledge": "0.088",
+                    "folio_no": "17060763",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Corporate Bond Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01DC2",
+                    "units_pledge": "494487.365",
+                    "folio_no": "17060763",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Small Cap Fund - Regular Plan - Growth Plan",
+                    "fund_code": "INF179KA1RZ8",
+                    "units_pledge": "0.097",
+                    "folio_no": "17073385",
+                  },
+                  {
+                    "fund_name": "HDFC Dividend Yield Regular Growth",
+                    "fund_code": "INF179KC1AR9",
+                    "units_pledge": "3021.224",
+                    "folio_no": "17073385",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Developed World Indexes Fund of Fund Regular Growth",
+                    "fund_code": "INF179KC1BP1",
+                    "units_pledge": "6069.785",
+                    "folio_no": "17073385",
+                  },
+                  {
+                    "fund_name": "HDFC Multi Cap Fund Regular Growth",
+                    "fund_code": "INF179KC1BV9",
+                    "units_pledge": "4839.750",
+                    "folio_no": "17073385",
+                  },
+                  {
+                    "fund_name": "HDFC NIFTY Next50 Index Fund Regular Growth",
+                    "fund_code": "INF179KC1BR7",
+                    "units_pledge": "4844.750",
+                    "folio_no": "17073385",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
+                    "fund_code": "INF179K01XQ0",
+                    "units_pledge": "495623.213",
+                    "folio_no": "15716592",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01CR2",
+                    "units_pledge": "449856.500",
+                    "folio_no": "10268268",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
+                    "fund_code": "INF179K01XQ0",
+                    "units_pledge": "496512.133",
+                    "folio_no": "10268268",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Overnight Fund - Direct Plan - Growth Option",
+                    "fund_code": "INF179KB1HT1",
+                    "units_pledge": "499845.000",
+                    "folio_no": "5544587",
+                  },
+                  {
+                    "fund_name": "HDFC Liquid Fund - Regular Plan - Growth ",
+                    "fund_code": "INF179KB1HK0",
+                    "units_pledge": "499840.000",
+                    "folio_no": "5544587",
+                  },
+                  {
+                    "fund_name": "HDFC Liquid Fund-Direct Plan-Growth Option",
+                    "fund_code": "INF179KB1HP9",
+                    "units_pledge": "499840.000",
+                    "folio_no": "5544587",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Low Duration Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01442",
+                    "units_pledge": "16441.570",
+                    "folio_no": "15608041",
+                  },
                 ],
                 "eligible_portfolio": 1959725634.58,
                 "eligible_limit": 1206463097.34,
@@ -1881,9 +1957,9 @@ class LenderRepository {
                 "min_eligible_limit": 25000,
                 "processing_fee_withoutGst": 2500,
                 "processing_fee_with_gst": 2950,
-                "roi": 10.5
-            },
-            {
+                "roi": 10.5,
+              },
+              {
                 "id": 2,
                 "name": "Tata Capital",
                 "logo": "https://valuenable.in/images/tata_capital_logo.png",
@@ -1893,330 +1969,371 @@ class LenderRepository {
                 "redirect_url": null,
                 "journey_type": "app",
                 "eligible_funds": [
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01CR2",
-                        "units_pledge": "473497.140",
-                        "folio_no": "17065948"
-                    },
-                    {
-                        "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01442",
-                        "units_pledge": "493170.140",
-                        "folio_no": "17059012"
-                    },
-                    {
-                        "fund_name": "HDFC Asset Allocator Fund of Funds Regular Growth",
-                        "fund_code": "INF179KC1BD7",
-                        "units_pledge": "21611.200",
-                        "folio_no": "17059012"
-                    },
-                    {
-                        "fund_name": "HDFC Banking and Financial Services Fund Regular Growth",
-                        "fund_code": "INF179KC1BJ4",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17059012"
-                    },
-                    {
-                        "fund_name": "HDFC Ultra Short Term Fund - Regular Growth",
-                        "fund_code": "INF179KB11R3",
-                        "units_pledge": "406769.290",
-                        "folio_no": "17059012"
-                    },
-                    {
-                        "fund_name": "HDFC Dividend Yield Regular Growth",
-                        "fund_code": "INF179KC1AR9",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17059012"
-                    },
-                    {
-                        "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
-                        "fund_code": "INF179K01814",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17059012"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01CR2",
-                        "units_pledge": "402625.000",
-                        "folio_no": "17076843"
-                    },
-                    {
-                        "fund_name": "HDFC Banking and PSU Debt Fund - Regular Plan - Growth Option",
-                        "fund_code": "INF179KA1JC4",
-                        "units_pledge": "446571.420",
-                        "folio_no": "17053786"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01CR2",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17085656"
-                    },
-                    {
-                        "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01442",
-                        "units_pledge": "498836.000",
-                        "folio_no": "17052966"
-                    },
-                    {
-                        "fund_name": "HDFC Credit Risk Debt Fund - Regular Plan  - Growth",
-                        "fund_code": "INF179KA1GC0",
-                        "units_pledge": "406982.000",
-                        "folio_no": "17052966"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
-                        "fund_code": "INF179K01XQ0",
-                        "units_pledge": "498728.900",
-                        "folio_no": "17070874"
-                    },
-                    {
-                        "fund_name": "HDFC Gold Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01LC5",
-                        "units_pledge": "490653.473",
-                        "folio_no": "17052966"
-                    },
-                    {
-                        "fund_name": "HDFC Index Fund - Sensex Plan - Direct Plan - Growth Option",
-                        "fund_code": "INF179K01WN9",
-                        "units_pledge": "0.250",
-                        "folio_no": "17057558"
-                    },
-                    {
-                        "fund_name": "HDFC Index Fund-NIFTY 50 Plan - Direct Plan",
-                        "fund_code": "INF179K01WM1",
-                        "units_pledge": "489025.700",
-                        "folio_no": "17074567"
-                    },
-                    {
-                        "fund_name": "HDFC Ultra Short Term Fund - Direct Growth",
-                        "fund_code": "INF179KB15Q6",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17074567"
-                    },
-                    {
-                        "fund_name": "HDFC Corporate Bond Fund - Direct Plan - Growth Option",
-                        "fund_code": "INF179K01XD8",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17074567"
-                    },
-                    {
-                        "fund_name": "HDFC Gold Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01LC5",
-                        "units_pledge": "491166.440",
-                        "folio_no": "17073871"
-                    },
-                    {
-                        "fund_name": "HDFC Index Fund-NIFTY 50 Plan - Regular Plan",
-                        "fund_code": "INF179K01KZ8",
-                        "units_pledge": "490640.000",
-                        "folio_no": "17073871"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01CR2",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17073871"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01CR2",
-                        "units_pledge": "466490.700",
-                        "folio_no": "17053829"
-                    },
-                    {
-                        "fund_name": "HDFC Small Cap Fund - Regular Plan - Growth Plan",
-                        "fund_code": "INF179KA1RZ8",
-                        "units_pledge": "484041.000",
-                        "folio_no": "17053806"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01CR2",
-                        "units_pledge": "450078.130",
-                        "folio_no": "17050735"
-                    },
-                    {
-                        "fund_name": "HDFC Liquid Fund - Regular Plan - Growth ",
-                        "fund_code": "INF179KB1HK0",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17050735"
-                    },
-                    {
-                        "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01442",
-                        "units_pledge": "499040.000",
-                        "folio_no": "17059663"
-                    },
-                    {
-                        "fund_name": "HDFC Banking and Financial Services Fund Regular Growth",
-                        "fund_code": "INF179KC1BJ4",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17059663"
-                    },
-                    {
-                        "fund_name": "HDFC NIFTY50 Equal Weight Index Fund Regular Growth",
-                        "fund_code": "INF179KC1BN6",
-                        "units_pledge": "499540.000",
-                        "folio_no": "17059663"
-                    },
-                    {
-                        "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
-                        "fund_code": "INF179K01814",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17059663"
-                    },
-                    {
-                        "fund_name": "HDFC Corporate Bond Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01DC2",
-                        "units_pledge": "494778.752",
-                        "folio_no": "17070909"
-                    },
-                    {
-                        "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01442",
-                        "units_pledge": "489841.600",
-                        "folio_no": "17058015"
-                    },
-                    {
-                        "fund_name": "HDFC Small Cap Fund - Regular Plan - Growth Plan",
-                        "fund_code": "INF179KA1RZ8",
-                        "units_pledge": "473641.000",
-                        "folio_no": "17058015"
-                    },
-                    {
-                        "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
-                        "fund_code": "INF179K01814",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17052580"
-                    },
-                    {
-                        "fund_name": "HDFC Small Cap Fund - Regular Plan - Growth Plan",
-                        "fund_code": "INF179KA1RZ8",
-                        "units_pledge": "468184.900",
-                        "folio_no": "17059147"
-                    },
-                    {
-                        "fund_name": "HDFC Credit Risk Debt Fund - Regular Plan  - Growth",
-                        "fund_code": "INF179KA1GC0",
-                        "units_pledge": "464125.710",
-                        "folio_no": "17059147"
-                    },
-                    {
-                        "fund_name": "HDFC Corporate Bond Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01DC2",
-                        "units_pledge": "495065.235",
-                        "folio_no": "17059147"
-                    },
-                    {
-                        "fund_name": "HDFC Dynamic Debt Fund - Regular Plan - Quarterly IDCW",
-                        "fund_code": "INF179K01871",
-                        "units_pledge": "499845.000",
-                        "folio_no": "17064577"
-                    },
-                    {
-                        "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
-                        "fund_code": "INF179K01814",
-                        "units_pledge": "499845.000",
-                        "folio_no": "17064577"
-                    },
-                    {
-                        "fund_name": "HDFC Hybrid Debt Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01AE4",
-                        "units_pledge": "488668.936",
-                        "folio_no": "17064577"
-                    },
-                    {
-                        "fund_name": "HDFC Hybrid Equity Fund - Regular Plan - IDCW",
-                        "fund_code": "INF179K01AQ8",
-                        "units_pledge": "488590.000",
-                        "folio_no": "17064577"
-                    },
-                    {
-                        "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01830",
-                        "units_pledge": "0.088",
-                        "folio_no": "17060763"
-                    },
-                    {
-                        "fund_name": "HDFC Corporate Bond Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01DC2",
-                        "units_pledge": "494487.365",
-                        "folio_no": "17060763"
-                    },
-                    {
-                        "fund_name": "HDFC Small Cap Fund - Regular Plan - Growth Plan",
-                        "fund_code": "INF179KA1RZ8",
-                        "units_pledge": "0.097",
-                        "folio_no": "17073385"
-                    },
-                    {
-                        "fund_name": "HDFC Dividend Yield Regular Growth",
-                        "fund_code": "INF179KC1AR9",
-                        "units_pledge": "3021.224",
-                        "folio_no": "17073385"
-                    },
-                    {
-                        "fund_name": "HDFC Developed World Indexes Fund of Fund Regular Growth",
-                        "fund_code": "INF179KC1BP1",
-                        "units_pledge": "6069.785",
-                        "folio_no": "17073385"
-                    },
-                    {
-                        "fund_name": "HDFC Multi Cap Fund Regular Growth",
-                        "fund_code": "INF179KC1BV9",
-                        "units_pledge": "4839.750",
-                        "folio_no": "17073385"
-                    },
-                    {
-                        "fund_name": "HDFC NIFTY Next50 Index Fund Regular Growth",
-                        "fund_code": "INF179KC1BR7",
-                        "units_pledge": "4844.750",
-                        "folio_no": "17073385"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
-                        "fund_code": "INF179K01XQ0",
-                        "units_pledge": "495623.213",
-                        "folio_no": "15716592"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01CR2",
-                        "units_pledge": "449856.500",
-                        "folio_no": "10268268"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
-                        "fund_code": "INF179K01XQ0",
-                        "units_pledge": "496512.133",
-                        "folio_no": "10268268"
-                    },
-                    {
-                        "fund_name": "HDFC Overnight Fund - Direct Plan - Growth Option",
-                        "fund_code": "INF179KB1HT1",
-                        "units_pledge": "499845.000",
-                        "folio_no": "5544587"
-                    },
-                    {
-                        "fund_name": "HDFC Liquid Fund - Regular Plan - Growth ",
-                        "fund_code": "INF179KB1HK0",
-                        "units_pledge": "499840.000",
-                        "folio_no": "5544587"
-                    },
-                    {
-                        "fund_name": "HDFC Liquid Fund-Direct Plan-Growth Option",
-                        "fund_code": "INF179KB1HP9",
-                        "units_pledge": "499840.000",
-                        "folio_no": "5544587"
-                    },
-                    {
-                        "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01442",
-                        "units_pledge": "16441.570",
-                        "folio_no": "15608041"
-                    }
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01CR2",
+                    "units_pledge": "473497.140",
+                    "folio_no": "17065948",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Low Duration Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01442",
+                    "units_pledge": "493170.140",
+                    "folio_no": "17059012",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Asset Allocator Fund of Funds Regular Growth",
+                    "fund_code": "INF179KC1BD7",
+                    "units_pledge": "21611.200",
+                    "folio_no": "17059012",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Banking and Financial Services Fund Regular Growth",
+                    "fund_code": "INF179KC1BJ4",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17059012",
+                  },
+                  {
+                    "fund_name": "HDFC Ultra Short Term Fund - Regular Growth",
+                    "fund_code": "INF179KB11R3",
+                    "units_pledge": "406769.290",
+                    "folio_no": "17059012",
+                  },
+                  {
+                    "fund_name": "HDFC Dividend Yield Regular Growth",
+                    "fund_code": "INF179KC1AR9",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17059012",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
+                    "fund_code": "INF179K01814",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17059012",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01CR2",
+                    "units_pledge": "402625.000",
+                    "folio_no": "17076843",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Banking and PSU Debt Fund - Regular Plan - Growth Option",
+                    "fund_code": "INF179KA1JC4",
+                    "units_pledge": "446571.420",
+                    "folio_no": "17053786",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01CR2",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17085656",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Low Duration Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01442",
+                    "units_pledge": "498836.000",
+                    "folio_no": "17052966",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Credit Risk Debt Fund - Regular Plan  - Growth",
+                    "fund_code": "INF179KA1GC0",
+                    "units_pledge": "406982.000",
+                    "folio_no": "17052966",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
+                    "fund_code": "INF179K01XQ0",
+                    "units_pledge": "498728.900",
+                    "folio_no": "17070874",
+                  },
+                  {
+                    "fund_name": "HDFC Gold Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01LC5",
+                    "units_pledge": "490653.473",
+                    "folio_no": "17052966",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Index Fund - Sensex Plan - Direct Plan - Growth Option",
+                    "fund_code": "INF179K01WN9",
+                    "units_pledge": "0.250",
+                    "folio_no": "17057558",
+                  },
+                  {
+                    "fund_name": "HDFC Index Fund-NIFTY 50 Plan - Direct Plan",
+                    "fund_code": "INF179K01WM1",
+                    "units_pledge": "489025.700",
+                    "folio_no": "17074567",
+                  },
+                  {
+                    "fund_name": "HDFC Ultra Short Term Fund - Direct Growth",
+                    "fund_code": "INF179KB15Q6",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17074567",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Corporate Bond Fund - Direct Plan - Growth Option",
+                    "fund_code": "INF179K01XD8",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17074567",
+                  },
+                  {
+                    "fund_name": "HDFC Gold Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01LC5",
+                    "units_pledge": "491166.440",
+                    "folio_no": "17073871",
+                  },
+                  {
+                    "fund_name": "HDFC Index Fund-NIFTY 50 Plan - Regular Plan",
+                    "fund_code": "INF179K01KZ8",
+                    "units_pledge": "490640.000",
+                    "folio_no": "17073871",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01CR2",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17073871",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01CR2",
+                    "units_pledge": "466490.700",
+                    "folio_no": "17053829",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Small Cap Fund - Regular Plan - Growth Plan",
+                    "fund_code": "INF179KA1RZ8",
+                    "units_pledge": "484041.000",
+                    "folio_no": "17053806",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01CR2",
+                    "units_pledge": "450078.130",
+                    "folio_no": "17050735",
+                  },
+                  {
+                    "fund_name": "HDFC Liquid Fund - Regular Plan - Growth ",
+                    "fund_code": "INF179KB1HK0",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17050735",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Low Duration Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01442",
+                    "units_pledge": "499040.000",
+                    "folio_no": "17059663",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Banking and Financial Services Fund Regular Growth",
+                    "fund_code": "INF179KC1BJ4",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17059663",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC NIFTY50 Equal Weight Index Fund Regular Growth",
+                    "fund_code": "INF179KC1BN6",
+                    "units_pledge": "499540.000",
+                    "folio_no": "17059663",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
+                    "fund_code": "INF179K01814",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17059663",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Corporate Bond Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01DC2",
+                    "units_pledge": "494778.752",
+                    "folio_no": "17070909",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Low Duration Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01442",
+                    "units_pledge": "489841.600",
+                    "folio_no": "17058015",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Small Cap Fund - Regular Plan - Growth Plan",
+                    "fund_code": "INF179KA1RZ8",
+                    "units_pledge": "473641.000",
+                    "folio_no": "17058015",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
+                    "fund_code": "INF179K01814",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17052580",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Small Cap Fund - Regular Plan - Growth Plan",
+                    "fund_code": "INF179KA1RZ8",
+                    "units_pledge": "468184.900",
+                    "folio_no": "17059147",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Credit Risk Debt Fund - Regular Plan  - Growth",
+                    "fund_code": "INF179KA1GC0",
+                    "units_pledge": "464125.710",
+                    "folio_no": "17059147",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Corporate Bond Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01DC2",
+                    "units_pledge": "495065.235",
+                    "folio_no": "17059147",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Dynamic Debt Fund - Regular Plan - Quarterly IDCW",
+                    "fund_code": "INF179K01871",
+                    "units_pledge": "499845.000",
+                    "folio_no": "17064577",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
+                    "fund_code": "INF179K01814",
+                    "units_pledge": "499845.000",
+                    "folio_no": "17064577",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Hybrid Debt Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01AE4",
+                    "units_pledge": "488668.936",
+                    "folio_no": "17064577",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Hybrid Equity Fund - Regular Plan - IDCW",
+                    "fund_code": "INF179K01AQ8",
+                    "units_pledge": "488590.000",
+                    "folio_no": "17064577",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Balanced Advantage Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01830",
+                    "units_pledge": "0.088",
+                    "folio_no": "17060763",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Corporate Bond Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01DC2",
+                    "units_pledge": "494487.365",
+                    "folio_no": "17060763",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Small Cap Fund - Regular Plan - Growth Plan",
+                    "fund_code": "INF179KA1RZ8",
+                    "units_pledge": "0.097",
+                    "folio_no": "17073385",
+                  },
+                  {
+                    "fund_name": "HDFC Dividend Yield Regular Growth",
+                    "fund_code": "INF179KC1AR9",
+                    "units_pledge": "3021.224",
+                    "folio_no": "17073385",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Developed World Indexes Fund of Fund Regular Growth",
+                    "fund_code": "INF179KC1BP1",
+                    "units_pledge": "6069.785",
+                    "folio_no": "17073385",
+                  },
+                  {
+                    "fund_name": "HDFC Multi Cap Fund Regular Growth",
+                    "fund_code": "INF179KC1BV9",
+                    "units_pledge": "4839.750",
+                    "folio_no": "17073385",
+                  },
+                  {
+                    "fund_name": "HDFC NIFTY Next50 Index Fund Regular Growth",
+                    "fund_code": "INF179KC1BR7",
+                    "units_pledge": "4844.750",
+                    "folio_no": "17073385",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
+                    "fund_code": "INF179K01XQ0",
+                    "units_pledge": "495623.213",
+                    "folio_no": "15716592",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01CR2",
+                    "units_pledge": "449856.500",
+                    "folio_no": "10268268",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
+                    "fund_code": "INF179K01XQ0",
+                    "units_pledge": "496512.133",
+                    "folio_no": "10268268",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Overnight Fund - Direct Plan - Growth Option",
+                    "fund_code": "INF179KB1HT1",
+                    "units_pledge": "499845.000",
+                    "folio_no": "5544587",
+                  },
+                  {
+                    "fund_name": "HDFC Liquid Fund - Regular Plan - Growth ",
+                    "fund_code": "INF179KB1HK0",
+                    "units_pledge": "499840.000",
+                    "folio_no": "5544587",
+                  },
+                  {
+                    "fund_name": "HDFC Liquid Fund-Direct Plan-Growth Option",
+                    "fund_code": "INF179KB1HP9",
+                    "units_pledge": "499840.000",
+                    "folio_no": "5544587",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Low Duration Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01442",
+                    "units_pledge": "16441.570",
+                    "folio_no": "15608041",
+                  },
                 ],
                 "eligible_portfolio": 1959725634.58,
                 "eligible_limit": 1567780507.66,
@@ -2228,282 +2345,318 @@ class LenderRepository {
                 "min_eligible_limit": 25000,
                 "processing_fee_withoutGst": 2500,
                 "processing_fee_with_gst": 2950,
-                "roi": 10.5
-            },
-            {
+                "roi": 10.5,
+              },
+              {
                 "id": 9,
                 "name": "Aditya Birla Capital",
-                "logo": "https://product-bucket-user-uat.s3.ap-south-1.amazonaws.com/Common_header/assets/images/footer/footer_brand_logo.png",
+                "logo":
+                    "https://product-bucket-user-uat.s3.ap-south-1.amazonaws.com/Common_header/assets/images/footer/footer_brand_logo.png",
                 "loan_interest": 10.5,
                 "lender_code": "ABCL",
                 "calculate_text": null,
                 "redirect_url": null,
                 "journey_type": "app",
                 "eligible_funds": [
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01CR2",
-                        "units_pledge": "473497.140",
-                        "folio_no": "17065948"
-                    },
-                    {
-                        "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01442",
-                        "units_pledge": "493170.140",
-                        "folio_no": "17059012"
-                    },
-                    {
-                        "fund_name": "HDFC Ultra Short Term Fund - Regular Growth",
-                        "fund_code": "INF179KB11R3",
-                        "units_pledge": "406769.290",
-                        "folio_no": "17059012"
-                    },
-                    {
-                        "fund_name": "HDFC Dividend Yield Regular Growth",
-                        "fund_code": "INF179KC1AR9",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17059012"
-                    },
-                    {
-                        "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
-                        "fund_code": "INF179K01814",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17059012"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01CR2",
-                        "units_pledge": "402625.000",
-                        "folio_no": "17076843"
-                    },
-                    {
-                        "fund_name": "HDFC Banking and PSU Debt Fund - Regular Plan - Growth Option",
-                        "fund_code": "INF179KA1JC4",
-                        "units_pledge": "446571.420",
-                        "folio_no": "17053786"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01CR2",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17085656"
-                    },
-                    {
-                        "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01442",
-                        "units_pledge": "498836.000",
-                        "folio_no": "17052966"
-                    },
-                    {
-                        "fund_name": "HDFC Credit Risk Debt Fund - Regular Plan  - Growth",
-                        "fund_code": "INF179KA1GC0",
-                        "units_pledge": "406982.000",
-                        "folio_no": "17052966"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
-                        "fund_code": "INF179K01XQ0",
-                        "units_pledge": "498728.900",
-                        "folio_no": "17070874"
-                    },
-                    {
-                        "fund_name": "HDFC Index Fund-NIFTY 50 Plan - Direct Plan",
-                        "fund_code": "INF179K01WM1",
-                        "units_pledge": "489025.700",
-                        "folio_no": "17074567"
-                    },
-                    {
-                        "fund_name": "HDFC Ultra Short Term Fund - Direct Growth",
-                        "fund_code": "INF179KB15Q6",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17074567"
-                    },
-                    {
-                        "fund_name": "HDFC Corporate Bond Fund - Direct Plan - Growth Option",
-                        "fund_code": "INF179K01XD8",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17074567"
-                    },
-                    {
-                        "fund_name": "HDFC Index Fund-NIFTY 50 Plan - Regular Plan",
-                        "fund_code": "INF179K01KZ8",
-                        "units_pledge": "490640.000",
-                        "folio_no": "17073871"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01CR2",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17073871"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01CR2",
-                        "units_pledge": "466490.700",
-                        "folio_no": "17053829"
-                    },
-                    {
-                        "fund_name": "HDFC Small Cap Fund - Regular Plan - Growth Plan",
-                        "fund_code": "INF179KA1RZ8",
-                        "units_pledge": "484041.000",
-                        "folio_no": "17053806"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01CR2",
-                        "units_pledge": "450078.130",
-                        "folio_no": "17050735"
-                    },
-                    {
-                        "fund_name": "HDFC Liquid Fund - Regular Plan - Growth ",
-                        "fund_code": "INF179KB1HK0",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17050735"
-                    },
-                    {
-                        "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01442",
-                        "units_pledge": "499040.000",
-                        "folio_no": "17059663"
-                    },
-                    {
-                        "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
-                        "fund_code": "INF179K01814",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17059663"
-                    },
-                    {
-                        "fund_name": "HDFC Corporate Bond Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01DC2",
-                        "units_pledge": "494778.752",
-                        "folio_no": "17070909"
-                    },
-                    {
-                        "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01442",
-                        "units_pledge": "489841.600",
-                        "folio_no": "17058015"
-                    },
-                    {
-                        "fund_name": "HDFC Small Cap Fund - Regular Plan - Growth Plan",
-                        "fund_code": "INF179KA1RZ8",
-                        "units_pledge": "473641.000",
-                        "folio_no": "17058015"
-                    },
-                    {
-                        "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
-                        "fund_code": "INF179K01814",
-                        "units_pledge": "499840.000",
-                        "folio_no": "17052580"
-                    },
-                    {
-                        "fund_name": "HDFC Small Cap Fund - Regular Plan - Growth Plan",
-                        "fund_code": "INF179KA1RZ8",
-                        "units_pledge": "468184.900",
-                        "folio_no": "17059147"
-                    },
-                    {
-                        "fund_name": "HDFC Credit Risk Debt Fund - Regular Plan  - Growth",
-                        "fund_code": "INF179KA1GC0",
-                        "units_pledge": "464125.710",
-                        "folio_no": "17059147"
-                    },
-                    {
-                        "fund_name": "HDFC Corporate Bond Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01DC2",
-                        "units_pledge": "495065.235",
-                        "folio_no": "17059147"
-                    },
-                    {
-                        "fund_name": "HDFC Dynamic Debt Fund - Regular Plan - Quarterly IDCW",
-                        "fund_code": "INF179K01871",
-                        "units_pledge": "499845.000",
-                        "folio_no": "17064577"
-                    },
-                    {
-                        "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
-                        "fund_code": "INF179K01814",
-                        "units_pledge": "499845.000",
-                        "folio_no": "17064577"
-                    },
-                    {
-                        "fund_name": "HDFC Hybrid Debt Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01AE4",
-                        "units_pledge": "488668.936",
-                        "folio_no": "17064577"
-                    },
-                    {
-                        "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01830",
-                        "units_pledge": "0.088",
-                        "folio_no": "17060763"
-                    },
-                    {
-                        "fund_name": "HDFC Corporate Bond Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01DC2",
-                        "units_pledge": "494487.365",
-                        "folio_no": "17060763"
-                    },
-                    {
-                        "fund_name": "HDFC Small Cap Fund - Regular Plan - Growth Plan",
-                        "fund_code": "INF179KA1RZ8",
-                        "units_pledge": "0.097",
-                        "folio_no": "17073385"
-                    },
-                    {
-                        "fund_name": "HDFC Dividend Yield Regular Growth",
-                        "fund_code": "INF179KC1AR9",
-                        "units_pledge": "3021.224",
-                        "folio_no": "17073385"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
-                        "fund_code": "INF179K01XQ0",
-                        "units_pledge": "495623.213",
-                        "folio_no": "15716592"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01CR2",
-                        "units_pledge": "449856.500",
-                        "folio_no": "10268268"
-                    },
-                    {
-                        "fund_name": "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
-                        "fund_code": "INF179K01XQ0",
-                        "units_pledge": "496512.133",
-                        "folio_no": "10268268"
-                    },
-                    {
-                        "fund_name": "HDFC Overnight Fund - Direct Plan - Growth Option",
-                        "fund_code": "INF179KB1HT1",
-                        "units_pledge": "499845.000",
-                        "folio_no": "5544587"
-                    },
-                    {
-                        "fund_name": "HDFC Floating Rate Debt Fund - Direct Plan - Growth Option",
-                        "fund_code": "INF179K01VQ4",
-                        "units_pledge": "485240.114",
-                        "folio_no": "5544587"
-                    },
-                    {
-                        "fund_name": "HDFC Liquid Fund - Regular Plan - Growth ",
-                        "fund_code": "INF179KB1HK0",
-                        "units_pledge": "499840.000",
-                        "folio_no": "5544587"
-                    },
-                    {
-                        "fund_name": "HDFC Liquid Fund-Direct Plan-Growth Option",
-                        "fund_code": "INF179KB1HP9",
-                        "units_pledge": "499840.000",
-                        "folio_no": "5544587"
-                    },
-                    {
-                        "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
-                        "fund_code": "INF179K01442",
-                        "units_pledge": "16441.570",
-                        "folio_no": "15608041"
-                    }
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01CR2",
+                    "units_pledge": "473497.140",
+                    "folio_no": "17065948",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Low Duration Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01442",
+                    "units_pledge": "493170.140",
+                    "folio_no": "17059012",
+                  },
+                  {
+                    "fund_name": "HDFC Ultra Short Term Fund - Regular Growth",
+                    "fund_code": "INF179KB11R3",
+                    "units_pledge": "406769.290",
+                    "folio_no": "17059012",
+                  },
+                  {
+                    "fund_name": "HDFC Dividend Yield Regular Growth",
+                    "fund_code": "INF179KC1AR9",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17059012",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
+                    "fund_code": "INF179K01814",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17059012",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01CR2",
+                    "units_pledge": "402625.000",
+                    "folio_no": "17076843",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Banking and PSU Debt Fund - Regular Plan - Growth Option",
+                    "fund_code": "INF179KA1JC4",
+                    "units_pledge": "446571.420",
+                    "folio_no": "17053786",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01CR2",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17085656",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Low Duration Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01442",
+                    "units_pledge": "498836.000",
+                    "folio_no": "17052966",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Credit Risk Debt Fund - Regular Plan  - Growth",
+                    "fund_code": "INF179KA1GC0",
+                    "units_pledge": "406982.000",
+                    "folio_no": "17052966",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
+                    "fund_code": "INF179K01XQ0",
+                    "units_pledge": "498728.900",
+                    "folio_no": "17070874",
+                  },
+                  {
+                    "fund_name": "HDFC Index Fund-NIFTY 50 Plan - Direct Plan",
+                    "fund_code": "INF179K01WM1",
+                    "units_pledge": "489025.700",
+                    "folio_no": "17074567",
+                  },
+                  {
+                    "fund_name": "HDFC Ultra Short Term Fund - Direct Growth",
+                    "fund_code": "INF179KB15Q6",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17074567",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Corporate Bond Fund - Direct Plan - Growth Option",
+                    "fund_code": "INF179K01XD8",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17074567",
+                  },
+                  {
+                    "fund_name": "HDFC Index Fund-NIFTY 50 Plan - Regular Plan",
+                    "fund_code": "INF179K01KZ8",
+                    "units_pledge": "490640.000",
+                    "folio_no": "17073871",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01CR2",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17073871",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01CR2",
+                    "units_pledge": "466490.700",
+                    "folio_no": "17053829",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Small Cap Fund - Regular Plan - Growth Plan",
+                    "fund_code": "INF179KA1RZ8",
+                    "units_pledge": "484041.000",
+                    "folio_no": "17053806",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01CR2",
+                    "units_pledge": "450078.130",
+                    "folio_no": "17050735",
+                  },
+                  {
+                    "fund_name": "HDFC Liquid Fund - Regular Plan - Growth ",
+                    "fund_code": "INF179KB1HK0",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17050735",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Low Duration Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01442",
+                    "units_pledge": "499040.000",
+                    "folio_no": "17059663",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
+                    "fund_code": "INF179K01814",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17059663",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Corporate Bond Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01DC2",
+                    "units_pledge": "494778.752",
+                    "folio_no": "17070909",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Low Duration Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01442",
+                    "units_pledge": "489841.600",
+                    "folio_no": "17058015",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Small Cap Fund - Regular Plan - Growth Plan",
+                    "fund_code": "INF179KA1RZ8",
+                    "units_pledge": "473641.000",
+                    "folio_no": "17058015",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
+                    "fund_code": "INF179K01814",
+                    "units_pledge": "499840.000",
+                    "folio_no": "17052580",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Small Cap Fund - Regular Plan - Growth Plan",
+                    "fund_code": "INF179KA1RZ8",
+                    "units_pledge": "468184.900",
+                    "folio_no": "17059147",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Credit Risk Debt Fund - Regular Plan  - Growth",
+                    "fund_code": "INF179KA1GC0",
+                    "units_pledge": "464125.710",
+                    "folio_no": "17059147",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Corporate Bond Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01DC2",
+                    "units_pledge": "495065.235",
+                    "folio_no": "17059147",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Dynamic Debt Fund - Regular Plan - Quarterly IDCW",
+                    "fund_code": "INF179K01871",
+                    "units_pledge": "499845.000",
+                    "folio_no": "17064577",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
+                    "fund_code": "INF179K01814",
+                    "units_pledge": "499845.000",
+                    "folio_no": "17064577",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Hybrid Debt Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01AE4",
+                    "units_pledge": "488668.936",
+                    "folio_no": "17064577",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Balanced Advantage Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01830",
+                    "units_pledge": "0.088",
+                    "folio_no": "17060763",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Corporate Bond Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01DC2",
+                    "units_pledge": "494487.365",
+                    "folio_no": "17060763",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Small Cap Fund - Regular Plan - Growth Plan",
+                    "fund_code": "INF179KA1RZ8",
+                    "units_pledge": "0.097",
+                    "folio_no": "17073385",
+                  },
+                  {
+                    "fund_name": "HDFC Dividend Yield Regular Growth",
+                    "fund_code": "INF179KC1AR9",
+                    "units_pledge": "3021.224",
+                    "folio_no": "17073385",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
+                    "fund_code": "INF179K01XQ0",
+                    "units_pledge": "495623.213",
+                    "folio_no": "15716592",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01CR2",
+                    "units_pledge": "449856.500",
+                    "folio_no": "10268268",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
+                    "fund_code": "INF179K01XQ0",
+                    "units_pledge": "496512.133",
+                    "folio_no": "10268268",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Overnight Fund - Direct Plan - Growth Option",
+                    "fund_code": "INF179KB1HT1",
+                    "units_pledge": "499845.000",
+                    "folio_no": "5544587",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Floating Rate Debt Fund - Direct Plan - Growth Option",
+                    "fund_code": "INF179K01VQ4",
+                    "units_pledge": "485240.114",
+                    "folio_no": "5544587",
+                  },
+                  {
+                    "fund_name": "HDFC Liquid Fund - Regular Plan - Growth ",
+                    "fund_code": "INF179KB1HK0",
+                    "units_pledge": "499840.000",
+                    "folio_no": "5544587",
+                  },
+                  {
+                    "fund_name": "HDFC Liquid Fund-Direct Plan-Growth Option",
+                    "fund_code": "INF179KB1HP9",
+                    "units_pledge": "499840.000",
+                    "folio_no": "5544587",
+                  },
+                  {
+                    "fund_name":
+                        "HDFC Low Duration Fund - Regular Plan - Growth",
+                    "fund_code": "INF179K01442",
+                    "units_pledge": "16441.570",
+                    "folio_no": "15608041",
+                  },
                 ],
                 "eligible_portfolio": 1667094668.34,
                 "eligible_limit": 107570294945.05,
@@ -2515,12 +2668,13 @@ class LenderRepository {
                 "min_eligible_limit": 25000,
                 "processing_fee_withoutGst": 2500,
                 "processing_fee_with_gst": 2950,
-                "roi": 10.5
-            }
-        ],
-        "pledgeableFunds": [
-            {
-                "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                "roi": 10.5,
+              },
+            ],
+            "pledgeableFunds": [
+              {
+                "fund_name":
+                    "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
                 "fund_value": 4734971.4,
                 "fund_code": "INF179K01CR2",
                 "lienEligibleUnits": "473497.140",
@@ -2530,9 +2684,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "MCOG",
                 "folioNo": "17065948",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
                 "fund_value": 24658507,
                 "fund_code": "INF179K01442",
@@ -2543,10 +2697,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "54",
                 "folioNo": "17059012",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Asset Allocator Fund of Funds Regular Growth",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Asset Allocator Fund of Funds Regular Growth",
                 "fund_value": 108056,
                 "fund_code": "INF179KC1BD7",
                 "lienEligibleUnits": "21611.200",
@@ -2556,10 +2711,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "AARGR",
                 "folioNo": "17059012",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Banking and Financial Services Fund Regular Growth",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Banking and Financial Services Fund Regular Growth",
                 "fund_value": 4998400,
                 "fund_code": "INF179KC1BJ4",
                 "lienEligibleUnits": "499840.000",
@@ -2569,9 +2725,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "BFRGR",
                 "folioNo": "17059012",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Ultra Short Term Fund - Regular Growth",
                 "fund_value": 4067692.9,
                 "fund_code": "INF179KB11R3",
@@ -2582,9 +2738,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "USTGR",
                 "folioNo": "17059012",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Dividend Yield Regular Growth",
                 "fund_value": 109964800,
                 "fund_code": "INF179KC1AR9",
@@ -2595,10 +2751,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "DYRGR",
                 "folioNo": "17059012",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
                 "fund_value": 4998400,
                 "fund_code": "INF179K01814",
                 "lienEligibleUnits": "499840.000",
@@ -2608,10 +2765,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "GFD",
                 "folioNo": "17059012",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
                 "fund_value": 4026250,
                 "fund_code": "INF179K01CR2",
                 "lienEligibleUnits": "402625.000",
@@ -2621,10 +2779,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "MCOG",
                 "folioNo": "17076843",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Banking and PSU Debt Fund - Regular Plan - Growth Option",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Banking and PSU Debt Fund - Regular Plan - Growth Option",
                 "fund_value": 7004606.694126,
                 "fund_code": "INF179KA1JC4",
                 "lienEligibleUnits": "446571.420",
@@ -2634,10 +2793,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "HBPGR",
                 "folioNo": "17053786",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
                 "fund_value": 4998400,
                 "fund_code": "INF179K01CR2",
                 "lienEligibleUnits": "499840.000",
@@ -2647,9 +2807,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "MCOG",
                 "folioNo": "17085656",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
                 "fund_value": 24941800,
                 "fund_code": "INF179K01442",
@@ -2660,10 +2820,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "54",
                 "folioNo": "17052966",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Credit Risk Debt Fund - Regular Plan  - Growth",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Credit Risk Debt Fund - Regular Plan  - Growth",
                 "fund_value": 4069820,
                 "fund_code": "INF179KA1GC0",
                 "lienEligibleUnits": "406982.000",
@@ -2673,10 +2834,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "CDOGR",
                 "folioNo": "17052966",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
                 "fund_value": 74809335,
                 "fund_code": "INF179K01XQ0",
                 "lienEligibleUnits": "498728.900",
@@ -2686,9 +2848,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "MCOGT",
                 "folioNo": "17070874",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Gold Fund - Regular Plan - Growth",
                 "fund_value": 78867639.25002,
                 "fund_code": "INF179K01LC5",
@@ -2699,10 +2861,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "GFOF",
                 "folioNo": "17052966",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Index Fund - Sensex Plan - Direct Plan - Growth Option",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Index Fund - Sensex Plan - Direct Plan - Growth Option",
                 "fund_value": 0.2,
                 "fund_code": "INF179K01WN9",
                 "lienEligibleUnits": "0.250",
@@ -2712,9 +2875,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "INSPT",
                 "folioNo": "17057558",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Index Fund-NIFTY 50 Plan - Direct Plan",
                 "fund_value": 97805140,
                 "fund_code": "INF179K01WM1",
@@ -2725,9 +2888,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "INNPT",
                 "folioNo": "17074567",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Ultra Short Term Fund - Direct Growth",
                 "fund_value": 5416466.176,
                 "fund_code": "INF179KB15Q6",
@@ -2738,10 +2901,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "USTGT",
                 "folioNo": "17074567",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Corporate Bond Fund - Direct Plan - Growth Option",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Corporate Bond Fund - Direct Plan - Growth Option",
                 "fund_value": 4249639.680000001,
                 "fund_code": "INF179K01XD8",
                 "lienEligibleUnits": "499840.000",
@@ -2751,9 +2915,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "MTOGT",
                 "folioNo": "17074567",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Gold Fund - Regular Plan - Growth",
                 "fund_value": 78950093.56560001,
                 "fund_code": "INF179K01LC5",
@@ -2764,9 +2928,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "GFOF",
                 "folioNo": "17073871",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Index Fund-NIFTY 50 Plan - Regular Plan",
                 "fund_value": 24532000,
                 "fund_code": "INF179K01KZ8",
@@ -2777,10 +2941,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "INNP",
                 "folioNo": "17073871",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
                 "fund_value": 4998400,
                 "fund_code": "INF179K01CR2",
                 "lienEligibleUnits": "499840.000",
@@ -2790,10 +2955,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "MCOG",
                 "folioNo": "17073871",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
                 "fund_value": 4664907,
                 "fund_code": "INF179K01CR2",
                 "lienEligibleUnits": "466490.700",
@@ -2803,9 +2969,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "MCOG",
                 "folioNo": "17053829",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Small Cap Fund - Regular Plan - Growth Plan",
                 "fund_value": 4840410,
                 "fund_code": "INF179KA1RZ8",
@@ -2816,10 +2982,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "ACGPG",
                 "folioNo": "17053806",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
                 "fund_value": 4500781.3,
                 "fund_code": "INF179K01CR2",
                 "lienEligibleUnits": "450078.130",
@@ -2829,9 +2996,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "MCOG",
                 "folioNo": "17050735",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Liquid Fund - Regular Plan - Growth ",
                 "fund_value": 99968000,
                 "fund_code": "INF179KB1HK0",
@@ -2842,9 +3009,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "LFGN",
                 "folioNo": "17050735",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
                 "fund_value": 24952000,
                 "fund_code": "INF179K01442",
@@ -2855,10 +3022,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "54",
                 "folioNo": "17059663",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Banking and Financial Services Fund Regular Growth",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Banking and Financial Services Fund Regular Growth",
                 "fund_value": 4998400,
                 "fund_code": "INF179KC1BJ4",
                 "lienEligibleUnits": "499840.000",
@@ -2868,10 +3036,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "BFRGR",
                 "folioNo": "17059663",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC NIFTY50 Equal Weight Index Fund Regular Growth",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC NIFTY50 Equal Weight Index Fund Regular Growth",
                 "fund_value": 99908000,
                 "fund_code": "INF179KC1BN6",
                 "lienEligibleUnits": "499540.000",
@@ -2881,10 +3050,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "NEWRG",
                 "folioNo": "17059663",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
                 "fund_value": 4998400,
                 "fund_code": "INF179K01814",
                 "lienEligibleUnits": "499840.000",
@@ -2894,9 +3064,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "GFD",
                 "folioNo": "17059663",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Corporate Bond Fund - Regular Plan - Growth",
                 "fund_value": 183068138.23999998,
                 "fund_code": "INF179K01DC2",
@@ -2907,9 +3077,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "MTOG",
                 "folioNo": "17070909",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
                 "fund_value": 24492080,
                 "fund_code": "INF179K01442",
@@ -2920,9 +3090,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "54",
                 "folioNo": "17058015",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Small Cap Fund - Regular Plan - Growth Plan",
                 "fund_value": 4736410,
                 "fund_code": "INF179KA1RZ8",
@@ -2933,10 +3103,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "ACGPG",
                 "folioNo": "17058015",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
                 "fund_value": 4998400,
                 "fund_code": "INF179K01814",
                 "lienEligibleUnits": "499840.000",
@@ -2946,9 +3117,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "GFD",
                 "folioNo": "17052580",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Small Cap Fund - Regular Plan - Growth Plan",
                 "fund_value": 4681849,
                 "fund_code": "INF179KA1RZ8",
@@ -2959,10 +3130,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "ACGPG",
                 "folioNo": "17059147",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Credit Risk Debt Fund - Regular Plan  - Growth",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Credit Risk Debt Fund - Regular Plan  - Growth",
                 "fund_value": 4641257.100000001,
                 "fund_code": "INF179KA1GC0",
                 "lienEligibleUnits": "464125.710",
@@ -2972,9 +3144,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "CDOGR",
                 "folioNo": "17059147",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Corporate Bond Fund - Regular Plan - Growth",
                 "fund_value": 183174136.95,
                 "fund_code": "INF179K01DC2",
@@ -2985,9 +3157,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "MTOG",
                 "folioNo": "17059147",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Flexi Cap Fund - Regular Plan - IDCW",
                 "fund_value": 5000000,
                 "fund_code": "INF179K01582",
@@ -2998,10 +3170,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "01",
                 "folioNo": "17064577",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Dynamic Debt Fund - Regular Plan - Quarterly IDCW",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Dynamic Debt Fund - Regular Plan - Quarterly IDCW",
                 "fund_value": 99969000,
                 "fund_code": "INF179K01871",
                 "lienEligibleUnits": "499845.000",
@@ -3011,9 +3184,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "11",
                 "folioNo": "17064577",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Prudence Fund -  Regular Plan - IDCW ",
                 "fund_value": 13233027.574004,
                 "fund_code": "INF179K01AT2",
@@ -3024,9 +3197,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "21",
                 "folioNo": "17064577",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Prudence Fund - Regular Plan - Growth ",
                 "fund_value": 240175821.466218,
                 "fund_code": "INF179K01AV8",
@@ -3037,9 +3210,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "22",
                 "folioNo": "17064577",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Balanced Fund - Regular Plan - IDCW ",
                 "fund_value": 14755520.900475,
                 "fund_code": "INF179K01376",
@@ -3050,10 +3223,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "BFD",
                 "folioNo": "17064577",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Balanced Advantage Fund - Regular Plan - IDCW",
                 "fund_value": 4998450,
                 "fund_code": "INF179K01814",
                 "lienEligibleUnits": "499845.000",
@@ -3063,9 +3237,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "GFD",
                 "folioNo": "17064577",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Hybrid Debt Fund - Regular Plan - Growth",
                 "fund_value": 34998469.196320005,
                 "fund_code": "INF179K01AE4",
@@ -3076,9 +3250,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "MILTG",
                 "folioNo": "17064577",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Hybrid Equity Fund - Regular Plan - IDCW",
                 "fund_value": 39087200,
                 "fund_code": "INF179K01AQ8",
@@ -3089,10 +3263,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "PRED",
                 "folioNo": "17064577",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Balanced Advantage Fund - Regular Plan - Growth",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Balanced Advantage Fund - Regular Plan - Growth",
                 "fund_value": 440,
                 "fund_code": "INF179K01830",
                 "lienEligibleUnits": "0.088",
@@ -3102,9 +3277,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "GFG",
                 "folioNo": "17060763",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Corporate Bond Fund - Regular Plan - Growth",
                 "fund_value": 182960325.04999998,
                 "fund_code": "INF179K01DC2",
@@ -3115,9 +3290,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "MTOG",
                 "folioNo": "17060763",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Small Cap Fund - Regular Plan - Growth Plan",
                 "fund_value": 0.97,
                 "fund_code": "INF179KA1RZ8",
@@ -3128,9 +3303,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "ACGPG",
                 "folioNo": "17073385",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Dividend Yield Regular Growth",
                 "fund_value": 664669.28,
                 "fund_code": "INF179KC1AR9",
@@ -3141,10 +3316,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "DYRGR",
                 "folioNo": "17073385",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Developed World Indexes Fund of Fund Regular Growth",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Developed World Indexes Fund of Fund Regular Growth",
                 "fund_value": 819420.975,
                 "fund_code": "INF179KC1BP1",
                 "lienEligibleUnits": "6069.785",
@@ -3154,9 +3330,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "HDWRG",
                 "folioNo": "17073385",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Multi Cap Fund Regular Growth",
                 "fund_value": 725962.5,
                 "fund_code": "INF179KC1BV9",
@@ -3167,9 +3343,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "HMCRG",
                 "folioNo": "17073385",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC NIFTY Next50 Index Fund Regular Growth",
                 "fund_value": 605593.75,
                 "fund_code": "INF179KC1BR7",
@@ -3180,10 +3356,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "NNIRG",
                 "folioNo": "17073385",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
                 "fund_value": 74343481.95,
                 "fund_code": "INF179K01XQ0",
                 "lienEligibleUnits": "495623.213",
@@ -3193,10 +3370,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "MCOGT",
                 "folioNo": "15716592",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
                 "fund_value": 4498565,
                 "fund_code": "INF179K01CR2",
                 "lienEligibleUnits": "449856.500",
@@ -3206,10 +3384,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "MCOG",
                 "folioNo": "10268268",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth Option",
                 "fund_value": 74476819.95,
                 "fund_code": "INF179K01XQ0",
                 "lienEligibleUnits": "496512.133",
@@ -3219,10 +3398,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "MCOGT",
                 "folioNo": "10268268",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Cash Management Fund - Savings Plan - Daily IDCW Reinvestment ",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Cash Management Fund - Savings Plan - Daily IDCW Reinvestment ",
                 "fund_value": 500318200,
                 "fund_code": "",
                 "lienEligibleUnits": "500000.000",
@@ -3232,10 +3412,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "55",
                 "folioNo": "5544587",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Overnight Fund - Direct Plan - Growth Option",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Overnight Fund - Direct Plan - Growth Option",
                 "fund_value": 4998450,
                 "fund_code": "INF179KB1HT1",
                 "lienEligibleUnits": "499845.000",
@@ -3245,10 +3426,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "57TN",
                 "folioNo": "5544587",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Floating Rate Debt Fund - Direct Plan - Growth Option",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Floating Rate Debt Fund - Direct Plan - Growth Option",
                 "fund_value": 16437800.005818399,
                 "fund_code": "INF179K01VQ4",
                 "lienEligibleUnits": "485240.114",
@@ -3258,9 +3440,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "ISWGT",
                 "folioNo": "5544587",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Liquid Fund - Growth ",
                 "fund_value": 14264250,
                 "fund_code": "INF179K01KG8",
@@ -3271,9 +3453,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "LFG",
                 "folioNo": "5544587",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Liquid Fund - Regular Plan - Growth ",
                 "fund_value": 99968000,
                 "fund_code": "INF179KB1HK0",
@@ -3284,9 +3466,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "LFGN",
                 "folioNo": "5544587",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Liquid Fund-Direct Plan-Growth Option",
                 "fund_value": 108965120,
                 "fund_code": "INF179KB1HP9",
@@ -3297,10 +3479,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "LFGTN",
                 "folioNo": "5544587",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Overnight Fund - Direct Plan - Growth Option",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Overnight Fund - Direct Plan - Growth Option",
                 "fund_value": 5000000,
                 "fund_code": "INF179KB1HT1",
                 "lienEligibleUnits": "500000.000",
@@ -3310,9 +3493,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "57TN",
                 "folioNo": "7996502",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Liquid Fund - Premium Plan - Growth ",
                 "fund_value": 14509250,
                 "fund_code": "INF179K01KM6",
@@ -3323,9 +3506,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "LFPG",
                 "folioNo": "5544587",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Liquid Fund - Direct Plan - Growth Option",
                 "fund_value": 14286200,
                 "fund_code": "INF179K01WT6",
@@ -3336,9 +3519,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "LFGT",
                 "folioNo": "7996502",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Liquid Fund-Direct Plan-Growth Option",
                 "fund_value": 109000000,
                 "fund_code": "INF179KB1HP9",
@@ -3349,9 +3532,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "LFGTN",
                 "folioNo": "7996502",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Liquid Fund - Premium Plus Plan - Growth ",
                 "fund_value": 5000000,
                 "fund_code": "INF179K01KQ7",
@@ -3362,9 +3545,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "LFPPG",
                 "folioNo": "7996502",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "HDFC Low Duration Fund - Regular Plan - Growth",
                 "fund_value": 822078.5,
                 "fund_code": "INF179K01442",
@@ -3375,9 +3558,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "54",
                 "folioNo": "15608041",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "ICICI Prudential Ultra Short Term Fund - Growth",
                 "fund_value": 4395.746863199999,
                 "fund_code": "INF109K01TP7",
@@ -3388,10 +3571,11 @@ class LenderRepository {
                 "amcCode": "P",
                 "schemeCode": "1746",
                 "folioNo": "15719893",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "ICICI Prudential Commodities Fund Direct Plan Growth",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "ICICI Prudential Commodities Fund Direct Plan Growth",
                 "fund_value": 64707.81296,
                 "fund_code": "INF109KC1F91",
                 "lienEligibleUnits": "1462.654",
@@ -3401,10 +3585,11 @@ class LenderRepository {
                 "amcCode": "P",
                 "schemeCode": "9600",
                 "folioNo": "15710315",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "Groww Banking & Financial Services Fund - REGULAR PLAN - Growth",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "Groww Banking & Financial Services Fund - REGULAR PLAN - Growth",
                 "fund_value": 227414.6287,
                 "fund_code": "INF666M01HP7",
                 "lienEligibleUnits": 19999,
@@ -3414,12 +3599,13 @@ class LenderRepository {
                 "amcCode": "125",
                 "schemeCode": "BSGP",
                 "folioNo": "5045079243",
-                "rtaName": "KFIN"
-            }
-        ],
-        "nonPledgeableFunds": [
-            {
-                "fund_name": "HDFC Medium Term Debt Fund - Regular Plan - Growth",
+                "rtaName": "KFIN",
+              },
+            ],
+            "nonPledgeableFunds": [
+              {
+                "fund_name":
+                    "HDFC Medium Term Debt Fund - Regular Plan - Growth",
                 "fund_value": "5000000.00",
                 "fund_code": "INF179K01913",
                 "lienEligibleUnits": "0.000",
@@ -3429,10 +3615,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "30",
                 "folioNo": "17052966",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Capital Builder Value Fund - Regular Plan - Growth",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Capital Builder Value Fund - Regular Plan - Growth",
                 "fund_value": "7909.03",
                 "fund_code": "INF179K01426",
                 "lienEligibleUnits": "0.000",
@@ -3442,10 +3629,11 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "62",
                 "folioNo": "17073385",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth",
                 "fund_value": "7555.37",
                 "fund_code": "INF179K01CR2",
                 "lienEligibleUnits": "0.000",
@@ -3455,9 +3643,9 @@ class LenderRepository {
                 "amcCode": "H",
                 "schemeCode": "MCOG",
                 "folioNo": "17073385",
-                "rtaName": "CAMS"
-            },
-            {
+                "rtaName": "CAMS",
+              },
+              {
                 "fund_name": "ICICI Prudential ELSS Tax Saver Fund - Growth",
                 "fund_value": "5841.33",
                 "fund_code": "INF109K01464",
@@ -3468,10 +3656,11 @@ class LenderRepository {
                 "amcCode": "P",
                 "schemeCode": "01",
                 "folioNo": "15710315",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "ICICI Prudential Liquid Fund - Direct Plan - Daily IDCW",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "ICICI Prudential Liquid Fund - Direct Plan - Daily IDCW",
                 "fund_value": "300309.58",
                 "fund_code": "INF109K01Q15",
                 "lienEligibleUnits": "0.000",
@@ -3481,10 +3670,11 @@ class LenderRepository {
                 "amcCode": "P",
                 "schemeCode": "8095",
                 "folioNo": "15710315",
-                "rtaName": "CAMS"
-            },
-            {
-                "fund_name": "ICICI Prudential Pharma Healthcare and Diagnostics (P.H.D) Fund Direct Plan Growth",
+                "rtaName": "CAMS",
+              },
+              {
+                "fund_name":
+                    "ICICI Prudential Pharma Healthcare and Diagnostics (P.H.D) Fund Direct Plan Growth",
                 "fund_value": "0.00",
                 "fund_code": "INF109KC1GH2",
                 "lienEligibleUnits": "0.000",
@@ -3494,18 +3684,18 @@ class LenderRepository {
                 "amcCode": "P",
                 "schemeCode": "9333",
                 "folioNo": "15710315",
-                "rtaName": "CAMS"
-            }
-        ],
-        "dematFunds": [],
-        "pledgeableAmount": 2912002222.712105,
-        "nonPledgeableAmount": 5321615.3100000005
-    },
-    "message": "MF Details retrieved successfully"
-}));
-      
+                "rtaName": "CAMS",
+              },
+            ],
+            "dematFunds": [],
+            "pledgeableAmount": 2912002222.712105,
+            "nonPledgeableAmount": 5321615.3100000005,
+          },
+          "message": "MF Details retrieved successfully",
+        }),
+      );
     } on DioException catch (e) {
-        print("⏰ Dio timeout or error: ${e.type}");
+      print("⏰ Dio timeout or error: ${e.type}");
       final msg = e.response?.data['message'] ?? e.message ?? 'Network error';
       return Failure(msg);
     } catch (e) {
