@@ -12,7 +12,7 @@ import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
 import 'package:las_app/features/new_user/view/widgets/three_kyc_verification/step_checker_view.dart';
 import 'package:las_app/features/new_user/view/widgets/two_lender_selection/fund_list_item.dart';
-import 'package:las_app/features/kyc/kyc_service.dart';
+import 'package:las_app/features/new_user/kyc_service.dart';
 import 'package:las_app/core/app_state_provider.dart';
 import 'package:las_app/core/utils/app_lifecycle_service.dart';
 import 'package:get_it/get_it.dart';
@@ -262,54 +262,65 @@ class FundSelectionView extends StatelessWidget {
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
                                     children: [
-                                      _buildDetailColumn(
-                                        'interestRate'.tr,
-                                        '${displayLender.interestRate}%',
+                                      Flexible(
+                                        child: _buildDetailColumn(
+                                          'interestRate'.tr,
+                                          '${displayLender.interestRate}%',
+                                        ),
                                       ),
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          CText(
-                                            'loanAmount'.tr,
-                                            style: AppTypography.bodySecondary
-                                                .copyWith(fontSize: 12),
-                                          ),
-                                          Gaps.hXs,
-                                          GestureDetector(
-                                            onTap: () => _showEditLoanDialog(
-                                              context,
-                                              selectedLender,
-                                              displayAmount,
+                                      Flexible(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            CText(
+                                              'loanAmount'.tr,
+                                              style: AppTypography.bodySecondary
+                                                  .copyWith(fontSize: 12),
                                             ),
-                                            child: Row(
-                                              children: [
-                                                CText(
-                                                  NumberFormat.currency(
-                                                    locale: 'en_IN',
-                                                    symbol: '₹ ',
-                                                    decimalDigits: 0,
-                                                  ).format(
-                                                    displayLender.loanAmount,
-                                                  ),
-                                                  style: AppTypography.bodyWhite
-                                                      .copyWith(
-                                                        fontSize: 14,
-                                                        fontWeight:
-                                                            FontWeight.w500,
+                                            Gaps.hXs,
+                                            GestureDetector(
+                                              onTap: () => _showEditLoanDialog(
+                                                context,
+                                                selectedLender,
+                                                displayAmount,
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Flexible(
+                                                    child: CText(
+                                                      NumberFormat.currency(
+                                                        locale: 'en_IN',
+                                                        symbol: '₹ ',
+                                                        decimalDigits: 0,
+                                                      ).format(
+                                                        displayLender
+                                                            .loanAmount,
                                                       ),
-                                                ),
-                                                Gaps.wXs,
-                                                const Icon(
-                                                  Icons.edit_outlined,
-                                                  color:
-                                                      AppColors.bSecondaryColor,
-                                                  size: 14,
-                                                ),
-                                              ],
+                                                      style: AppTypography
+                                                          .bodyWhite
+                                                          .copyWith(
+                                                            fontSize: 14,
+                                                            fontWeight:
+                                                                FontWeight.w500,
+                                                          ),
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                  Gaps.wXs,
+                                                  const Icon(
+                                                    Icons.edit_outlined,
+                                                    color: AppColors
+                                                        .bSecondaryColor,
+                                                    size: 14,
+                                                  ),
+                                                ],
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
                                       _buildDetailColumn(
                                         'pledgeableMFs'.tr,
@@ -324,10 +335,12 @@ class FundSelectionView extends StatelessWidget {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                CText(
-                                  'chooseFundsHint'.tr,
-                                  style: AppTypography.bodySecondary.copyWith(
-                                    fontSize: 12,
+                                Expanded(
+                                  child: CText(
+                                    'chooseFundsHint'.tr,
+                                    style: AppTypography.bodySecondary.copyWith(
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ),
                                 const Icon(
@@ -376,55 +389,15 @@ class FundSelectionView extends StatelessWidget {
                       text: 'continueWith'.trParams({
                         'lenderName': selectedLender.name,
                       }),
-                      onPressed: () async {
-                        // final _storage = const FlutterSecureStorage();
-                        // final data = await _storage.read(key: 'token');
-                        // print("data========${data}");
-                        // Navigator.push(
-                        //   blocContext,
-                        //   MaterialPageRoute(
-                        //     builder: (context) => BlocProvider.value(
-                        //       value: blocContext.read<EligibilityBloc>(),
-                        //       child: const KycVerificationScreen(),
-                        //     ),
-                        //   ),
-                        // );
-                        final reqId = GetIt.instance<AppStateProvider>().reqId;
-                        if (reqId == null) {
-                          ScaffoldMessenger.of(blocContext).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Missing request ID. Please restart the process.',
-                              ),
-                            ),
-                          );
-                          return;
-                        }
-
-                        final selectedLender = state.lenders.firstWhere(
-                          (l) => l.id == state.selectedLenderId,
-                          orElse: () => state.lenders.first,
-                        );
-
-                        KycService.startKyc(
+                      onPressed: () {
+                        Navigator.push(
                           blocContext,
-                          lenderCode: selectedLender
-                              .lender_code, // or selectedLender.lender_code if available
-                          reqId: reqId,
-                          onSuccess: () {
-                            // Set callback for when user returns from web KYC
-                            AppLifecycleService.setKycCompleteCallback(() {
-                              Navigator.push(
-                                blocContext,
-                                MaterialPageRoute(
-                                  builder: (context) => BlocProvider.value(
-                                    value: blocContext.read<EligibilityBloc>(),
-                                    child: const KycVerificationScreen(),
-                                  ),
-                                ),
-                              );
-                            });
-                          },
+                          MaterialPageRoute(
+                            builder: (context) => BlocProvider.value(
+                              value: blocContext.read<EligibilityBloc>(),
+                              child: const KycVerificationScreen(),
+                            ),
+                          ),
                         );
                       },
                       type: ButtonType.primaryWhite,

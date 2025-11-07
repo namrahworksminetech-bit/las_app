@@ -56,7 +56,11 @@ class _EligibilityScreenState extends State<EligibilityScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => EligibilityBloc(repository: PanRepository(ApiClient()),lenderRepository: LenderRepository(ApiClient())),
+      create: (context) => EligibilityBloc(
+        repository: PanRepository(ApiClient()),
+        lenderRepository: LenderRepository(ApiClient()),
+        apiClient: ApiClient(),
+      ),
       child: Scaffold(
         backgroundColor: AppColors.black,
         body: BlocConsumer<EligibilityBloc, EligibilityState>(

@@ -149,11 +149,14 @@ class EligibilityState extends Equatable {
     this.editedLoanAmounts = const {},
     this.pledgeableFunds = const [],
     this.selectedFundIds = const {},
-    this.kycStepChecks = const [true, true, true, true],
+    this.kycStepChecks = const [false, false, false, false],
     this.otp = '',
     this.isSubmitting = false,
     this.otpError = false,
     this.otpResent = false,
+    this.kycUrl,
+    this.kycLoading = false,
+    this.kycError,
   });
 
   final int majorStep;
@@ -185,6 +188,9 @@ class EligibilityState extends Equatable {
   final bool isSubmitting;
   final bool otpError;
   final bool otpResent;
+  final String? kycUrl;
+  final bool kycLoading;
+  final String? kycError;
 
   EligibilityState copyWith({
     int? majorStep,
@@ -215,6 +221,9 @@ class EligibilityState extends Equatable {
     PanOtpStatus? otpStatus,
     String? snackbarMessage,
     bool clearSnackbar = false,
+    String? kycUrl,
+    bool? kycLoading,
+    String? kycError,
   }) {
     return EligibilityState(
       majorStep: majorStep ?? this.majorStep,
@@ -253,6 +262,9 @@ class EligibilityState extends Equatable {
       snackbarMessage: clearSnackbar
           ? null
           : snackbarMessage ?? this.snackbarMessage,
+      kycUrl: kycUrl ?? this.kycUrl,
+      kycLoading: kycLoading ?? this.kycLoading,
+      kycError: kycError ?? this.kycError,
     );
   }
 
@@ -283,5 +295,8 @@ class EligibilityState extends Equatable {
     panStatus,
     otpStatus,
     snackbarMessage,
+    kycUrl,
+    kycLoading,
+    kycError,
   ];
 }

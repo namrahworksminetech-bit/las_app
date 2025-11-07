@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:las_app/app.dart';
@@ -7,14 +8,22 @@ import 'package:las_app/features/new_user/repository/lenders_data_repo.dart';
 import 'package:las_app/features/new_user/repository/pan_veirfy_repo.dart';
 import 'package:las_app/models/pan_verification/pan_otp_response_model.dart';
 import 'package:las_app/models/pan_verification/pan_verify_response_model.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../repository/kyc_repo.dart';
+import '../../../core/network/api_client.dart';
 part 'eligibility_event.dart';
 part 'eligibility_state.dart';
 
 class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
   final PanRepository repository;
   final LenderRepository lenderRepository;
-  EligibilityBloc({required this.repository, required this.lenderRepository})
-    : super(const EligibilityState()) {
+  final KycRepository _kycRepository;
+  EligibilityBloc({
+    required this.repository,
+    required this.lenderRepository,
+    required ApiClient apiClient,
+  }) : _kycRepository = KycRepository(apiClient),
+       super(const EligibilityState()) {
     on<InvestmentTypeUpdated>(_onInvestmentTypeUpdated);
 
     on<PanNumberUpdated>(_onPanNumberUpdated);
@@ -47,6 +56,8 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     on<NextStepPressed>(_onNextStepPressed);
     on<PreviousStepPressed>(_onPreviousStepPressed);
     on<ErrorMessageCleared>(_onErrorMessageCleared);
+    on<StartKycEvent>(_onStartKyc);
+    on<UpdateKycStep>(_onUpdateKycStep);
   }
 
   //kyc
@@ -763,5 +774,62 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     Emitter<EligibilityState> emit,
   ) {
     emit(state.copyWith(clearErrors: true, generalErrorMessage: null));
+  }
+
+  Future<void> _onStartKyc(
+    StartKycEvent event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    emit(state.copyWith(kycLoading: true, kycError: null));
+    try {
+      final response = await _kycRepository.startKyc(
+        reqId: event.reqId,
+        lenderCode: event.lenderCode,
+        latitude: event.latitude,
+        longitude: event.longitude,
+      );
+
+      if (response.status == 'success') {
+        await _launchUrl(response.data.url);
+        emit(state.copyWith(kycLoading: false, kycUrl: response.data.url));
+      } else {
+        emit(
+          state.copyWith(kycLoading: false, kycError: 'KYC initiation failed'),
+        );
+      }
+    } catch (e) {
+      String errorMessage = 'Unknown error';
+      if (e is DioException && e.response != null) {
+        errorMessage = 'STATUS CODE: ${e.response!.statusCode}';
+      }
+      emit(state.copyWith(kycLoading: false, kycError: errorMessage));
+    }
+  }
+
+
+
+  void _onUpdateKycStep(UpdateKycStep event, Emitter<EligibilityState> emit) {
+    print('🔄 Updating KYC step ${event.stepIndex} to ${event.isCompleted}');
+    print('📝 Before update: ${state.kycStepChecks}');
+    
+    final updated = List<bool>.from(state.kycStepChecks);
+    updated[event.stepIndex] = event.isCompleted;
+    
+    print('📝 After update: $updated');
+    emit(state.copyWith(kycStepChecks: updated));
+  }
+
+  Future<void> _launchUrl(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      try {
+        final uri = Uri.parse(url);
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      } catch (e2) {
+        print('Failed to launch URL: $e2');
+      }
+    }
   }
 }

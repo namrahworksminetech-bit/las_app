@@ -160,3 +160,30 @@ class ResendOtp extends EligibilityEvent {
   @override
   List<Object?> get props => [];
 }
+
+class StartKycEvent extends EligibilityEvent {
+  final String reqId;
+  final String lenderCode;
+  final double latitude;
+  final double longitude;
+
+  const StartKycEvent({
+    required this.reqId,
+    required this.lenderCode,
+    required this.latitude,
+    required this.longitude,
+  });
+
+  @override
+  List<Object> get props => [reqId, lenderCode, latitude, longitude];
+}
+
+class UpdateKycStep extends EligibilityEvent {
+  final int stepIndex;
+  final bool isCompleted;
+
+  const UpdateKycStep(this.stepIndex, this.isCompleted);
+
+  @override
+  List<Object> get props => [stepIndex, isCompleted];
+}

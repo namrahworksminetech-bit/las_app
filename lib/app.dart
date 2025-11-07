@@ -22,17 +22,17 @@ class SliqApp extends StatefulWidget {
 }
 
 class _SliqAppState extends State<SliqApp> {
-  final _lifecycleService = AppLifecycleService();
+  // final _lifecycleService = AppLifecycleService();
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(_lifecycleService);
+    // WidgetsBinding.instance.addObserver(_lifecycleService);
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(_lifecycleService);
+    // WidgetsBinding.instance.removeObserver(_lifecycleService);
     super.dispose();
   }
 
@@ -51,6 +51,7 @@ class _SliqAppState extends State<SliqApp> {
         create: (_) => EligibilityBloc(
           lenderRepository: LenderRepository(getIt<ApiClient>()),
           repository: PanRepository(getIt<ApiClient>()),
+          apiClient: getIt<ApiClient>(),
         ),
         // child: const WelcomeScreen(),
         child: const WelcomeScreen(),

@@ -4,10 +4,9 @@ import 'package:get_it/get_it.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/location_service.dart';
-import 'bloc/kyc_bloc.dart';
-import 'bloc/kyc_event.dart';
-import 'bloc/kyc_state.dart';
-import 'repository/kyc_repository.dart';
+import 'bloc/eligibility_bloc.dart';
+import 'repository/lenders_data_repo.dart';
+import 'repository/pan_veirfy_repo.dart';
 
 class KycService {
   static void startKyc(
@@ -16,20 +15,25 @@ class KycService {
     required String reqId,
     VoidCallback? onSuccess,
   }) async {
-    final kycRepository = KycRepository(GetIt.instance<ApiClient>());
-    final kycBloc = KycBloc(kycRepository);
+    final apiClient = GetIt.instance<ApiClient>();
+    
+    final eligibilityBloc = EligibilityBloc(
+      repository: PanRepository(apiClient),
+      lenderRepository: LenderRepository(apiClient),
+      apiClient: apiClient,
+    );
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => BlocProvider.value(
-        value: kycBloc,
-        child: BlocConsumer<KycBloc, KycState>(
+        value: eligibilityBloc,
+        child: BlocConsumer<EligibilityBloc, EligibilityState>(
           listener: (context, state) {
-            if (state is KycSuccess) {
+            if (state.kycUrl != null && !state.kycLoading) {
               Navigator.of(context).pop();
               onSuccess?.call();
-            } else if (state is KycError) {
+            } else if (state.kycError != null) {
               Navigator.of(context).pop();
               showDialog(
                 context: context,
@@ -37,7 +41,7 @@ class KycService {
                   backgroundColor: const Color(0xFF1F2937),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   content: Text(
-                    state.message,
+                    state.kycError!,
                     style: const TextStyle(color: AppColors.white, fontSize: 16),
                     textAlign: TextAlign.center,
                   ),
@@ -55,7 +59,7 @@ class KycService {
             }
           },
           builder: (context, state) {
-            if (state is KycLoading) {
+            if (state.kycLoading) {
               return Dialog(
                 backgroundColor: Colors.transparent,
                 child: Container(
@@ -114,7 +118,7 @@ class KycService {
     final latitude = position?.latitude ?? 28.6139;
     final longitude = position?.longitude ?? 77.2090;
 
-    kycBloc.add(
+    eligibilityBloc.add(
       StartKycEvent(
         reqId: reqId,
         lenderCode: lenderCode,
