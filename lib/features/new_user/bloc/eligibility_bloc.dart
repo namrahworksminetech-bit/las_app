@@ -1,10 +1,16 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:las_app/app.dart';
 import 'package:las_app/core/app_state_provider.dart';
 import 'package:las_app/core/results/result.dart';
 import 'package:las_app/features/new_user/repository/lenders_data_repo.dart';
+
 import 'package:las_app/features/new_user/repository/pan_veirfy_repo.dart';
+import 'package:las_app/features/new_user/view/widgets/three_kyc_verification/step_checker_view.dart';
+import 'package:las_app/helper_widgets/funds_merger.dart';
+import 'package:las_app/models/funds/mf_details_response_model.dart';
+import 'package:las_app/models/funds/pledgeable_model.dart';
 import 'package:las_app/models/pan_verification/pan_otp_response_model.dart';
 import 'package:las_app/models/pan_verification/pan_verify_response_model.dart';
 part 'eligibility_event.dart';
@@ -24,6 +30,7 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     on<SendPanOtpPressed>(_onSendPanOtpPressed);
     on<VerifyPanOtpPressed>(_onVerifyPanOtpPressed);
     on<EligibilitySnackbarCleared>(_onSnackbarCleared);
+on<AutoSelectAllFunds>(_onAutoSelectAllFunds);
 
     on<FetchStep2Data>(_onFetchStep2Data);
     on<LenderSelected>(_onLenderSelected);
@@ -49,7 +56,104 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     on<ErrorMessageCleared>(_onErrorMessageCleared);
   }
 
-  //kyc 
+
+  void _onAutoSelectAllFunds(
+  AutoSelectAllFunds event,
+  Emitter<EligibilityState> emit,
+) {
+  // Set both selected and previousSelected so diffs work later
+  emit(state.copyWith(
+    selectedFundIds: event.fundIds,
+    previousSelectedFundIds: event.fundIds,
+  ));
+
+  print('✅ Auto-selected all ${event.fundIds.length} funds (UI + state)');
+}
+
+
+Future<void> _onLenderContinuePressed(
+  LenderContinuePressed event,
+  Emitter<EligibilityState> emit,
+) async {
+  print('➡️ Continue pressed for lenderId: ${event.lenderId}');
+  emit(state.copyWith(isLoading: true, generalErrorMessage: null));
+
+  try {
+    // 1️⃣ Get selected UI lender
+    final selectedUiLender = state.lenders.firstWhere(
+      (l) => l.id == event.lenderId,
+      orElse: () => throw Exception('Selected lender not found in UI list'),
+    );
+
+    // 2️⃣ Get mfDetailsResponse
+    final mfDetails = state.mfDetailsResponse;
+    if (mfDetails == null) throw Exception('mfDetailsResponse not loaded yet');
+
+    // 3️⃣ Find the full LenderItem details by matching ID
+    final lenderItem = mfDetails.lenders.firstWhere(
+      (l) => l.id.toString() == selectedUiLender.id,
+      orElse: () => throw Exception('Lender details not found in mfDetailsResponse'),
+    );
+
+    // 4️⃣ Extract eligible funds
+    final eligibleFunds = lenderItem.eligibleFunds ?? [];
+    if (eligibleFunds.isEmpty) {
+      emit(state.copyWith(
+        isLoading: false,
+        generalErrorMessage:
+            'No eligible funds found for ${selectedUiLender.name}.',
+      ));
+      return;
+    }
+
+    // 5️⃣ Use pledgeableFunds list from mfDetailsResponse
+    final fundDetails = mfDetails.pledgeableFunds;
+    if (fundDetails.isEmpty) {
+      emit(state.copyWith(
+        isLoading: false,
+        generalErrorMessage: 'No pledgeable fund details found.',
+      ));
+      return;
+    }
+
+    // 6️⃣ Merge both using helper
+    final mergedFunds = FundsMerger.merge(
+      eligibleFunds: eligibleFunds,
+      fundDetails: fundDetails,
+    );
+
+    if (mergedFunds.isEmpty) {
+      emit(state.copyWith(
+        isLoading: false,
+        generalErrorMessage:
+            'No matching funds found for ${selectedUiLender.name}.',
+      ));
+      return;
+    }
+
+    // 7️⃣ Collect selected IDs (folio numbers)
+    final selectedIds = mergedFunds.map((f) => f.folioNo).toSet();
+
+    // 8️⃣ Emit state for next screen
+    emit(state.copyWith(
+      isLoading: false,
+      selectedLenderId: selectedUiLender.id,
+      lenderSelectionView: LenderSelectionView.fundSelection,
+      pledgeableFunds: mergedFunds,
+      selectedFundIds: selectedIds,
+    ));
+
+    print(
+        '✅ ${mergedFunds.length} pledgeable funds ready for ${selectedUiLender.name}');
+  } catch (e, st) {
+    print('❌ Error in _onLenderContinuePressed: $e\n$st');
+    emit(state.copyWith(
+      isLoading: false,
+      generalErrorMessage: 'Something went wrong while preparing lender funds.',
+    ));
+  }
+}
+
   void _onToggleKycStep(ToggleKycStep event, Emitter<EligibilityState> emit) {
     final updated = List<bool>.from(state.kycStepChecks);
     updated[event.index] = !updated[event.index];
@@ -306,16 +410,13 @@ final result = await repository.verifyPan(
       );
     }
   }
-
-
-//fetch funds data
 Future<void> _onFetchStep2Data(
   FetchStep2Data event,
   Emitter<EligibilityState> emit,
 ) async {
   if (state.isLoading || state.isPortfolioRefreshing) return;
 
-  emit(state.copyWith(isLoading: true, generalErrorMessage: null));
+  print("🔄 Fetching lenders and portfolio data...");
 
   try {
     final reqId = getIt<AppStateProvider>().reqId;
@@ -331,84 +432,217 @@ Future<void> _onFetchStep2Data(
 
     await result.when(
       success: (mfResponse) async {
-       final lenders = mfResponse.lenders.map((l) {
-  return Lender(
-    id: l.id.toString(),
-    name: l.name ?? '-',
-    logoAsset: l.logo ?? '',
-    interestRate: l.loanInterest ?? 0.0,
-    loanAmount: l.loanAmount ?? 0.0,
-    pledgeableMFs: l.eligibleFundsCount ?? 0,
-    tag: '',
-  );
-}).toList();
+        print("✅ Lenders parsed: ${mfResponse.lenders.length}");
+        print("✅ Pledgeable funds parsed: ${mfResponse.pledgeableFunds.length}");
+        print("✅ Pledgeable Amount: ${mfResponse.pledgeableAmount}");
+        print("✅ Non-Pledgeable Amount: ${mfResponse.nonPledgeableAmount}");
+        print("✅ Demat Amount: ${mfResponse.dematAmount}");
+        print("✅ Eligible Portfolio: ${mfResponse.eligiblePortfolio}");
+        print("✅ Max Eligible Limit: ${mfResponse.maxEligibleLimit}");
 
-        // Compute aggregated portfolio data (optional)
-        final totalEligiblePortfolio = lenders.fold<double>(
-          0.0,
-          (sum, l) => sum + (l.loanAmount),
-        );
+        // 🔹 Convert API lenders to UI model
+        final lenders = mfResponse.lenders.map((l) {
+          return Lender(
+            id: l.id.toString(),
+            name: l.name ?? '-',
+            logoAsset: l.logo ?? '',
+            interestRate: l.loanInterest ?? 0.0,
+            loanAmount: l.loanAmount ?? 0.0,
+            pledgeableMFs: l.eligibleFundsCount ?? 0,
+            tag: '',
+          );
+        }).toList();
 
-        final portfolio = PortfolioData(
-          totalValue: totalEligiblePortfolio,
-          eligibleCreditLimit: totalEligiblePortfolio,
-          pledgeableFunds: totalEligiblePortfolio,
-        );
-
+        // ✅ Emit updated state directly with mfResponse data
         emit(state.copyWith(
           isLoading: false,
           lenders: lenders,
-          portfolioData: portfolio,
+          pledgeableFunds: mfResponse.pledgeableFunds,
+          mfDetailsResponse: mfResponse,
+          // Optional: derived summary data for UI
+         
         ));
+
+        print("🟢 Stored lender + MF data successfully.");
       },
       failure: (error) {
+        print("❌ Failed to fetch Step 2 data: $error");
         emit(state.copyWith(
           isLoading: false,
           generalErrorMessage: error,
         ));
       },
     );
-  } catch (e) {
+  } catch (e, stack) {
+    print("❌ Exception while fetching Step 2 data: $e");
+    print("🧠 Stacktrace: $stack");
     emit(state.copyWith(
       isLoading: false,
       generalErrorMessage: "Failed to fetch lender data.",
     ));
   }
 }
+void _onLenderSelected(
+  LenderSelected event,
+  Emitter<EligibilityState> emit,
+) {
+  final newSelectedId =
+      (state.selectedLenderId == event.lenderId) ? null : event.lenderId;
 
-  void _onLenderSelected(LenderSelected event, Emitter<EligibilityState> emit) {
-    final newSelectedId = (state.selectedLenderId == event.lenderId)
-        ? null
-        : event.lenderId;
-    emit(
-      state.copyWith(
-        selectedLenderId: newSelectedId,
-        clearSelectedLender: newSelectedId == null,
-      ),
-    );
+  // 🧹 If lender is deselected — clear everything
+  if (newSelectedId == null) {
+    emit(state.copyWith(
+      selectedLenderId: null,
+      selectedFundIds: {},
+      previousSelectedFundIds: {},
+      clearSelectedLender: true,
+    ));
+    return;
   }
+
+  // 🧩 Get all pledgeable funds (for this lender, if applicable)
+  final allFunds = state.pledgeableFunds;
+
+  // 🪄 Auto-select all fund codes
+  final allFundIds = allFunds.map((f) => f.fundCode).toSet();
+
+  emit(state.copyWith(
+    selectedLenderId: newSelectedId,
+    clearSelectedLender: false,
+    selectedFundIds: allFundIds,
+    previousSelectedFundIds: allFundIds,
+  ));
+
+  print('✅ Auto-selected all ${allFundIds.length} funds for lender $newSelectedId');
+}
+
 
   void _onToggleFundSelection(
-    ToggleFundSelection event,
-    Emitter<EligibilityState> emit,
-  ) {
-    final newSelectedIds = Set<String>.from(state.selectedFundIds);
-    if (newSelectedIds.contains(event.fundId)) {
-      newSelectedIds.remove(event.fundId);
-    } else {
-      newSelectedIds.add(event.fundId);
+  ToggleFundSelection event,
+  Emitter<EligibilityState> emit,
+) {
+  // 🧠 Copy current selected fund IDs
+  final currentSelected = Set<String>.from(state.selectedFundIds);
+  final previousSelected = Set<String>.from(state.previousSelectedFundIds);
+
+  // 🪄 Toggle logic: add/remove based on tap
+  if (currentSelected.contains(event.fundId)) {
+    currentSelected.remove(event.fundId);
+  } else {
+    currentSelected.add(event.fundId);
+  }
+
+  // 🧾 Log the change
+  print('🔁 Fund toggled: ${event.fundId}');
+  print('📦 Selected funds after toggle: $currentSelected');
+
+  // ✅ Emit updated selection and store current state for future diffing
+  emit(state.copyWith(
+    selectedFundIds: currentSelected,
+    previousSelectedFundIds: previousSelected,
+  ));
+}
+
+Future<void> _onConfirmFundSelection(
+  ConfirmFundSelection event,
+  Emitter<EligibilityState> emit,
+) async {
+  print('🧩 Confirming Fund Selection...');
+  print('Selected Fund IDs: ${state.selectedFundIds}');
+  print('Edited Amounts: ${state.editedLoanAmounts}');
+
+  emit(state.copyWith(isLoading: true));
+
+  try {
+    final lenderId = state.selectedLenderId ?? '';
+    final reqId = getIt<AppStateProvider>().reqId ?? '';
+    print("📋 Current reqId: $reqId");
+
+    if (reqId.isEmpty) {
+      emit(state.copyWith(
+        isLoading: false,
+        generalErrorMessage: 'Missing reqId. Please login again.',
+      ));
+      return;
     }
-    emit(state.copyWith(selectedFundIds: newSelectedIds));
-  }
 
-  void _onConfirmFundSelection(
-    ConfirmFundSelection event,
-    Emitter<EligibilityState> emit,
-  ) {
-    print('Fund selection confirmed. Selected IDs: ${state.selectedFundIds}');
+    final loanAmount =
+        state.editedLoanAmounts[lenderId] ??
+        state.selectedLender?.loanAmount ??
+        0.0;
 
-    add(NextStepPressed());
+    // 🧮 Build ISIN lists for add/remove/modify
+    final previousFunds = state.previousSelectedFundIds;
+    final currentFunds = state.selectedFundIds;
+
+    final isinAdd = currentFunds.difference(previousFunds).toList();
+    final isinRemove = previousFunds.difference(currentFunds).toList();
+
+    // 🧠 For modify: pattern 'fundCode:folioNo:amount'
+    final isinModify = state.pledgeableFunds
+        .where((f) => currentFunds.contains(f.fundCode))
+        .map((f) =>
+            "${f.fundCode}:${f.folioNo ?? ''}:${(f.availableAmount ?? 0.0).toStringAsFixed(2)}")
+        .toList();
+
+    print('📤 ISIN_ADD: $isinAdd');
+    print('📤 ISIN_REMOVE: $isinRemove');
+    print('📤 ISIN_MODIFY: $isinModify');
+
+    // 🪄 Call updated repository method
+    final result = await lenderRepository.editLoanAmount(
+      reqId: reqId,
+      loanAmount: loanAmount,
+      lenderId: lenderId,
+      isinAdd: isinAdd,
+      isinRemove: isinRemove,
+      isinModify: isinModify,
+    );
+
+    await result.when(
+      success: (updatedData) async {
+        print('✅ Loan Amount Updated Successfully');
+
+        emit(state.copyWith(
+          mfDetailsResponse: updatedData,
+          pledgeableFunds: updatedData.pledgeableFunds,
+          lenders: updatedData.lenders.map((l) {
+            return Lender(
+              id: l.id.toString(),
+              name: l.name ?? '-',
+              logoAsset: l.logo ?? '',
+              interestRate: l.loanInterest ?? 0.0,
+              loanAmount: l.loanAmount ?? 0.0,
+              pledgeableMFs: l.eligibleFundsCount ?? 0,
+              tag: '',
+            );
+          }).toList(),
+          isLoading: false,
+        ));
+        // ✅ Navigate to KYC screen after successful update
+        final context = event.context;
+        if (context.mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => BlocProvider.value(
+                value: context.read<EligibilityBloc>(),
+                child: const KycVerificationScreen(),
+              ),
+            ),
+          );
+        }
+      },
+      failure: (error) {
+        print('❌ API failed: $error');
+        emit(state.copyWith(isLoading: false, generalErrorMessage: error));
+      },
+    );
+  } catch (e, st) {
+    print('❌ Unexpected error in ConfirmFundSelection: $e\n$st');
+    emit(state.copyWith(isLoading: false, generalErrorMessage: e.toString()));
   }
+}
 
   void _onViewDetailsToggled(
     ViewDetailsToggled event,
@@ -433,45 +667,68 @@ Future<void> _onFetchStep2Data(
     );
   }
 
-  Future<void> _onRefreshPortfolioPressed(
-    RefreshPortfolioPressed event,
-    Emitter<EligibilityState> emit,
-  ) async {
-    emit(state.copyWith(isPortfolioRefreshing: true));
-    try {
-      await Future.delayed(const Duration(seconds: 2));
-      emit(
-        state.copyWith(
-          isPortfolioRefreshing: false,
-          portfolioData: const PortfolioData(
-            totalValue: 1250000,
-            eligibleCreditLimit: 490000,
-            pledgeableFunds: 560000,
-          ),
-        ),
-      );
-    } catch (e) {
-      emit(
-        state.copyWith(
-          isPortfolioRefreshing: false,
-          generalErrorMessage: "Failed to refresh portfolio.",
-        ),
-      );
-    }
-  }
+Future<void> _onRefreshPortfolioPressed(
+  RefreshPortfolioPressed event,
+  Emitter<EligibilityState> emit,
+) async {
+  if (state.isPortfolioRefreshing) return;
 
-  void _onBreakdownCategoryTapped(
-    BreakdownCategoryTapped event,
-    Emitter<EligibilityState> emit,
-  ) {
-    if (event.categoryId == 'pledgeable') {
-      emit(
-        state.copyWith(
-          lenderSelectionView: LenderSelectionView.pledgeableDetail,
-        ),
-      );
+  emit(state.copyWith(isPortfolioRefreshing: true));
+  print("🔄 Refreshing portfolio...");
+
+  try {
+    final reqId = getIt<AppStateProvider>().reqId;
+    if (reqId == null) {
+      emit(state.copyWith(
+        isPortfolioRefreshing: false,
+        generalErrorMessage: "Missing request ID.",
+      ));
+      return;
     }
+
+    final result = await lenderRepository.fetchLendersAndPortfolio(reqId: reqId);
+    await result.when(
+      success: (mfResponse) {
+        print("✅ Portfolio refreshed successfully.");
+        emit(state.copyWith(
+          isPortfolioRefreshing: false,
+          pledgeableFunds: mfResponse.pledgeableFunds,
+          mfDetailsResponse: mfResponse,
+        ));
+      },
+      failure: (error) {
+        emit(state.copyWith(
+          isPortfolioRefreshing: false,
+          generalErrorMessage: error,
+        ));
+      },
+    );
+  } catch (e) {
+    emit(state.copyWith(
+      isPortfolioRefreshing: false,
+      generalErrorMessage: "Failed to refresh portfolio.",
+    ));
   }
+}
+
+void _onBreakdownCategoryTapped(
+  BreakdownCategoryTapped event,
+  Emitter<EligibilityState> emit,
+) {
+  if (event.categoryId == 'pledgeable') {
+    print("🟢 Switching to Pledgeable Detail view");
+    print("🟢 Current funds count: ${state.pledgeableFunds.length}");
+
+    emit(state.copyWith(
+      lenderSelectionView: LenderSelectionView.pledgeableDetail,
+    ));
+  } else {
+    // For other categories (non-pledgeable, demat, etc.)
+    emit(state.copyWith(
+      lenderSelectionView: LenderSelectionView.portfolioBreakdown,
+    ));
+  }
+}
 
   void _onEditLoanAmountPressed(
     EditLoanAmountPressed event,
@@ -480,71 +737,52 @@ Future<void> _onFetchStep2Data(
     print('Edit loan amount triggered for lender ${event.lenderId}');
   }
 
-  void _onSaveEditedLoanAmount(
-    SaveEditedLoanAmount event,
-    Emitter<EligibilityState> emit,
-  ) {
-    final newAmounts = Map<String, double>.from(state.editedLoanAmounts);
-
-    newAmounts[event.lenderId] = event.amount;
-
-    emit(state.copyWith(editedLoanAmounts: newAmounts));
-  }
-
-  Future<void> _onLenderContinuePressed(
-    LenderContinuePressed event,
-    Emitter<EligibilityState> emit,
-  ) async {
-    print('Continue pressed for lender ${event.lenderId}');
-
+Future<void> _onSaveEditedLoanAmount(
+  SaveEditedLoanAmount event,
+  Emitter<EligibilityState> emit,
+) async {
+  try {
     emit(state.copyWith(isLoading: true));
 
-    try {
-      await Future.delayed(const Duration(milliseconds: 500));
+   
+     final reqId = getIt<AppStateProvider>().reqId ?? '';
+    final isinModify = state.selectedFundIds.toList();
 
-      final funds = [
-        const PledgeableFund(
-          id: 'f1',
-          name: 'HDFC Midcap Opportunities Fund',
-          value: 556000,
-          units: 24,
-          perUnitValue: 1234.56,
-        ),
-        const PledgeableFund(
-          id: 'f2',
-          name: 'ICICI Prudential Balanced Advantage Fund',
-          value: 556000,
-          units: 30,
-          perUnitValue: 1000.00,
-        ),
-        const PledgeableFund(
-          id: 'f3',
-          name: 'Axis Bluechip Fund - Direct Growth',
-          value: 556000,
-          units: 50,
-          perUnitValue: 800.00,
-        ),
-      ];
+    print("📤 Calling editLoanAmount API...");
+    print("🧩 reqId: $reqId | lenderId: ${event.lenderId} | newAmount: ${event.amount}");
+    print("🔄 ISIN Modify: $isinModify");
 
-      final selectedIds = funds.map((f) => f.id).toSet();
+    final result = await lenderRepository.editLoanAmount(
+      reqId: reqId,
+      loanAmount: event.amount,
+      lenderId: event.lenderId,
+      isinAdd: const [],
+      isinRemove: const [],
+      isinModify: isinModify,
+    );
 
-      emit(
-        state.copyWith(
-          isLoading: false,
-          lenderSelectionView: LenderSelectionView.fundSelection,
-          pledgeableFunds: funds,
-          selectedFundIds: selectedIds,
-        ),
-      );
-    } catch (e) {
-      emit(
-        state.copyWith(
-          isLoading: false,
-          generalErrorMessage: 'Failed to fetch funds.',
-        ),
-      );
+    if (result is Success<MfDetailsResponse>) {
+      final updatedResponse = result.value;
+
+      print("✅ Loan amount updated successfully via API!");
+      print("✅ New lenders list: ${updatedResponse.lenders.length}");
+
+      emit(state.copyWith(
+        mfDetailsResponse: updatedResponse,
+        isLoading: false,
+      ));
+    } else if (result is Failure) {
+      print("❌ API call failed: ${result}");
+      emit(state.copyWith(isLoading: false));
     }
+
+  } catch (e, stack) {
+    print("💥 Error in _onSaveEditedLoanAmount: $e");
+    print(stack);
+    emit(state.copyWith(isLoading: false));
   }
+}
+
 
   void _onProceedToLenderSelection(
     ProceedToLenderSelection event,

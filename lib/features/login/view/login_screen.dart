@@ -91,6 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
           return Scaffold(
             backgroundColor: AppColors.black,
+            resizeToAvoidBottomInset: false, // Prevent buttons from moving with keyboard
             body: SafeArea(
               child: Stack(
                 children: [
@@ -131,7 +132,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               CInput(
                                 labelText: 'EmailAddress'.tr,
                                 controller: _emailController,
-                            
                                 keyboardType: TextInputType.emailAddress,
                                 suffixIcon: const Icon(
                                   Icons.email_outlined,
@@ -171,90 +171,92 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-
-                      /// ---------- Buttons ----------
-                      Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          children: [
-                            if (!isOtpView) ...[
-                              CButton(
-                                text: 'SendOTP'.tr,
-                                onPressed: () {
-                                  bloc.add(
-                                    LoginSendOtpPressed(
-                                      mobile: _mobileController.text.trim(),
-                                      
-                                    ),
-                                  );
-                                },
-                                type: ButtonType.primaryWhite,
-                                suffixIcon: const Icon(
-                                  Icons.arrow_forward,
-                                  color: AppColors.black,
-                                  size: 18,
-                                ),
-                              ),
-                            ] else ...[
-                              CButton(
-                                text: 'Continue'.tr,
-                                onPressed: () {
-                                  if (state.otpRef == null ||
-                                      state.otpRef!.isEmpty) {
-                                    CSnackBar.show(
-                                      context,
-                                      'Missing OTP reference. Please resend OTP.',
-                                      isError: true,
-                                    );
-                                    return;
-                                  }
-
-                                  bloc.add(
-                                    LoginVerifyOtpPressed(
-                                      mobile: _mobileController.text.trim(),
-                                      otpRef: state.otpRef!,
-                                      otp: _otpController.text.trim(),
-                                    ),
-                                  );
-                                },
-                                type: ButtonType.primaryWhite,
-                                suffixIcon: const Icon(
-                                  Icons.arrow_forward,
-                                  color: AppColors.black,
-                                  size: 18,
-                                ),
-                              ),
-                              Gaps.hXl,
-                              Center(
-                                child: RichText(
-                                  text: TextSpan(
-                                    text: "NoCode?".tr,
-                                    style: const TextStyle(
-                                      color: AppColors.bSecondaryColor,
-                                      fontSize: 14,
-                                    ),
-                                    children: [
-                                      TextSpan(
-                                        text: 'ResendOTP'.tr,
-                                        style: const TextStyle(
-                                          color: AppColors.bPrimaryColor,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        recognizer: TapGestureRecognizer()
-                                          ..onTap = () {
-                                            bloc.add(
-                                                const LoginResendOtpPressed());
-                                          },
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
                     ],
+                  ),
+
+                  /// ---------- Bottom Buttons ----------
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (!isOtpView) ...[
+                            CButton(
+                              text: 'SendOTP'.tr,
+                              onPressed: () {
+                                bloc.add(
+                                  LoginSendOtpPressed(
+                                    mobile: _mobileController.text.trim(),
+                                  ),
+                                );
+                              },
+                              type: ButtonType.primaryWhite,
+                              suffixIcon: const Icon(
+                                Icons.arrow_forward,
+                                color: AppColors.black,
+                                size: 18,
+                              ),
+                            ),
+                          ] else ...[
+                            CButton(
+                              text: 'Continue'.tr,
+                              onPressed: () {
+                                if (state.otpRef == null ||
+                                    state.otpRef!.isEmpty) {
+                                  CSnackBar.show(
+                                    context,
+                                    'Missing OTP reference. Please resend OTP.',
+                                    isError: true,
+                                  );
+                                  return;
+                                }
+
+                                bloc.add(
+                                  LoginVerifyOtpPressed(
+                                    mobile: _mobileController.text.trim(),
+                                    otpRef: state.otpRef!,
+                                    otp: _otpController.text.trim(),
+                                  ),
+                                );
+                              },
+                              type: ButtonType.primaryWhite,
+                              suffixIcon: const Icon(
+                                Icons.arrow_forward,
+                                color: AppColors.black,
+                                size: 18,
+                              ),
+                            ),
+                            Gaps.hXl,
+                            Center(
+                              child: RichText(
+                                text: TextSpan(
+                                  text: "NoCode?".tr,
+                                  style: const TextStyle(
+                                    color: AppColors.bSecondaryColor,
+                                    fontSize: 14,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text: 'ResendOTP'.tr,
+                                      style: const TextStyle(
+                                        color: AppColors.bPrimaryColor,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      recognizer: TapGestureRecognizer()
+                                        ..onTap = () {
+                                          bloc.add(const LoginResendOtpPressed());
+                                        },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                   ),
 
                   /// ---------- Loader ----------

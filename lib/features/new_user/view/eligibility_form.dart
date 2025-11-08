@@ -34,24 +34,40 @@ class _EligibilityScreenState extends State<EligibilityScreen> {
     super.dispose();
   }
 
-  void _showOverlay(BuildContext context, EligibilityOverlayType type) {
-    _bottomSheetController?.close();
+void _showOverlay(BuildContext context, EligibilityOverlayType type) {
+  // Close any existing bottom sheet safely
+  if (_bottomSheetController != null) {
+    try {
+      _bottomSheetController?.close();
+    } catch (_) {}
+    _bottomSheetController = null;
+  }
 
-    Widget content;
-    if (type == EligibilityOverlayType.fetchingPortfolio) {
-      content = const PortfolioFetchingOverlay();
-    } else if (type == EligibilityOverlayType.eligibilityResult) {
-      content = const EligibilityResultOverlay();
-    } else {
+  // Pick overlay widget
+  Widget content;
+  if (type == EligibilityOverlayType.fetchingPortfolio) {
+    content = const PortfolioFetchingOverlay();
+  } else if (type == EligibilityOverlayType.eligibilityResult) {
+    content = const EligibilityResultOverlay();
+  } else {
+    return;
+  }
+
+  // Use addPostFrameCallback to delay opening until build is stable
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!mounted) return;
+    final scaffoldState = Scaffold.maybeOf(context);
+    if (scaffoldState == null || !scaffoldState.mounted) {
+      debugPrint("⚠️ Scaffold not ready, skipping overlay");
       return;
     }
 
-    _bottomSheetController = showBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext bc) => content,
-    );
-  }
+_bottomSheetController = scaffoldState.showBottomSheet(
+  (_) => content,
+  backgroundColor: Colors.transparent,
+);
+  });
+}
 
   @override
   Widget build(BuildContext context) {

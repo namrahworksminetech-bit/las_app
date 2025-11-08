@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 import 'package:las_app/common_widgets/c_button.dart';
 import 'package:las_app/common_widgets/c_input.dart';
+import 'package:las_app/common_widgets/c_snackbar.dart';
 import 'package:las_app/common_widgets/c_text.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
@@ -89,18 +90,19 @@ class _Step1PanPageState extends State<Step1PanPage> {
   @override
   Widget build(BuildContext context) {
     return BlocListener<EligibilityBloc, EligibilityState>(
-      listenWhen: (prev, curr) =>
-          curr.snackbarMessage != null && curr.snackbarMessage != prev.snackbarMessage,
-      listener: (context, state) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(state.snackbarMessage!)),
-        );
+  listenWhen: (prev, curr) =>
+      curr.snackbarMessage != null && curr.snackbarMessage != prev.snackbarMessage,
+  listener: (context, state) {
+    // ✅ Show custom snackbar
+    CSnackBar.show(context, state.snackbarMessage!);
 
-        // ✅ Move to next step automatically after OTP verified
-        if (state.otpStatus == PanOtpStatus.verified) {
-          context.read<EligibilityBloc>().add(NextStepPressed());
-        }
-      },
+    // ✅ Move to next step automatically after OTP verified
+    if (state.otpStatus == PanOtpStatus.verified) {
+      context.read<EligibilityBloc>().add(NextStepPressed());
+    }
+  },
+
+
       child: BlocBuilder<EligibilityBloc, EligibilityState>(
         builder: (context, state) {
           final showOtpField = state.otpStatus == PanOtpStatus.sent ||

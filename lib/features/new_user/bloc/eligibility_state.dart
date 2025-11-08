@@ -14,24 +14,6 @@ enum LenderSelectionView {
 }
 
 
-class PledgeableFund extends Equatable {
-  final String id;
-  final String name;
-  final double value;
-  final int units;
-  final double perUnitValue;
-
-  const PledgeableFund({
-    required this.id,
-    required this.name,
-    required this.value,
-    required this.units,
-    required this.perUnitValue,
-  });
-
-  @override
-  List<Object?> get props => [id];
-}
 
 class Lender extends Equatable {
   final String id;
@@ -76,20 +58,7 @@ class Lender extends Equatable {
   }
 }
 
-class PortfolioData extends Equatable {
-  final double totalValue;
-  final double eligibleCreditLimit;
-  final double pledgeableFunds;
 
-  const PortfolioData({
-    this.totalValue = 0.0,
-    this.eligibleCreditLimit = 0.0,
-    this.pledgeableFunds = 0.0,
-  });
-
-  @override
-  List<Object?> get props => [totalValue, eligibleCreditLimit, pledgeableFunds];
-}
 
 class EligibilityFormData extends Equatable {
   const EligibilityFormData({
@@ -129,6 +98,7 @@ class EligibilityState extends Equatable {
     this.generalErrorMessage,
     this.panNumberError,
     this.panFullNameError,
+    this.mfDetailsResponse,
     this.panDobError,
     this.panStatus = PanVerificationStatus.initial,
     this.otpStatus = PanOtpStatus.initial,
@@ -138,11 +108,11 @@ class EligibilityState extends Equatable {
     this.lenderSelectionView = LenderSelectionView.lenderList,
     this.lenders = const [],
     this.selectedLenderId,
-    this.portfolioData = const PortfolioData(),
     this.isPortfolioRefreshing = false,
     this.editedLoanAmounts = const {},
     this.pledgeableFunds = const [],
     this.selectedFundIds = const {},
+    this.previousSelectedFundIds = const {}, // ✅ Correctly placed
     this.kycStepChecks = const [true, true, true, true],
     this.otp = '',
     this.isSubmitting = false,
@@ -150,9 +120,11 @@ class EligibilityState extends Equatable {
     this.otpResent = false,
   });
 
+  // 🔹 Fields
   final int majorStep;
   final int pageIndex;
   final EligibilityFormData formData;
+  final MfDetailsResponse? mfDetailsResponse;
 
   final PanVerificationStatus panStatus;
   final PanOtpStatus otpStatus;
@@ -169,17 +141,18 @@ class EligibilityState extends Equatable {
   final LenderSelectionView lenderSelectionView;
   final List<Lender> lenders;
   final String? selectedLenderId;
-  final PortfolioData portfolioData;
   final bool isPortfolioRefreshing;
   final Map<String, double> editedLoanAmounts;
   final List<PledgeableFund> pledgeableFunds;
   final Set<String> selectedFundIds;
+  final Set<String> previousSelectedFundIds; // ✅ Added field
   final List<bool> kycStepChecks;
   final String otp;
   final bool isSubmitting;
   final bool otpError;
   final bool otpResent;
 
+  // 🔹 CopyWith
   EligibilityState copyWith({
     int? majorStep,
     int? pageIndex,
@@ -195,11 +168,12 @@ class EligibilityState extends Equatable {
     List<Lender>? lenders,
     String? selectedLenderId,
     bool clearSelectedLender = false,
-    PortfolioData? portfolioData,
+    MfDetailsResponse? mfDetailsResponse,
     bool? isPortfolioRefreshing,
     Map<String, double>? editedLoanAmounts,
     List<PledgeableFund>? pledgeableFunds,
     Set<String>? selectedFundIds,
+    Set<String>? previousSelectedFundIds, // ✅ Added param
     List<bool>? kycStepChecks,
     String? otp,
     bool? isSubmitting,
@@ -215,6 +189,7 @@ class EligibilityState extends Equatable {
       pageIndex: pageIndex ?? this.pageIndex,
       formData: formData ?? this.formData,
       isLoading: isLoading ?? this.isLoading,
+      mfDetailsResponse: mfDetailsResponse ?? this.mfDetailsResponse,
       generalErrorMessage:
           clearErrors ? null : generalErrorMessage ?? this.generalErrorMessage,
       panNumberError:
@@ -227,12 +202,13 @@ class EligibilityState extends Equatable {
       lenders: lenders ?? this.lenders,
       selectedLenderId:
           clearSelectedLender ? null : selectedLenderId ?? this.selectedLenderId,
-      portfolioData: portfolioData ?? this.portfolioData,
       isPortfolioRefreshing:
           isPortfolioRefreshing ?? this.isPortfolioRefreshing,
       editedLoanAmounts: editedLoanAmounts ?? this.editedLoanAmounts,
       pledgeableFunds: pledgeableFunds ?? this.pledgeableFunds,
       selectedFundIds: selectedFundIds ?? this.selectedFundIds,
+      previousSelectedFundIds:
+          previousSelectedFundIds ?? this.previousSelectedFundIds, // ✅ Added
       kycStepChecks: kycStepChecks ?? this.kycStepChecks,
       otp: otp ?? this.otp,
       isSubmitting: isSubmitting ?? this.isSubmitting,
@@ -245,6 +221,17 @@ class EligibilityState extends Equatable {
     );
   }
 
+  // 🔹 Getter for currently selected lender
+  Lender? get selectedLender {
+    if (selectedLenderId == null) return null;
+    try {
+      return lenders.firstWhere((l) => l.id == selectedLenderId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // 🔹 Equatable props
   @override
   List<Object?> get props => [
         majorStep,
@@ -254,16 +241,17 @@ class EligibilityState extends Equatable {
         generalErrorMessage,
         panNumberError,
         panFullNameError,
+        mfDetailsResponse,
         panDobError,
         currentOverlay,
         lenderSelectionView,
         lenders,
         selectedLenderId,
-        portfolioData,
         isPortfolioRefreshing,
         editedLoanAmounts,
         pledgeableFunds,
         selectedFundIds,
+        previousSelectedFundIds, // ✅ Added here too
         kycStepChecks,
         otp,
         isSubmitting,
