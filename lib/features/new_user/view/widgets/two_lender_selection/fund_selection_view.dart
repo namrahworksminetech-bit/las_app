@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:las_app/common_widgets/c_button.dart';
@@ -12,10 +11,6 @@ import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
 import 'package:las_app/features/new_user/view/widgets/three_kyc_verification/step_checker_view.dart';
 import 'package:las_app/features/new_user/view/widgets/two_lender_selection/fund_list_item.dart';
-import 'package:las_app/features/new_user/kyc_service.dart';
-import 'package:las_app/core/app_state_provider.dart';
-import 'package:las_app/core/utils/app_lifecycle_service.dart';
-import 'package:get_it/get_it.dart';
 
 class FundSelectionView extends StatelessWidget {
   const FundSelectionView({super.key});

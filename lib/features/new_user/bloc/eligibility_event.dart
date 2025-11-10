@@ -187,3 +187,10 @@ class UpdateKycStep extends EligibilityEvent {
   @override
   List<Object> get props => [stepIndex, isCompleted];
 }
+
+class UpdateKycStepsReset extends EligibilityEvent {
+  const UpdateKycStepsReset();
+
+  @override
+  List<Object> get props => [];
+}

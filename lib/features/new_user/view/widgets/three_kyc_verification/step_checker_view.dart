@@ -11,9 +11,11 @@ import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
 import 'package:las_app/features/new_user/view/succcess_pledge_view.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
-import '../../../../../core/services/websocket_service.dart';
 import '../../../../../core/app_state_provider.dart';
 import '../../../kyc_service.dart';
+import '../../../../../core/network/api_client.dart';
+import '../../../repository/pledge_status_repo.dart';
+import '../four_pledge/pledge_otp_view.dart';
 
 class KycVerificationScreen extends StatefulWidget {
   const KycVerificationScreen({super.key});
@@ -23,126 +25,190 @@ class KycVerificationScreen extends StatefulWidget {
 }
 
 class _KycVerificationScreenState extends State<KycVerificationScreen> {
-  StreamSubscription? _webSocketSubscription;
+  Timer? _statusTimer;
+  late final PledgeStatusRepository _pledgeRepo;
+  String? _lastStatus;
 
   @override
   void initState() {
     super.initState();
-    _initWebSocket();
+    _pledgeRepo = PledgeStatusRepository(GetIt.instance<ApiClient>());
+    _startStatusPolling();
   }
 
-  void _initWebSocket() async {
-    print('🔌 Initializing WebSocket connection...');
-    await WebSocketService.instance.connect();
+  void _startStatusPolling() {
+    _checkPledgeStatus();
+    _statusTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _checkPledgeStatus();
+    });
+  }
 
-    if (WebSocketService.instance.stream == null) {
-      print('❌ WebSocket stream is null!');
-      return;
-    }
+  Future<void> _checkPledgeStatus() async {
+    final appState = GetIt.instance<AppStateProvider>();
+    final reqId = appState.reqId;
+    final token = appState.token;
 
-    _webSocketSubscription = WebSocketService.instance.stream?.listen(
-      (data) {
-        print('📨 WebSocket message received: $data');
-        _handleWebSocketMessage(data);
+    if (reqId == null || token == null) return;
+
+    final result = await _pledgeRepo.checkPledgeStatus(
+      reqId: reqId,
+      authToken: token,
+    );
+
+    result.when(
+      success: (data) {
+        if (mounted) {
+          // Extract status from nested structure: data.data.status[0]
+          final statusArray = data['data']?['status'] as List?;
+          final status = statusArray?.isNotEmpty == true
+              ? statusArray!.first as String?
+              : null;
+
+          // Only update if status changed
+          if (status != null && status != _lastStatus) {
+            print('📊 Status changed: $_lastStatus → $status');
+            _lastStatus = status;
+            _updateStepsBasedOnStatus(status);
+          }
+        }
       },
-      onError: (error) {
-        print('❌ WebSocket stream error: $error');
-      },
-      onDone: () {
-        print('🔚 WebSocket stream closed');
+      failure: (error) {
+        print('❌ Error checking pledge status: $error');
       },
     );
-    print('✅ WebSocket subscription established');
-
-    // Test WebSocket after 3 seconds
-    // Timer(Duration(seconds: 3), _testWebSocketMessage);
   }
 
-  void _handleWebSocketMessage(Map<String, dynamic> data) {
-    print('🔍 Processing WebSocket message: $data');
+  void _updateStepsBasedOnStatus(String? status) {
+    if (status == null) return;
 
-    if (data['type'] == 'kyc_step_update') {
-      final stepIndex = data['step_index'] as int?;
-      final isCompleted = data['is_completed'] as bool?;
+    print('📊 Current status: $status');
 
-      print('📝 KYC Step Update - Index: $stepIndex, Completed: $isCompleted');
-
-      if (stepIndex != null && isCompleted != null && mounted) {
-        print('✅ Updating KYC step $stepIndex to $isCompleted');
-        context.read<EligibilityBloc>().add(
-          UpdateKycStep(stepIndex, isCompleted),
-        );
-      } else {
-        print('❌ Invalid step data or widget not mounted');
-      }
-    } else {
-      print('🔄 Non-KYC message type: ${data['type']}');
+    switch (status) {
+      case 'not_started':
+        context.read<EligibilityBloc>().add(const UpdateKycStepsReset());
+        break;
+      case 'verified':
+        context.read<EligibilityBloc>().add(const UpdateKycStep(0, true));
+        break;
+      case 'kyc_done':
+        context.read<EligibilityBloc>().add(const UpdateKycStep(0, true));
+        context.read<EligibilityBloc>().add(const UpdateKycStep(1, true));
+        break;
+      case ('mandate_done' || 'kfs_agreement_done'):
+        context.read<EligibilityBloc>().add(const UpdateKycStep(0, true));
+        context.read<EligibilityBloc>().add(const UpdateKycStep(1, true));
+        context.read<EligibilityBloc>().add(const UpdateKycStep(2, true));
+        break;
+      // case 'kfs_agreement_done':
+      //   context.read<EligibilityBloc>().add(const UpdateKycStep(0, true));
+      //   context.read<EligibilityBloc>().add(const UpdateKycStep(1, true));
+      //   context.read<EligibilityBloc>().add(const UpdateKycStep(2, true));
+      //   context.read<EligibilityBloc>().add(const UpdateKycStep(3, true));
+      //   _navigateToNextScreen();
+      //   break;
     }
   }
 
-  void _handleFirstStepClick(
+  void _navigateToNextScreen() {
+    _statusTimer?.cancel();
+    final bloc = context.read<EligibilityBloc>();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BlocProvider.value(
+          value: bloc,
+          child: const PledgeFundsOtpScreen(),
+        ),
+      ),
+    );
+  }
+
+  bool _isStepClickable(int index, List<bool> checks) {
+    // First step is always clickable if not completed
+    if (index == 0) return !checks[0];
+
+    // Other steps are clickable only if previous step is completed
+    return index > 0 && checks[index - 1] && !checks[index];
+  }
+
+  bool _isStepVisible(int index, List<bool> checks) {
+    // First step is always visible
+    if (index == 0) return true;
+
+    // Other steps are visible only if previous step is completed
+    return index > 0 && checks[index - 1];
+  }
+
+  void _handleStepClick(
     BuildContext context,
     EligibilityState state,
+    int stepIndex,
   ) async {
-    print('💆 First step clicked - Starting KYC process');
+    print('💆 Step $stepIndex clicked');
 
-    final reqId = GetIt.instance<AppStateProvider>().reqId;
-    if (reqId == null) {
-      print('❌ Missing reqId for KYC process');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Missing request ID. Please restart the process.'),
-        ),
-      );
+    // For 4th step (index 3), directly navigate to next screen
+    if (stepIndex == 3) {
+      print('🚀 4th step clicked - Navigating to next screen');
+      _navigateToNextScreen();
       return;
     }
 
-    final selectedLender = state.lenders.firstWhere(
-      (l) => l.id == state.selectedLenderId,
-      orElse: () => state.lenders.first,
-    );
+    // For other steps, open KYC URL
+    final appState = GetIt.instance<AppStateProvider>();
+    final reqId = appState.reqId;
+    final lenderCode = appState.lenderCode;
 
-    print(
-      '🏦 Selected lender: ${selectedLender.name} (${selectedLender.lender_code})',
-    );
+    // if (reqId == null || lenderCode == null) {
+    //   print('❌ Missing reqId or lenderCode for KYC process');
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     const SnackBar(
+    //       content: Text(
+    //         'Missing request ID or lender code. Please restart the process.',
+    //       ),
+    //     ),
+    //   );
+    //   return;
+    // }
+
+    // final reqId = GetIt.instance<AppStateProvider>().reqId;
+    // if (reqId == null) {
+    //   print('❌ Missing reqId for KYC process');
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     const SnackBar(
+    //       content: Text('Missing request ID. Please restart the process.'),
+    //     ),
+    //   );
+    //   return;
+    // }
+    //
+    // final selectedLender = state.lenders.firstWhere(
+    //       (l) => l.id == state.selectedLenderId,
+    //   orElse: () => state.lenders.first,
+    // );
+    //
+    // print(
+    //   '🏦 Selected lender: ${selectedLender.name} (${selectedLender.lender_code})',
+    // );
+
+    print('🏦 Lender code: $lenderCode');
     print('🎯 ReqId: $reqId');
+    print('📋 Step Index: $stepIndex');
 
     KycService.startKyc(
       context,
-      lenderCode: selectedLender.lender_code,
-      reqId: reqId,
+      lenderCode: 'BFL',
+      reqId: reqId.toString(),
       onSuccess: () {
         print(
-          '✅ KYC URL opened successfully - WebSocket will handle step updates',
+          '✅ KYC URL opened successfully - API polling will handle step updates',
         );
-
-        // Check WebSocket connection status
-        if (WebSocketService.instance.isConnected) {
-          print('✅ WebSocket is connected and ready to receive messages');
-          print('🚀 Starting KYC monitoring - will check status every 5 seconds');
-          WebSocketService.instance.startKycMonitoring();
-        } else {
-          print('❌ WebSocket is not connected!');
-        }
       },
     );
   }
 
-  // void _testWebSocketMessage() {
-  //   print('🧪 Testing WebSocket with mock message...');
-  //   final testMessage = {
-  //     'type': 'kyc_step_update',
-  //     'step_index': 0,
-  //     'is_completed': true
-  //   };
-  //   _handleWebSocketMessage(testMessage);
-  // }
-
   @override
   void dispose() {
-    _webSocketSubscription?.cancel();
-    WebSocketService.instance.stopKycMonitoring();
-    WebSocketService.instance.disconnect();
+    _statusTimer?.cancel();
     super.dispose();
   }
 
@@ -233,6 +299,61 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
               Gaps.hXl,
 
+              // // ===== Test Buttons (Remove in production) =====
+              // BlocBuilder<EligibilityBloc, EligibilityState>(
+              //   builder: (context, state) {
+              //     final checks = state.kycStepChecks;
+              //     final nextStep = checks.indexWhere((step) => !step);
+              //
+              //     return Row(
+              //       children: [
+              //         Expanded(
+              //           child: ElevatedButton(
+              //             onPressed: nextStep != -1
+              //                 ? () {
+              //                     context.read<EligibilityBloc>().add(
+              //                       UpdateKycStep(nextStep, true),
+              //                     );
+              //                   }
+              //                 : null,
+              //             style: ElevatedButton.styleFrom(
+              //               backgroundColor: AppColors.bPrimaryColor,
+              //               padding: const EdgeInsets.symmetric(vertical: 12),
+              //             ),
+              //             child: Text(
+              //               nextStep != -1
+              //                   ? 'Complete Step ${nextStep + 1}'
+              //                   : 'All Done',
+              //               style: const TextStyle(color: Colors.black),
+              //             ),
+              //           ),
+              //         ),
+              //         Gaps.wSm,
+              //         ElevatedButton(
+              //           onPressed: () {
+              //             // Reset to initial state - only update what's needed
+              //             context.read<EligibilityBloc>().add(
+              //               const UpdateKycStepsReset(),
+              //             );
+              //           },
+              //           style: ElevatedButton.styleFrom(
+              //             backgroundColor: AppColors.bSecondaryColor,
+              //             padding: const EdgeInsets.symmetric(
+              //               vertical: 12,
+              //               horizontal: 16,
+              //             ),
+              //           ),
+              //           child: const Text(
+              //             'Reset',
+              //             style: TextStyle(color: Colors.white),
+              //           ),
+              //         ),
+              //       ],
+              //     );
+              //   },
+              // ),
+              // Gaps.hMd,
+
               // ===== Step List =====
               Expanded(
                 child: BlocBuilder<EligibilityBloc, EligibilityState>(
@@ -245,10 +366,12 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                       separatorBuilder: (_, __) => Gaps.hSm,
                       itemBuilder: (context, index) {
                         final isChecked = checks[index];
+                        final isClickable = _isStepClickable(index, checks);
+                        final isVisible = _isStepVisible(index, checks);
 
                         return GestureDetector(
-                          onTap: index == 0
-                              ? () => _handleFirstStepClick(context, state)
+                          onTap: isClickable
+                              ? () => _handleStepClick(context, state, index)
                               : null,
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
@@ -257,12 +380,16 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                               vertical: 14,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF1C1C1C),
+                              color: isVisible
+                                  ? const Color(0xFF1C1C1C)
+                                  : const Color(0xFF0F0F0F),
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
-                                color: AppColors.bSecondaryColor.withOpacity(
-                                  0.3,
-                                ),
+                                color: isVisible
+                                    ? AppColors.bSecondaryColor.withOpacity(0.3)
+                                    : AppColors.bSecondaryColor.withOpacity(
+                                        0.1,
+                                      ),
                               ),
                             ),
                             child: Row(
@@ -282,7 +409,10 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                                             : Colors.transparent,
                                         borderRadius: BorderRadius.circular(2),
                                         border: Border.all(
-                                          color: AppColors.bPrimaryColor,
+                                          color: isVisible
+                                              ? AppColors.bPrimaryColor
+                                              : AppColors.bSecondaryColor
+                                                    .withOpacity(0.3),
                                           width: 1.8,
                                         ),
                                       ),
@@ -299,13 +429,21 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                                       steps[index],
                                       style: AppTypography.bodyWhite.copyWith(
                                         fontWeight: FontWeight.w500,
+                                        color: isVisible
+                                            ? AppColors.white
+                                            : AppColors.bSecondaryColor
+                                                  .withOpacity(0.5),
                                       ),
                                     ),
                                   ],
                                 ),
-                                const Icon(
+                                Icon(
                                   Icons.arrow_forward_ios,
-                                  color: AppColors.bSecondaryColor,
+                                  color: isVisible
+                                      ? AppColors.bSecondaryColor
+                                      : AppColors.bSecondaryColor.withOpacity(
+                                          0.3,
+                                        ),
                                   size: 14,
                                 ),
                               ],
@@ -371,6 +509,13 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                   ],
                 ),
               ),
+              // CButton(
+              //   text: 'proceedToFinalStep'.tr,
+              //   onPressed: () {
+              //     _navigateToNextScreen();
+              //   },
+              //   type: ButtonType.secondaryGrey,
+              // ),
             ],
           ),
         ),

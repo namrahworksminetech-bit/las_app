@@ -58,6 +58,7 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     on<ErrorMessageCleared>(_onErrorMessageCleared);
     on<StartKycEvent>(_onStartKyc);
     on<UpdateKycStep>(_onUpdateKycStep);
+    on<UpdateKycStepsReset>(_onUpdateKycStepsReset);
   }
 
   //kyc
@@ -817,6 +818,11 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     
     print('📝 After update: $updated');
     emit(state.copyWith(kycStepChecks: updated));
+  }
+
+  void _onUpdateKycStepsReset(UpdateKycStepsReset event, Emitter<EligibilityState> emit) {
+    print('🔄 Resetting all KYC steps to initial state');
+    emit(state.copyWith(kycStepChecks: [false, false, false, false]));
   }
 
   Future<void> _launchUrl(String url) async {
