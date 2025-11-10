@@ -1,9 +1,7 @@
 part of 'eligibility_bloc.dart';
 
 enum InvestmentType { insurancePolicy, mutualFund, shares, none }
-
 enum PanVerificationStatus { initial, verifying, verified, failed }
-
 enum PanOtpStatus { initial, sending, sent, verified, failed }
 
 enum EligibilityOverlayType { none, fetchingPortfolio, eligibilityResult }
@@ -15,24 +13,7 @@ enum LenderSelectionView {
   fundSelection,
 }
 
-class PledgeableFund extends Equatable {
-  final String id;
-  final String name;
-  final double value;
-  final int units;
-  final double perUnitValue;
 
-  const PledgeableFund({
-    required this.id,
-    required this.name,
-    required this.value,
-    required this.units,
-    required this.perUnitValue,
-  });
-
-  @override
-  List<Object?> get props => [id];
-}
 
 class Lender extends Equatable {
   final String id;
@@ -42,7 +23,6 @@ class Lender extends Equatable {
   final double loanAmount;
   final int pledgeableMFs;
   final String tag;
-  final String lender_code;
 
   const Lender({
     required this.id,
@@ -52,7 +32,6 @@ class Lender extends Equatable {
     required this.loanAmount,
     required this.pledgeableMFs,
     required this.tag,
-    required this.lender_code,
   });
 
   @override
@@ -66,7 +45,6 @@ class Lender extends Equatable {
     double? loanAmount,
     int? pledgeableMFs,
     String? tag,
-    String? lender_code,
   }) {
     return Lender(
       id: id ?? this.id,
@@ -76,25 +54,11 @@ class Lender extends Equatable {
       loanAmount: loanAmount ?? this.loanAmount,
       pledgeableMFs: pledgeableMFs ?? this.pledgeableMFs,
       tag: tag ?? this.tag,
-      lender_code: lender_code ?? this.lender_code,
     );
   }
 }
 
-class PortfolioData extends Equatable {
-  final double totalValue;
-  final double eligibleCreditLimit;
-  final double pledgeableFunds;
 
-  const PortfolioData({
-    this.totalValue = 0.0,
-    this.eligibleCreditLimit = 0.0,
-    this.pledgeableFunds = 0.0,
-  });
-
-  @override
-  List<Object?> get props => [totalValue, eligibleCreditLimit, pledgeableFunds];
-}
 
 class EligibilityFormData extends Equatable {
   const EligibilityFormData({
@@ -126,7 +90,6 @@ class EligibilityFormData extends Equatable {
   @override
   List<Object?> get props => [investmentType, panNumber, panFullName, panDob];
 }
-
 class EligibilityState extends Equatable {
   const EligibilityState({
     this.majorStep = 1,
@@ -135,6 +98,7 @@ class EligibilityState extends Equatable {
     this.generalErrorMessage,
     this.panNumberError,
     this.panFullNameError,
+    this.mfDetailsResponse,
     this.panDobError,
     this.panStatus = PanVerificationStatus.initial,
     this.otpStatus = PanOtpStatus.initial,
@@ -144,24 +108,23 @@ class EligibilityState extends Equatable {
     this.lenderSelectionView = LenderSelectionView.lenderList,
     this.lenders = const [],
     this.selectedLenderId,
-    this.portfolioData = const PortfolioData(),
     this.isPortfolioRefreshing = false,
     this.editedLoanAmounts = const {},
     this.pledgeableFunds = const [],
     this.selectedFundIds = const {},
-    this.kycStepChecks = const [false, false, false, false],
+    this.previousSelectedFundIds = const {}, // ✅ Correctly placed
+    this.kycStepChecks = const [true, true, true, true],
     this.otp = '',
     this.isSubmitting = false,
     this.otpError = false,
     this.otpResent = false,
-    this.kycUrl,
-    this.kycLoading = false,
-    this.kycError,
   });
 
+  // 🔹 Fields
   final int majorStep;
   final int pageIndex;
   final EligibilityFormData formData;
+  final MfDetailsResponse? mfDetailsResponse;
 
   final PanVerificationStatus panStatus;
   final PanOtpStatus otpStatus;
@@ -178,20 +141,18 @@ class EligibilityState extends Equatable {
   final LenderSelectionView lenderSelectionView;
   final List<Lender> lenders;
   final String? selectedLenderId;
-  final PortfolioData portfolioData;
   final bool isPortfolioRefreshing;
   final Map<String, double> editedLoanAmounts;
   final List<PledgeableFund> pledgeableFunds;
   final Set<String> selectedFundIds;
+  final Set<String> previousSelectedFundIds; // ✅ Added field
   final List<bool> kycStepChecks;
   final String otp;
   final bool isSubmitting;
   final bool otpError;
   final bool otpResent;
-  final String? kycUrl;
-  final bool kycLoading;
-  final String? kycError;
 
+  // 🔹 CopyWith
   EligibilityState copyWith({
     int? majorStep,
     int? pageIndex,
@@ -207,11 +168,12 @@ class EligibilityState extends Equatable {
     List<Lender>? lenders,
     String? selectedLenderId,
     bool clearSelectedLender = false,
-    PortfolioData? portfolioData,
+    MfDetailsResponse? mfDetailsResponse,
     bool? isPortfolioRefreshing,
     Map<String, double>? editedLoanAmounts,
     List<PledgeableFund>? pledgeableFunds,
     Set<String>? selectedFundIds,
+    Set<String>? previousSelectedFundIds, // ✅ Added param
     List<bool>? kycStepChecks,
     String? otp,
     bool? isSubmitting,
@@ -221,37 +183,32 @@ class EligibilityState extends Equatable {
     PanOtpStatus? otpStatus,
     String? snackbarMessage,
     bool clearSnackbar = false,
-    String? kycUrl,
-    bool? kycLoading,
-    String? kycError,
   }) {
     return EligibilityState(
       majorStep: majorStep ?? this.majorStep,
       pageIndex: pageIndex ?? this.pageIndex,
       formData: formData ?? this.formData,
       isLoading: isLoading ?? this.isLoading,
-      generalErrorMessage: clearErrors
-          ? null
-          : generalErrorMessage ?? this.generalErrorMessage,
-      panNumberError: clearErrors
-          ? null
-          : panNumberError ?? this.panNumberError,
-      panFullNameError: clearErrors
-          ? null
-          : panFullNameError ?? this.panFullNameError,
+      mfDetailsResponse: mfDetailsResponse ?? this.mfDetailsResponse,
+      generalErrorMessage:
+          clearErrors ? null : generalErrorMessage ?? this.generalErrorMessage,
+      panNumberError:
+          clearErrors ? null : panNumberError ?? this.panNumberError,
+      panFullNameError:
+          clearErrors ? null : panFullNameError ?? this.panFullNameError,
       panDobError: clearErrors ? null : panDobError ?? this.panDobError,
       currentOverlay: currentOverlay ?? this.currentOverlay,
       lenderSelectionView: lenderSelectionView ?? this.lenderSelectionView,
       lenders: lenders ?? this.lenders,
-      selectedLenderId: clearSelectedLender
-          ? null
-          : selectedLenderId ?? this.selectedLenderId,
-      portfolioData: portfolioData ?? this.portfolioData,
+      selectedLenderId:
+          clearSelectedLender ? null : selectedLenderId ?? this.selectedLenderId,
       isPortfolioRefreshing:
           isPortfolioRefreshing ?? this.isPortfolioRefreshing,
       editedLoanAmounts: editedLoanAmounts ?? this.editedLoanAmounts,
       pledgeableFunds: pledgeableFunds ?? this.pledgeableFunds,
       selectedFundIds: selectedFundIds ?? this.selectedFundIds,
+      previousSelectedFundIds:
+          previousSelectedFundIds ?? this.previousSelectedFundIds, // ✅ Added
       kycStepChecks: kycStepChecks ?? this.kycStepChecks,
       otp: otp ?? this.otp,
       isSubmitting: isSubmitting ?? this.isSubmitting,
@@ -259,44 +216,49 @@ class EligibilityState extends Equatable {
       otpResent: otpResent ?? this.otpResent,
       panStatus: panStatus ?? this.panStatus,
       otpStatus: otpStatus ?? this.otpStatus,
-      snackbarMessage: clearSnackbar
-          ? null
-          : snackbarMessage ?? this.snackbarMessage,
-      kycUrl: kycUrl ?? this.kycUrl,
-      kycLoading: kycLoading ?? this.kycLoading,
-      kycError: kycError ?? this.kycError,
+      snackbarMessage:
+          clearSnackbar ? null : snackbarMessage ?? this.snackbarMessage,
     );
   }
 
+  // 🔹 Getter for currently selected lender
+  Lender? get selectedLender {
+    if (selectedLenderId == null) return null;
+    try {
+      return lenders.firstWhere((l) => l.id == selectedLenderId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // 🔹 Equatable props
   @override
   List<Object?> get props => [
-    majorStep,
-    pageIndex,
-    formData,
-    isLoading,
-    generalErrorMessage,
-    panNumberError,
-    panFullNameError,
-    panDobError,
-    currentOverlay,
-    lenderSelectionView,
-    lenders,
-    selectedLenderId,
-    portfolioData,
-    isPortfolioRefreshing,
-    editedLoanAmounts,
-    pledgeableFunds,
-    selectedFundIds,
-    kycStepChecks,
-    otp,
-    isSubmitting,
-    otpError,
-    otpResent,
-    panStatus,
-    otpStatus,
-    snackbarMessage,
-    kycUrl,
-    kycLoading,
-    kycError,
-  ];
+        majorStep,
+        pageIndex,
+        formData,
+        isLoading,
+        generalErrorMessage,
+        panNumberError,
+        panFullNameError,
+        mfDetailsResponse,
+        panDobError,
+        currentOverlay,
+        lenderSelectionView,
+        lenders,
+        selectedLenderId,
+        isPortfolioRefreshing,
+        editedLoanAmounts,
+        pledgeableFunds,
+        selectedFundIds,
+        previousSelectedFundIds, // ✅ Added here too
+        kycStepChecks,
+        otp,
+        isSubmitting,
+        otpError,
+        otpResent,
+        panStatus,
+        otpStatus,
+        snackbarMessage,
+      ];
 }

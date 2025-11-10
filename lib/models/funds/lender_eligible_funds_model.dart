@@ -3,7 +3,7 @@ class EligibleFund {
   final String fundCode;
   final String unitsPledge;
   final String folioNo;
-
+ 
   EligibleFund({
     required this.fundName,
     required this.fundCode,
@@ -19,4 +19,12 @@ class EligibleFund {
       folioNo: json['folio_no'] ?? '',
     );
   }
+    Map<String, dynamic> toJson() => {
+        'fund_name': fundName,
+        'fund_code': fundCode,
+        'units_pledge': unitsPledge,
+        'folio_no': folioNo,
+      };
 }
+
+  

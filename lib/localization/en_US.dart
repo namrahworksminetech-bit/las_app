@@ -61,6 +61,8 @@ final Map<String, String> enUS = {
   'checking': 'Checking...',
   'checkLoanEligibility': 'Check Loan Eligibility',
 
+
+
   'totalUnits': 'Total Unit',
   'totalFundValue': 'Total Fund Value (₹@perUnit/Unit)',
 

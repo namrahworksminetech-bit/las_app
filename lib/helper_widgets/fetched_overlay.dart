@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:las_app/common_widgets/c_button.dart';
 import 'package:las_app/common_widgets/c_text.dart';
 import 'package:las_app/core/theme/app_colors.dart';
@@ -14,6 +15,22 @@ class EligibilityResultOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ Currency formatter
+    final formatCurrency = NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '₹ ',
+      decimalDigits: 0,
+    );
+
+    // ✅ Access the BLoC state
+    final mfDetailsResponse =
+        context.watch<EligibilityBloc>().state.mfDetailsResponse;
+
+    // ✅ Calculate total pledgeable funds dynamically
+    final totalPledgeable = mfDetailsResponse?.pledgeableFunds
+            .fold<double>(0, (sum, fund) => sum + (fund.availableAmount ?? 0)) ??
+        0.0;
+
     return Container(
       padding: const EdgeInsets.all(Gaps.xl),
       decoration: const BoxDecoration(
@@ -30,20 +47,21 @@ class EligibilityResultOverlay extends StatelessWidget {
           ),
           Gaps.hXxl,
 
-        SizedBox(
-  width: 150, // or 120 for even bigger
-  height: 150, // or 120 for even bigger
-  child: ClipOval(
-    child: Image.asset(
-      'assets/images/fetchedFunds.png', // Update with your asset path
-      fit: BoxFit.cover, // Ensures the image fills the container
-    ),
-  ),
-),
-
+          // ✅ Center Image
+          SizedBox(
+            width: 150,
+            height: 150,
+            child: ClipOval(
+              child: Image.asset(
+                'assets/images/fetchedFunds.png',
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
 
           Gaps.hXl,
 
+          // ✅ Dynamic total pledgeable value
           RichText(
             text: TextSpan(
               style: AppTypography.h0.copyWith(
@@ -51,7 +69,7 @@ class EligibilityResultOverlay extends StatelessWidget {
               ),
               children: [
                 TextSpan(text: '₹ '.tr),
-                TextSpan(text: '4,85,800'.tr),
+                TextSpan(text: formatCurrency.format(totalPledgeable)),
               ],
             ),
           ),
@@ -65,32 +83,34 @@ class EligibilityResultOverlay extends StatelessWidget {
 
           Gaps.hXxl,
 
+          // ✅ Button to proceed
           CButton(
-  text: 'seeLoanOffers'.tr,
-  onPressed: () {
-    final eligibilityBloc = context.read<EligibilityBloc>();
+            text: 'seeLoanOffers'.tr,
+            onPressed: () {
+              final eligibilityBloc = context.read<EligibilityBloc>();
 
-    // 🔹 Correct: Fetch lender list + portfolio data here
-    eligibilityBloc.add(FetchStep2Data());
+              // 🔹 Trigger data fetch for lender list + portfolio
+              eligibilityBloc.add(FetchStep2Data());
 
-    // 🔹 Navigate to lender selection screen
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => BlocProvider.value(
-          value: eligibilityBloc,
-          child: const LenderSelectionScreen(),
-        ),
-      ),
-    );
-  },
-  type: ButtonType.secondaryBlack,
-  suffixIcon: const Icon(
-    Icons.arrow_forward,
-    color: AppColors.black,
-    size: 18,
-  ),
-),
+              // 🔹 Navigate to LenderSelectionScreen
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => BlocProvider.value(
+                    value: eligibilityBloc,
+                    child: const LenderSelectionScreen(),
+                  ),
+                ),
+              );
+            },
+            type: ButtonType.secondaryBlack,
+            suffixIcon: const Icon(
+              Icons.arrow_forward,
+              color: AppColors.black,
+              size: 18,
+            ),
+          ),
+
           Gaps.hMd,
         ],
       ),
