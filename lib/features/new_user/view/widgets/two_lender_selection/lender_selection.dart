@@ -176,17 +176,22 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
                             ),
                             if (showFullHeader) ...[
                               Gaps.hXl,
-                              CText('eligibleCreditLimit'.tr,
-                                  style: AppTypography.bodyWhite),
-                              Gaps.hSm,
-                              CText(
-                                formatCurrency.format(state
-                                    .mfDetailsResponse
-                                    ?.maxEligibleLimit),
-                                style: AppTypography.h1.copyWith(
-                                    color:
-                                        AppColors.bPrimaryColor),
-                              ),
+                              CText('eligibleCreditLimit'.tr, style: AppTypography.bodyWhite),
+  Gaps.hSm,
+
+  // ✅ Use pledgeable funds total instead of maxEligibleLimit
+  Builder(
+    builder: (_) {
+      final totalPledgeable = state.mfDetailsResponse?.pledgeableFunds
+              .fold<double>(0, (sum, fund) => sum + (fund.availableAmount ?? 0)) ??
+          0.0;
+
+      return CText(
+        formatCurrency.format(totalPledgeable),
+        style: AppTypography.h1.copyWith(color: AppColors.bPrimaryColor),
+      );
+    },
+  ),
                               Gaps.hXxs,
                               CText(
                                 'totalPortfolioValue'.trParams({

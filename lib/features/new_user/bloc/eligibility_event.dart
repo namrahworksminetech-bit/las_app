@@ -62,12 +62,19 @@ class BreakdownCategoryTapped extends EligibilityEvent {
   List<Object?> get props => [categoryId];
 }
 
+// eligibility_event.dart
 class EditLoanAmountPressed extends EligibilityEvent {
+  final String reqId;
+  final double loanAmount;
   final String lenderId;
-  const EditLoanAmountPressed(this.lenderId);
-  @override
-  List<Object?> get props => [lenderId];
+
+  const EditLoanAmountPressed({
+    required this.reqId,
+    required this.loanAmount,
+    required this.lenderId,
+  });
 }
+
 
 class SaveEditedLoanAmount extends EligibilityEvent {
   final String lenderId;

@@ -730,12 +730,92 @@ void _onBreakdownCategoryTapped(
   }
 }
 
-  void _onEditLoanAmountPressed(
-    EditLoanAmountPressed event,
-    Emitter<EligibilityState> emit,
-  ) {
-    print('Edit loan amount triggered for lender ${event.lenderId}');
+ Future<void> _onEditLoanAmountPressed(
+  EditLoanAmountPressed event,
+  Emitter<EligibilityState> emit,
+) async {
+  print('📤 Edit loan amount triggered for lender ${event.lenderId}');
+  emit(state.copyWith(isLoading: true));
+
+  try {
+    final reqId = getIt<AppStateProvider>().reqId ?? '';
+    final lenderId = event.lenderId;
+
+    if (reqId.isEmpty) {
+      emit(state.copyWith(
+        isLoading: false,
+        snackbarMessage: 'Missing reqId. Please login again.',
+      ));
+      return;
+    }
+
+    // 🧮 Build ISIN lists similar to ConfirmFundSelection
+    final previousFunds = state.previousSelectedFundIds;
+    final currentFunds = state.selectedFundIds;
+
+    final isinAdd = currentFunds.difference(previousFunds).toList();
+    final isinRemove = previousFunds.difference(currentFunds).toList();
+
+    final isinModify = state.pledgeableFunds
+        .where((f) => currentFunds.contains(f.fundCode))
+        .map((f) =>
+            "${f.fundCode}:${f.folioNo ?? ''}:${(f.availableAmount ?? 0.0).toStringAsFixed(2)}")
+        .toList();
+
+    print('📋 reqId: $reqId');
+    print('📤 ISIN_ADD: $isinAdd');
+    print('📤 ISIN_REMOVE: $isinRemove');
+    print('📤 ISIN_MODIFY: $isinModify');
+    print('💰 New Loan Amount: ${event.loanAmount}');
+
+    final result = await lenderRepository.editLoanAmount(
+      reqId: reqId,
+      loanAmount: event.loanAmount,
+      lenderId: lenderId,
+      isinAdd: isinAdd,
+      isinRemove: isinRemove,
+      isinModify: isinModify,
+    );
+
+    result.when(
+      success: (response) {
+        print('✅ Loan amount updated successfully');
+
+        emit(state.copyWith(
+          isLoading: false,
+          mfDetailsResponse: response,
+          pledgeableFunds: response.pledgeableFunds,
+          lenders: response.lenders.map((l) {
+            return Lender(
+              id: l.id.toString(),
+              name: l.name ?? '-',
+              logoAsset: l.logo ?? '',
+              interestRate: l.loanInterest ?? 0.0,
+              loanAmount: l.loanAmount ?? 0.0,
+              pledgeableMFs: l.eligibleFundsCount ?? 0,
+              tag: '',
+            );
+          }).toList(),
+          snackbarMessage: 'Loan amount updated successfully!',
+        ));
+      },
+      failure: (error) {
+        print('❌ Failed to update loan amount: $error');
+        emit(state.copyWith(
+          isLoading: false,
+          snackbarMessage: 'Failed to update loan amount.',
+        ));
+      },
+    );
+  } catch (e, st) {
+    print('🚨 Exception while editing loan amount: $e\n$st');
+    emit(state.copyWith(
+      isLoading: false,
+      snackbarMessage: 'Something went wrong while updating the amount.',
+    ));
   }
+}
+
 
 Future<void> _onSaveEditedLoanAmount(
   SaveEditedLoanAmount event,
