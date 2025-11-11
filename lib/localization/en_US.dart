@@ -2,30 +2,31 @@ final Map<String, String> enUS = {
   'title': 'SLiQ Demo',
   'loading': 'Loading...',
   'retry': 'Retry',
-  //login screen 
+  //login screen
   'sliQ': 'SLiQ',
 
   'email': 'Email',
-  'login':'Login',
+  'login': 'Login',
   'password': 'Password',
   'error': 'Something went wrong',
-  'EnterDetailsBelow' : 'Enter Details Below',
+  'EnterDetailsBelow': 'Enter Details Below',
   'EmailAddress': 'Email Address',
-  'MobileNumber':'Mobile Number',
+  'MobileNumber': 'Mobile Number',
   'LoginSuccessful!': 'Login Successful!',
-  'EnterOTP':'Enter 6-digit OTP',
-  'SendOTP':'Send OTP',
-  'Continue':'Continue',
-  'ResendOTP':'Resend OTP',
- 'NoCode?' :"Didn't get the code? " ,
+  'EnterOTP': 'Enter 6-digit OTP',
+  'SendOTP': 'Send OTP',
+  'Continue': 'Continue',
+  'ResendOTP': 'Resend OTP',
+  'NoCode?': "Didn't get the code? ",
 
- 'Skip':'Skip',
- 'GetStarted':'Get Started',
- 'Next':'Next',
+  'Skip': 'Skip',
+  'GetStarted': 'Get Started',
+  'Next': 'Next',
 
-//welcome screens
- 'welcome1_subtitle': 'Unlock Funds Instantly',
-  'welcome1_title': 'Get Easy, Fast, & secured loans without selling your investments.',
+  //welcome screens
+  'welcome1_subtitle': 'Unlock Funds Instantly',
+  'welcome1_title':
+      'Get Easy, Fast, & secured loans without selling your investments.',
   'welcome2_subtitle': 'Smart & Transparent Borrowing',
   'welcome2_title': 'Competitive Rates. Flexible. Transparent.',
   'welcome3_subtitle': 'Keep Your Assets, Unlock Value',
@@ -33,15 +34,16 @@ final Map<String, String> enUS = {
 
   //successs pledge
   'congratulations': 'Congratulations!',
-  'loanSuccessMessage': 'Your loan application has been submitted successfully and is being processed.',
+  'loanSuccessMessage':
+      'Your loan application has been submitted successfully and is being processed.',
   'goToDashboard': 'Go to Dashboard',
 
-//form 
-  'CheckEligibility':'Check Eligibility',
-  'NextLenderSelection':'Next: Lender Selection',
-  'Submitting':'Submitting...',
-  'Submit':'Submit',
-  'Confirm&Continue':'Confirm & Continue',
+  //form
+  'CheckEligibility': 'Check Eligibility',
+  'NextLenderSelection': 'Next: Lender Selection',
+  'Submitting': 'Submitting...',
+  'Submit': 'Submit',
+  'Confirm&Continue': 'Confirm & Continue',
 
   'selectInvestmentTitlePart1': 'Select The Investment You Want to ',
   'selectInvestmentTitlePart2': 'Unlock Funds From',
@@ -61,12 +63,10 @@ final Map<String, String> enUS = {
   'checking': 'Checking...',
   'checkLoanEligibility': 'Check Loan Eligibility',
 
-
-
   'totalUnits': 'Total Unit',
   'totalFundValue': 'Total Fund Value (₹@perUnit/Unit)',
 
-  'Nolendersavailable':'No lenders available.',
+  'Nolendersavailable': 'No lenders available.',
 
   'yourSelection': 'Your Selection',
   'interestRate': 'Interest Rate',
@@ -85,19 +85,19 @@ final Map<String, String> enUS = {
   'viewLenders': 'View Lenders',
   'viewYourMfDetails': 'View Your MF Details',
   'eligibleCreditLimit': 'Your Eligible Credit Limit',
-'totalPortfolioValue': 'Your Total Portfolio Value is @value',
+  'totalPortfolioValue': 'Your Total Portfolio Value is @value',
 
   'selectLenderInfo': 'Select a lender to proceed with your loan application.',
   'portfolioBreakdown': 'Portfolio Breakdown',
   'portfolioBreakdownPledgeableFunds': 'Portfolio Breakdown > Pledgeable Funds',
-   'refreshPortfolio': 'Refresh Portfolio',
+  'refreshPortfolio': 'Refresh Portfolio',
 
   "pledgeableFunds": "Pledgeable Funds",
   "nonPledgeableFunds": "Non Pledgeable Funds",
   "dematFunds": "Demat Funds",
   "unapprovedFunds": "Unapproved Funds",
 
-   "fillBasicInfo": "Fill your basic info",
+  "fillBasicInfo": "Fill your basic info",
   "aadharPanVerification": "Aadhar and PAN verification",
   "linkAccountMandate": "Link account & set mandate",
   "loanAgreementSigning": "Loan agreement signing",
@@ -108,9 +108,10 @@ final Map<String, String> enUS = {
   "safeSecure": "Safe & Secure • Your data is encrypted",
   "proceedToFinalStep": "Proceed to Final Step",
 
-    "pledgeFunds": "Pledge Funds",
+  "pledgeFunds": "Pledge Funds",
   "nextApplicationSubmission": "Next: Application Submission",
-  "otpSentMessage": "OTP sent from MFCentral to your registered mobile number ending with XX45",
+  "otpSentMessage":
+      "OTP sent from MFCentral to your registered mobile number ending with XX45",
 
   "invalidOtp": "Invalid OTP. Try again.",
   "submitComplete": "Submit & Complete Application",
@@ -122,24 +123,6 @@ final Map<String, String> enUS = {
   'almostThere': 'Almost there!',
   'fetchingMutualFunds': 'Fetching your Mutual Funds...',
   'cibilNote': "Relax, this won't affect your CIBIL score.",
+  'enterMobileNumber': "Enter mobile number",
+  'enterEmail': "Enter your Email",
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

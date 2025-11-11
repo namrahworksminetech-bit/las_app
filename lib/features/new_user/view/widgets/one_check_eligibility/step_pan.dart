@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 import 'package:las_app/common_widgets/c_button.dart';
@@ -23,6 +24,11 @@ class _Step1PanPageState extends State<Step1PanPage> {
   late TextEditingController _dobController;
   late TextEditingController _otpController;
 
+  final FocusNode _panFocus = FocusNode();
+  final FocusNode _nameFocus = FocusNode();
+  final FocusNode _dobFocus = FocusNode();
+  final FocusNode _otpFocus = FocusNode();
+
   @override
   void initState() {
     super.initState();
@@ -39,6 +45,11 @@ class _Step1PanPageState extends State<Step1PanPage> {
     _nameController.dispose();
     _dobController.dispose();
     _otpController.dispose();
+    _panFocus.dispose();
+    _nameFocus.dispose();
+    _dobFocus.dispose();
+    _otpFocus.dispose();
+
     super.dispose();
   }
 
@@ -79,33 +90,30 @@ class _Step1PanPageState extends State<Step1PanPage> {
 
     // 🔹 Step 2: Verify OTP
     if (state.otpStatus == PanOtpStatus.sent) {
-      bloc.add(
-        VerifyPanOtpPressed(
-          otp: _otpController.text.trim(),
-        ),
-      );
+      bloc.add(VerifyPanOtpPressed(otp: _otpController.text.trim()));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<EligibilityBloc, EligibilityState>(
-  listenWhen: (prev, curr) =>
-      curr.snackbarMessage != null && curr.snackbarMessage != prev.snackbarMessage,
-  listener: (context, state) {
-    // ✅ Show custom snackbar
-    CSnackBar.show(context, state.snackbarMessage!);
+      listenWhen: (prev, curr) =>
+          curr.snackbarMessage != null &&
+          curr.snackbarMessage != prev.snackbarMessage,
+      listener: (context, state) {
+        // ✅ Show custom snackbar
+        CSnackBar.show(context, state.snackbarMessage!);
 
-    // ✅ Move to next step automatically after OTP verified
-    if (state.otpStatus == PanOtpStatus.verified) {
-      context.read<EligibilityBloc>().add(NextStepPressed());
-    }
-  },
-
+        // ✅ Move to next step automatically after OTP verified
+        if (state.otpStatus == PanOtpStatus.verified) {
+          context.read<EligibilityBloc>().add(NextStepPressed());
+        }
+      },
 
       child: BlocBuilder<EligibilityBloc, EligibilityState>(
         builder: (context, state) {
-          final showOtpField = state.otpStatus == PanOtpStatus.sent ||
+          final showOtpField =
+              state.otpStatus == PanOtpStatus.sent ||
               state.otpStatus == PanOtpStatus.sending ||
               state.otpStatus == PanOtpStatus.verified;
 
@@ -124,10 +132,19 @@ class _Step1PanPageState extends State<Step1PanPage> {
                         labelText: 'panCardNumberLabel'.tr,
                         hintText: 'panCardNumberHint'.tr,
                         controller: _panController,
+                        focusNode: _panFocus,
+                        enabled: !showOtpField,
+                        textInputAction: TextInputAction.next,
                         onChanged: (value) => context
                             .read<EligibilityBloc>()
                             .add(PanNumberUpdated(value)),
                         errorText: state.panNumberError,
+
+                        /// FOR FOCUS NEXT TEXT FILED
+                        onSubmitted: (_) {
+                          /// Move to Name field
+                          FocusScope.of(context).requestFocus(_nameFocus);
+                        },
                       ),
 
                       SizedBox(height: Gaps.md),
@@ -137,10 +154,18 @@ class _Step1PanPageState extends State<Step1PanPage> {
                         labelText: 'nameAsPerPanLabel'.tr,
                         hintText: 'nameAsPerPanHint'.tr,
                         controller: _nameController,
+                        focusNode: _nameFocus,
+                        enabled: !showOtpField,
+
+                        textInputAction: TextInputAction.next,
                         onChanged: (value) => context
                             .read<EligibilityBloc>()
                             .add(PanFullNameUpdated(value)),
                         errorText: state.panFullNameError,
+                        onSubmitted: (_) {
+                          // Move to DOB field
+                          FocusScope.of(context).requestFocus(_dobFocus);
+                        },
                       ),
 
                       SizedBox(height: Gaps.md),
@@ -151,6 +176,9 @@ class _Step1PanPageState extends State<Step1PanPage> {
                         hintText: 'dateOfBirthHint'.tr,
                         controller: _dobController,
                         readOnly: true,
+                        focusNode: _dobFocus,
+                        enabled: !showOtpField,
+
                         onTap: () => _selectDate(context),
                         errorText: state.panDobError,
                         suffixIcon: const Icon(
@@ -165,6 +193,10 @@ class _Step1PanPageState extends State<Step1PanPage> {
                         CInput(
                           labelText: 'Enter OTP',
                           hintText: 'Enter the 6-digit code',
+                          inputFormatters: [
+                            LengthLimitingTextInputFormatter(6),
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
                           controller: _otpController,
                           keyboardType: TextInputType.number,
                         ),
@@ -179,7 +211,8 @@ class _Step1PanPageState extends State<Step1PanPage> {
                 child: CButton(
                   text: _getButtonText(state),
                   onPressed: () => _onButtonPressed(state),
-                  isLoading: state.panStatus == PanVerificationStatus.verifying ||
+                  isLoading:
+                      state.panStatus == PanVerificationStatus.verifying ||
                       state.otpStatus == PanOtpStatus.sending,
                   type: ButtonType.primaryWhite,
                   suffixIcon: const Icon(

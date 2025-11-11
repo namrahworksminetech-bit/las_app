@@ -1,7 +1,9 @@
 part of 'eligibility_bloc.dart';
 
 enum InvestmentType { insurancePolicy, mutualFund, shares, none }
+
 enum PanVerificationStatus { initial, verifying, verified, failed }
+
 enum PanOtpStatus { initial, sending, sent, verified, failed }
 
 enum EligibilityOverlayType { none, fetchingPortfolio, eligibilityResult }
@@ -12,8 +14,6 @@ enum LenderSelectionView {
   pledgeableDetail,
   fundSelection,
 }
-
-
 
 class Lender extends Equatable {
   final String id;
@@ -58,8 +58,6 @@ class Lender extends Equatable {
   }
 }
 
-
-
 class EligibilityFormData extends Equatable {
   const EligibilityFormData({
     this.investmentType = InvestmentType.none,
@@ -90,6 +88,7 @@ class EligibilityFormData extends Equatable {
   @override
   List<Object?> get props => [investmentType, panNumber, panFullName, panDob];
 }
+
 class EligibilityState extends Equatable {
   const EligibilityState({
     this.majorStep = 1,
@@ -113,11 +112,18 @@ class EligibilityState extends Equatable {
     this.pledgeableFunds = const [],
     this.selectedFundIds = const {},
     this.previousSelectedFundIds = const {}, // ✅ Correctly placed
-    this.kycStepChecks = const [true, true, true, true],
+    this.kycStepChecks = const [false, false, false, false],
     this.otp = '',
     this.isSubmitting = false,
     this.otpError = false,
     this.otpResent = false,
+    this.kycUrl,
+    this.kycLoading = false,
+    this.kycError,
+    this.hasSeenEligibilityResult = false,
+    this.isRtaOtpVerifying = false,
+    this.rtaOtpError,
+    this.userMobileNumber,
   });
 
   // 🔹 Fields
@@ -151,6 +157,13 @@ class EligibilityState extends Equatable {
   final bool isSubmitting;
   final bool otpError;
   final bool otpResent;
+  final String? kycUrl;
+  final bool kycLoading;
+  final String? kycError;
+  final bool hasSeenEligibilityResult;
+  final bool isRtaOtpVerifying;
+  final String? rtaOtpError;
+  final String? userMobileNumber;
 
   // 🔹 CopyWith
   EligibilityState copyWith({
@@ -183,6 +196,13 @@ class EligibilityState extends Equatable {
     PanOtpStatus? otpStatus,
     String? snackbarMessage,
     bool clearSnackbar = false,
+    String? kycUrl,
+    bool? kycLoading,
+    String? kycError,
+    bool? hasSeenEligibilityResult,
+    bool? isRtaOtpVerifying,
+    String? rtaOtpError,
+    String? userMobileNumber,
   }) {
     return EligibilityState(
       majorStep: majorStep ?? this.majorStep,
@@ -190,18 +210,22 @@ class EligibilityState extends Equatable {
       formData: formData ?? this.formData,
       isLoading: isLoading ?? this.isLoading,
       mfDetailsResponse: mfDetailsResponse ?? this.mfDetailsResponse,
-      generalErrorMessage:
-          clearErrors ? null : generalErrorMessage ?? this.generalErrorMessage,
-      panNumberError:
-          clearErrors ? null : panNumberError ?? this.panNumberError,
-      panFullNameError:
-          clearErrors ? null : panFullNameError ?? this.panFullNameError,
+      generalErrorMessage: clearErrors
+          ? null
+          : generalErrorMessage ?? this.generalErrorMessage,
+      panNumberError: clearErrors
+          ? null
+          : panNumberError ?? this.panNumberError,
+      panFullNameError: clearErrors
+          ? null
+          : panFullNameError ?? this.panFullNameError,
       panDobError: clearErrors ? null : panDobError ?? this.panDobError,
       currentOverlay: currentOverlay ?? this.currentOverlay,
       lenderSelectionView: lenderSelectionView ?? this.lenderSelectionView,
       lenders: lenders ?? this.lenders,
-      selectedLenderId:
-          clearSelectedLender ? null : selectedLenderId ?? this.selectedLenderId,
+      selectedLenderId: clearSelectedLender
+          ? null
+          : selectedLenderId ?? this.selectedLenderId,
       isPortfolioRefreshing:
           isPortfolioRefreshing ?? this.isPortfolioRefreshing,
       editedLoanAmounts: editedLoanAmounts ?? this.editedLoanAmounts,
@@ -216,8 +240,16 @@ class EligibilityState extends Equatable {
       otpResent: otpResent ?? this.otpResent,
       panStatus: panStatus ?? this.panStatus,
       otpStatus: otpStatus ?? this.otpStatus,
-      snackbarMessage:
-          clearSnackbar ? null : snackbarMessage ?? this.snackbarMessage,
+      snackbarMessage: clearSnackbar
+          ? null
+          : snackbarMessage ?? this.snackbarMessage,
+      kycUrl: kycUrl ?? this.kycUrl,
+      kycLoading: kycLoading ?? this.kycLoading,
+      kycError: kycError ?? this.kycError,
+      hasSeenEligibilityResult: hasSeenEligibilityResult ?? this.hasSeenEligibilityResult,
+      isRtaOtpVerifying: isRtaOtpVerifying ?? this.isRtaOtpVerifying,
+      rtaOtpError: rtaOtpError ?? this.rtaOtpError,
+      userMobileNumber: userMobileNumber ?? this.userMobileNumber,
     );
   }
 
@@ -234,31 +266,38 @@ class EligibilityState extends Equatable {
   // 🔹 Equatable props
   @override
   List<Object?> get props => [
-        majorStep,
-        pageIndex,
-        formData,
-        isLoading,
-        generalErrorMessage,
-        panNumberError,
-        panFullNameError,
-        mfDetailsResponse,
-        panDobError,
-        currentOverlay,
-        lenderSelectionView,
-        lenders,
-        selectedLenderId,
-        isPortfolioRefreshing,
-        editedLoanAmounts,
-        pledgeableFunds,
-        selectedFundIds,
-        previousSelectedFundIds, // ✅ Added here too
-        kycStepChecks,
-        otp,
-        isSubmitting,
-        otpError,
-        otpResent,
-        panStatus,
-        otpStatus,
-        snackbarMessage,
-      ];
+    majorStep,
+    pageIndex,
+    formData,
+    isLoading,
+    generalErrorMessage,
+    panNumberError,
+    panFullNameError,
+    mfDetailsResponse,
+    panDobError,
+    currentOverlay,
+    lenderSelectionView,
+    lenders,
+    selectedLenderId,
+    isPortfolioRefreshing,
+    editedLoanAmounts,
+    pledgeableFunds,
+    selectedFundIds,
+    previousSelectedFundIds, // ✅ Added here too
+    kycStepChecks,
+    otp,
+    isSubmitting,
+    otpError,
+    otpResent,
+    panStatus,
+    otpStatus,
+    snackbarMessage,
+    kycUrl,
+    kycLoading,
+    kycError,
+    hasSeenEligibilityResult,
+    isRtaOtpVerifying,
+    rtaOtpError,
+    userMobileNumber,
+  ];
 }

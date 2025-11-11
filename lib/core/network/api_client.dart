@@ -1,11 +1,11 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'api_constants.dart';
 import 'api_interceptor.dart';
 
 class ApiClient {
   late final Dio _dio;
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+
   String? _authToken;
 
   ApiClient() {
@@ -25,36 +25,39 @@ class ApiClient {
     loadToken(); // 🔹 Automatically loads token at startup
   }
 
-  /// 🔹 Load saved token from secure storage
+  /// 🔹 Load saved token from storage
   Future<void> loadToken() async {
     try {
-      final savedToken = await _secureStorage.read(key: 'auth_token');
+      final prefs = await SharedPreferences.getInstance();
+      final savedToken = prefs.getString('auth_token');
       if (savedToken != null && savedToken.isNotEmpty) {
         _authToken = savedToken;
-        print('🔑 Loaded token from secure storage');
+        print('🔑 Loaded token from storage');
       }
     } catch (e) {
       print('⚠️ Error loading token from storage: $e');
     }
   }
 
-  /// 🔹 Save token securely
+  /// 🔹 Save token
   Future<void> setAuthToken(String token) async {
     try {
       _authToken = token;
-      await _secureStorage.write(key: 'auth_token', value: token);
-      print('✅ Token securely saved');
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('auth_token', token);
+      print('✅ Token saved');
     } catch (e) {
       print('⚠️ Failed to save token: $e');
     }
   }
 
-  /// 🔹 Clear token securely (logout)
+  /// 🔹 Clear token (logout)
   Future<void> clearAuthToken() async {
     try {
       _authToken = null;
-      await _secureStorage.delete(key: 'auth_token');
-      print('🗑️ Token cleared from secure storage');
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('auth_token');
+      print('🗑️ Token cleared from storage');
     } catch (e) {
       print('⚠️ Failed to clear token: $e');
     }

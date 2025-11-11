@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
+import 'package:flutter/services.dart';
 
 // Common widgets & themes
 import 'package:las_app/common_widgets/c_button.dart';
@@ -29,14 +30,18 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _mobileController = TextEditingController();
   final TextEditingController _otpController = TextEditingController();
-
+  final ScrollController _scrollController = ScrollController();
   @override
   void initState() {
     super.initState();
     // Prefilled for testing
-    _emailController.text = 'namrah@gmail.com';
-    _mobileController.text = '9876543210';
-    _otpController.text = '123456';
+    // _emailController.text = 'namrah@gmail.com';
+    // _mobileController.text = '9876543210';
+    // _otpController.text = '123456';
+
+    _emailController.text = '';
+    _mobileController.text = '';
+    _otpController.text = '';
   }
 
   @override
@@ -50,9 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => LoginBloc(
-        repository: LoginRepository(ApiClient()),
-      ),
+      create: (_) => LoginBloc(repository: LoginRepository(ApiClient())),
       child: BlocConsumer<LoginBloc, LoginState>(
         listenWhen: (previous, current) =>
             previous.snackbarMessage != current.snackbarMessage ||
@@ -65,7 +68,8 @@ class _LoginScreenState extends State<LoginScreen> {
             CSnackBar.show(
               context,
               state.snackbarMessage!,
-              isError: state.otpError != null ||
+              isError:
+                  state.otpError != null ||
                   state.mobileError != null ||
                   state.snackbarMessage!.contains('Failed') ||
                   state.snackbarMessage!.contains('Invalid') ||
@@ -88,10 +92,23 @@ class _LoginScreenState extends State<LoginScreen> {
         builder: (context, state) {
           final bloc = context.read<LoginBloc>();
           final bool isOtpView = state.viewStatus == LoginViewStatus.otpSent;
+          final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+          /// OTP FILED AUTO SCROLL
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (MediaQuery.of(context).viewInsets.bottom > 0) {
+              _scrollController.animateTo(
+                _scrollController.position.maxScrollExtent,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              );
+            }
+          });
 
           return Scaffold(
             backgroundColor: AppColors.black,
-            resizeToAvoidBottomInset: false, // Prevent buttons from moving with keyboard
+            resizeToAvoidBottomInset:
+                false, // Prevent buttons from moving with keyboard
             body: SafeArea(
               child: Stack(
                 children: [
@@ -116,15 +133,21 @@ class _LoginScreenState extends State<LoginScreen> {
                       /// ---------- Form Section ----------
                       Expanded(
                         child: SingleChildScrollView(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 24.0),
+                          controller: _scrollController,
+                          padding: EdgeInsets.fromLTRB(
+                            24,
+                            0,
+                            24,
+                            bottomInset + 150, // ✅ Push content above keyboard
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               CText(
                                 'EnterDetailsBelow'.tr,
-                                style: AppTypography.h1
-                                    .copyWith(color: AppColors.white),
+                                style: AppTypography.h1.copyWith(
+                                  color: AppColors.white,
+                                ),
                               ),
                               Gaps.hXxl,
 
@@ -132,7 +155,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               CInput(
                                 labelText: 'EmailAddress'.tr,
                                 controller: _emailController,
+                                enabled: !isOtpView,
                                 keyboardType: TextInputType.emailAddress,
+                                hintText: 'enterEmail'.tr,
                                 suffixIcon: const Icon(
                                   Icons.email_outlined,
                                   color: AppColors.white,
@@ -146,13 +171,22 @@ class _LoginScreenState extends State<LoginScreen> {
                                 labelText: 'MobileNumber'.tr,
                                 controller: _mobileController,
                                 errorText: state.mobileError,
+                                hintText: 'enterMobileNumber'.tr,
                                 keyboardType: TextInputType.phone,
                                 prefixText: '+91 ',
+                                enabled: !isOtpView,
                                 suffixIcon: const Icon(
                                   Icons.phone_outlined,
                                   color: AppColors.white,
                                   size: 20,
                                 ),
+                                inputFormatters: [
+                                  LengthLimitingTextInputFormatter(
+                                    10,
+                                  ), // ✅ Max 10 digits only
+                                  FilteringTextInputFormatter
+                                      .digitsOnly, // ✅ Only numbers allowed
+                                ],
                               ),
                               Gaps.hXl,
 
@@ -162,6 +196,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                   labelText: 'EnterOTP'.tr,
                                   controller: _otpController,
                                   errorText: state.otpError,
+                                  inputFormatters: [
+                                    LengthLimitingTextInputFormatter(6),
+                                    FilteringTextInputFormatter.digitsOnly,
+                                  ],
                                   hintText: '******',
                                   keyboardType: TextInputType.number,
                                   obscureText: true,
@@ -246,7 +284,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                       recognizer: TapGestureRecognizer()
                                         ..onTap = () {
-                                          bloc.add(const LoginResendOtpPressed());
+                                          bloc.add(
+                                            const LoginResendOtpPressed(),
+                                          );
                                         },
                                     ),
                                   ],

@@ -5,11 +5,13 @@ class AppStateProvider extends ChangeNotifier {
   String? _reqId;
   String? _name;
   String? _lenderCode;
+  String? _mobileNumber;
 
   String? get token => _token;
   String? get reqId => _reqId;
   String? get name => _name;
   String? get lenderCode => _lenderCode;
+  String? get mobileNumber => _mobileNumber;
 
   void setToken(String token) {
     _token = token;
@@ -31,11 +33,17 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setMobileNumber(String mobileNumber) {
+    _mobileNumber = mobileNumber;
+    notifyListeners();
+  }
+
   void clear() {
     _token = null;
     _reqId = null;
     _name = null;
     _lenderCode = null;
+    _mobileNumber = null;
     notifyListeners();
   }
 }

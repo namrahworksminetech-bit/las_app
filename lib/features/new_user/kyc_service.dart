@@ -35,25 +35,10 @@ class KycService {
               onSuccess?.call();
             } else if (state.kycError != null) {
               Navigator.of(context).pop();
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  backgroundColor: const Color(0xFF1F2937),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  content: Text(
-                    state.kycError!,
-                    style: const TextStyle(color: AppColors.white, fontSize: 16),
-                    textAlign: TextAlign.center,
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text(
-                        'OK',
-                        style: TextStyle(color: AppColors.bPrimaryColor),
-                      ),
-                    ),
-                  ],
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.kycError!),
+                  backgroundColor: Colors.red,
                 ),
               );
             }

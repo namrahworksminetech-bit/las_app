@@ -23,12 +23,17 @@ class EligibilityResultOverlay extends StatelessWidget {
     );
 
     // ✅ Access the BLoC state
-    final mfDetailsResponse =
-        context.watch<EligibilityBloc>().state.mfDetailsResponse;
+    final mfDetailsResponse = context
+        .watch<EligibilityBloc>()
+        .state
+        .mfDetailsResponse;
 
     // ✅ Calculate total pledgeable funds dynamically
-    final totalPledgeable = mfDetailsResponse?.pledgeableFunds
-            .fold<double>(0, (sum, fund) => sum + (fund.availableAmount ?? 0)) ??
+    final totalPledgeable =
+        mfDetailsResponse?.pledgeableFunds.fold<double>(
+          0,
+          (sum, fund) => sum + (fund.availableAmount ?? 0),
+        ) ??
         0.0;
 
     return Container(
@@ -64,11 +69,9 @@ class EligibilityResultOverlay extends StatelessWidget {
           // ✅ Dynamic total pledgeable value
           RichText(
             text: TextSpan(
-              style: AppTypography.h0.copyWith(
-                color: AppColors.success,
-              ),
+              style: AppTypography.h0.copyWith(color: AppColors.success),
               children: [
-                TextSpan(text: '₹ '.tr),
+                // TextSpan(text: /*'₹ '*/.tr),
                 TextSpan(text: formatCurrency.format(totalPledgeable)),
               ],
             ),
@@ -91,9 +94,9 @@ class EligibilityResultOverlay extends StatelessWidget {
 
               // 🔹 Trigger data fetch for lender list + portfolio
               eligibilityBloc.add(FetchStep2Data());
-
+              Navigator.pop(context);
               // 🔹 Navigate to LenderSelectionScreen
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
                   builder: (context) => BlocProvider.value(

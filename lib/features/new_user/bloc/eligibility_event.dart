@@ -75,7 +75,6 @@ class EditLoanAmountPressed extends EligibilityEvent {
   });
 }
 
-
 class SaveEditedLoanAmount extends EligibilityEvent {
   final String lenderId;
   final double amount;
@@ -91,11 +90,11 @@ class LenderContinuePressed extends EligibilityEvent {
   @override
   List<Object?> get props => [lenderId];
 }
+
 class AutoSelectAllFunds extends EligibilityEvent {
   final Set<String> fundIds;
   AutoSelectAllFunds(this.fundIds);
 }
-
 
 class ToggleFundSelection extends EligibilityEvent {
   final String fundId;
@@ -105,7 +104,7 @@ class ToggleFundSelection extends EligibilityEvent {
 }
 
 class ConfirmFundSelection extends EligibilityEvent {
-    final BuildContext context;
+  final BuildContext context;
 
   ConfirmFundSelection(this.context);
 }
@@ -126,7 +125,6 @@ class OtpChanged extends EligibilityEvent {
   List<Object?> get props => [otp];
 }
 
-
 class VerifyPanPressed extends EligibilityEvent {
   final String pan;
   final String dob;
@@ -134,14 +132,12 @@ class VerifyPanPressed extends EligibilityEvent {
   final String email;
 
   VerifyPanPressed({
-    
     required this.pan,
     required this.dob,
     required this.name,
     required this.email,
   });
 }
-
 
 class SendPanOtpPressed extends EligibilityEvent {
   // no args required — repo will use AppStateProvider.reqId
@@ -150,15 +146,15 @@ class SendPanOtpPressed extends EligibilityEvent {
   @override
   List<Object?> get props => [];
 }
+
 /// Step 3
 class VerifyPanOtpPressed extends EligibilityEvent {
-
   final String otp;
 
-  const VerifyPanOtpPressed({ required this.otp});
+  const VerifyPanOtpPressed({required this.otp});
 
   @override
-  List<Object?> get props => [ otp];
+  List<Object?> get props => [otp];
 }
 
 /// Snackbar clear
@@ -210,4 +206,46 @@ class UpdateKycStepsReset extends EligibilityEvent {
 
   @override
   List<Object> get props => [];
+}
+
+class UpdateKycStepsAll extends EligibilityEvent {
+  final List<bool> steps;
+
+  const UpdateKycStepsAll(this.steps);
+
+  @override
+  List<Object> get props => [steps];
+}
+
+class MarkEligibilityResultSeen extends EligibilityEvent {
+  const MarkEligibilityResultSeen();
+
+  @override
+  List<Object> get props => [];
+}
+
+class VerifyRtaOtp extends EligibilityEvent {
+  final String phone;
+  final String rta;
+  final String otp;
+  final String refNo;
+
+  const VerifyRtaOtp({
+    required this.phone,
+    required this.rta,
+    required this.otp,
+    this.refNo = '',
+  });
+
+  @override
+  List<Object> get props => [phone, rta, otp, refNo];
+}
+
+class SetUserMobileNumber extends EligibilityEvent {
+  final String mobileNumber;
+
+  const SetUserMobileNumber(this.mobileNumber);
+
+  @override
+  List<Object> get props => [mobileNumber];
 }

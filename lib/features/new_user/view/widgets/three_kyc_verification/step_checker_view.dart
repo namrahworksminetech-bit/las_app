@@ -10,12 +10,12 @@ import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
 import 'package:las_app/features/new_user/view/succcess_pledge_view.dart';
+import 'package:las_app/features/new_user/view/widgets/four_pledge_funds/pledge_funds_otp_screen.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import '../../../../../core/app_state_provider.dart';
 import '../../../kyc_service.dart';
 import '../../../../../core/network/api_client.dart';
 import '../../../repository/pledge_status_repo.dart';
-import '../four_pledge/pledge_otp_view.dart';
 
 class KycVerificationScreen extends StatefulWidget {
   const KycVerificationScreen({super.key});
@@ -38,7 +38,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
   void _startStatusPolling() {
     _checkPledgeStatus();
-    _statusTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    _statusTimer = Timer.periodic(const Duration(seconds: 2), (_) {
       _checkPledgeStatus();
     });
   }
@@ -83,30 +83,27 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
     print('📊 Current status: $status');
 
+    List<bool> steps = [false, false, false, false];
+
     switch (status) {
-      case 'not_started':
-        context.read<EligibilityBloc>().add(const UpdateKycStepsReset());
+      case 'not_started' || 'pan_verified' || 'pending':
+        // All steps remain false
         break;
       case 'verified':
-        context.read<EligibilityBloc>().add(const UpdateKycStep(0, true));
+        steps[0] = true;
         break;
       case 'kyc_done':
-        context.read<EligibilityBloc>().add(const UpdateKycStep(0, true));
-        context.read<EligibilityBloc>().add(const UpdateKycStep(1, true));
+        steps[0] = true;
+        steps[1] = true;
         break;
       case ('mandate_done' || 'kfs_agreement_done'):
-        context.read<EligibilityBloc>().add(const UpdateKycStep(0, true));
-        context.read<EligibilityBloc>().add(const UpdateKycStep(1, true));
-        context.read<EligibilityBloc>().add(const UpdateKycStep(2, true));
+        steps[0] = true;
+        steps[1] = true;
+        steps[2] = true;
         break;
-      // case 'kfs_agreement_done':
-      //   context.read<EligibilityBloc>().add(const UpdateKycStep(0, true));
-      //   context.read<EligibilityBloc>().add(const UpdateKycStep(1, true));
-      //   context.read<EligibilityBloc>().add(const UpdateKycStep(2, true));
-      //   context.read<EligibilityBloc>().add(const UpdateKycStep(3, true));
-      //   _navigateToNextScreen();
-      //   break;
     }
+
+    context.read<EligibilityBloc>().add(UpdateKycStepsAll(steps));
   }
 
   void _navigateToNextScreen() {
@@ -158,38 +155,6 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     final reqId = appState.reqId;
     final lenderCode = appState.lenderCode;
 
-    // if (reqId == null || lenderCode == null) {
-    //   print('❌ Missing reqId or lenderCode for KYC process');
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     const SnackBar(
-    //       content: Text(
-    //         'Missing request ID or lender code. Please restart the process.',
-    //       ),
-    //     ),
-    //   );
-    //   return;
-    // }
-
-    // final reqId = GetIt.instance<AppStateProvider>().reqId;
-    // if (reqId == null) {
-    //   print('❌ Missing reqId for KYC process');
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     const SnackBar(
-    //       content: Text('Missing request ID. Please restart the process.'),
-    //     ),
-    //   );
-    //   return;
-    // }
-    //
-    // final selectedLender = state.lenders.firstWhere(
-    //       (l) => l.id == state.selectedLenderId,
-    //   orElse: () => state.lenders.first,
-    // );
-    //
-    // print(
-    //   '🏦 Selected lender: ${selectedLender.name} (${selectedLender.lender_code})',
-    // );
-
     print('🏦 Lender code: $lenderCode');
     print('🎯 ReqId: $reqId');
     print('📋 Step Index: $stepIndex');
@@ -199,9 +164,11 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
       lenderCode: 'BFL',
       reqId: reqId.toString(),
       onSuccess: () {
-        print(
-          '✅ KYC URL opened successfully - API polling will handle step updates',
-        );
+        print('✅ KYC URL opened successfully - checking status immediately');
+        // Check status immediately after KYC success
+        Future.delayed(const Duration(seconds: 1), () {
+          _checkPledgeStatus();
+        });
       },
     );
   }
@@ -368,7 +335,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                         final isChecked = checks[index];
                         final isClickable = _isStepClickable(index, checks);
                         final isVisible = _isStepVisible(index, checks);
-
+                        print("${isChecked}");
                         return GestureDetector(
                           onTap: isClickable
                               ? () => _handleStepClick(context, state, index)

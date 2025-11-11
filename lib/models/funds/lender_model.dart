@@ -7,7 +7,7 @@ class LenderItem {
   final double? loanInterest;
   final double? loanAmount;
   final int? eligibleFundsCount;
-  final List<EligibleFund>? eligibleFunds; 
+  final List<EligibleFund>? eligibleFunds;
 
   LenderItem({
     required this.id,
@@ -30,7 +30,8 @@ class LenderItem {
     if (v == null) return 0;
     if (v is int) return v;
     if (v is double) return v.toInt();
-    if (v is String) return int.tryParse(v) ?? (double.tryParse(v)?.toInt() ?? 0);
+    if (v is String)
+      return int.tryParse(v) ?? (double.tryParse(v)?.toInt() ?? 0);
     return 0;
   }
 
@@ -45,24 +46,25 @@ class LenderItem {
       logo: json['logo'],
       loanInterest: _toDouble(json['loan_interest'] ?? json['roi']),
       loanAmount: _toDouble(json['loan_amount'] ?? json['eligible_limit']),
-      eligibleFundsCount:
-          _toInt(json['eligible_funds_count'] ?? json['eligibleFundsCount']),
+      eligibleFundsCount: _toInt(
+        json['eligible_funds_count'] ?? json['eligibleFundsCount'],
+      ),
       eligibleFunds: (eligibleFundsData is List)
           ? eligibleFundsData
-              .map((e) => EligibleFund.fromJson(Map<String, dynamic>.from(e)))
-              .toList()
+                .map((e) => EligibleFund.fromJson(Map<String, dynamic>.from(e)))
+                .toList()
           : <EligibleFund>[],
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'logo': logo,
-        'loan_interest': loanInterest,
-        'loan_amount': loanAmount,
-        'eligible_funds_count': eligibleFundsCount,
-        'eligible_funds':
-            eligibleFunds?.map((e) => e.toJson()).toList() ?? [], // ✅ Added
-      };
+    'id': id,
+    'name': name,
+    'logo': logo,
+    'loan_interest': loanInterest,
+    'loan_amount': loanAmount,
+    'eligible_funds_count': eligibleFundsCount,
+    'eligible_funds':
+        eligibleFunds?.map((e) => e.toJson()).toList() ?? [], // ✅ Added
+  };
 }

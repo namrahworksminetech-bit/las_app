@@ -45,8 +45,9 @@ class FundSelectionView extends StatelessWidget {
             children: [
               TextField(
                 controller: amountController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: false),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: false,
+                ),
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 style: AppTypography.bodyWhite.copyWith(fontSize: 24),
                 textAlign: TextAlign.center,
@@ -81,39 +82,41 @@ class FundSelectionView extends StatelessWidget {
             TextButton(
               child: CText(
                 'confirm'.tr,
-                style: AppTypography.bodyWhite
-                    .copyWith(color: AppColors.bPrimaryColor),
+                style: AppTypography.bodyWhite.copyWith(
+                  color: AppColors.bPrimaryColor,
+                ),
               ),
               onPressed: () {
                 final enteredAmount = double.tryParse(amountController.text);
-print("💰 Entered: $enteredAmount | Eligible Limit: $eligibleLimit");
+                print(
+                  "💰 Entered: $enteredAmount | Eligible Limit: $eligibleLimit",
+                );
 
-if (enteredAmount != null && enteredAmount > 0) {
-  if (enteredAmount <= eligibleLimit) {
-    Navigator.of(dialogContext).pop(enteredAmount);
+                if (enteredAmount != null && enteredAmount > 0) {
+                  if (enteredAmount <= eligibleLimit) {
+                    Navigator.of(dialogContext).pop(enteredAmount);
 
-    // ✅ Show success snackbar using CSnackBar
-    CSnackBar.show(
-      blocContext,
-      'Loan amount updated to ₹${enteredAmount.toStringAsFixed(0)}',
-    );
-  } else {
-    // ⚠️ Show error snackbar for exceeding limit
-    CSnackBar.show(
-      blocContext,
-      'Amount exceeds eligible limit (₹${eligibleLimit.toStringAsFixed(0)})',
-      isError: true,
-    );
-  }
-} else {
-  // ❌ Show error snackbar for invalid input
-  CSnackBar.show(
-    blocContext,
-    'Invalid amount entered',
-    isError: true,
-  );
-}
-
+                    // ✅ Show success snackbar using CSnackBar
+                    CSnackBar.show(
+                      blocContext,
+                      'Loan amount updated to ₹${enteredAmount.toStringAsFixed(0)}',
+                    );
+                  } else {
+                    // ⚠️ Show error snackbar for exceeding limit
+                    CSnackBar.show(
+                      blocContext,
+                      'Amount exceeds eligible limit (₹${eligibleLimit.toStringAsFixed(0)})',
+                      isError: true,
+                    );
+                  }
+                } else {
+                  // ❌ Show error snackbar for invalid input
+                  CSnackBar.show(
+                    blocContext,
+                    'Invalid amount entered',
+                    isError: true,
+                  );
+                }
               },
             ),
           ],
@@ -122,9 +125,9 @@ if (enteredAmount != null && enteredAmount > 0) {
     );
 
     if (newAmount != null) {
-      blocContext
-          .read<EligibilityBloc>()
-          .add(SaveEditedLoanAmount(lender.id, newAmount));
+      blocContext.read<EligibilityBloc>().add(
+        SaveEditedLoanAmount(lender.id, newAmount),
+      );
     }
   }
 
@@ -135,8 +138,8 @@ if (enteredAmount != null && enteredAmount > 0) {
 
     // 🧩 Auto-select all funds on UI load (once)
     if (state.selectedFundIds.isEmpty && state.pledgeableFunds.isNotEmpty) {
- final allFundIds = state.pledgeableFunds.map((f) => f.fundCode).toSet();
-context.read<EligibilityBloc>().add(AutoSelectAllFunds(allFundIds));
+      final allFundIds = state.pledgeableFunds.map((f) => f.fundCode).toSet();
+      context.read<EligibilityBloc>().add(AutoSelectAllFunds(allFundIds));
       print('🟢 Auto-selected all ${allFundIds.length} funds on UI load');
     }
 
@@ -212,21 +215,25 @@ context.read<EligibilityBloc>().add(AutoSelectAllFunds(allFundIds));
                                         height: 40,
                                         decoration: BoxDecoration(
                                           color: Colors.white,
-                                          borderRadius:
-                                              BorderRadius.circular(4),
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
                                         ),
                                         clipBehavior: Clip.antiAlias,
-                                        child: displayLender.logoAsset.isNotEmpty
+                                        child:
+                                            displayLender.logoAsset.isNotEmpty
                                             ? Image.network(
                                                 displayLender.logoAsset,
                                                 errorBuilder: (_, __, ___) =>
                                                     const Icon(
-                                                  Icons.business,
-                                                  color: Colors.grey,
-                                                ),
+                                                      Icons.business,
+                                                      color: Colors.grey,
+                                                    ),
                                               )
-                                            : const Icon(Icons.business,
-                                                color: Colors.grey),
+                                            : const Icon(
+                                                Icons.business,
+                                                color: Colors.grey,
+                                              ),
                                       ),
                                       Gaps.wSm,
                                       Expanded(
@@ -234,27 +241,30 @@ context.read<EligibilityBloc>().add(AutoSelectAllFunds(allFundIds));
                                           displayLender.name,
                                           style: AppTypography.bodyWhite
                                               .copyWith(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                         ),
                                       ),
                                       Container(
                                         padding: const EdgeInsets.symmetric(
-                                            horizontal: 8, vertical: 4),
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
                                         decoration: BoxDecoration(
                                           color: AppColors.bPrimaryColor,
-                                          borderRadius:
-                                              BorderRadius.circular(4),
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
                                         ),
                                         child: CText(
                                           'yourSelection'.tr,
                                           style: AppTypography.bodyWhite
                                               .copyWith(
-                                            color: AppColors.black,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                                color: AppColors.black,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                         ),
                                       ),
                                     ],
@@ -265,16 +275,18 @@ context.read<EligibilityBloc>().add(AutoSelectAllFunds(allFundIds));
                                         MainAxisAlignment.spaceBetween,
                                     children: [
                                       _buildDetailColumn(
-                                          'interestRate'.tr,
-                                          '${displayLender.interestRate}%'),
+                                        'interestRate'.tr,
+                                        '${displayLender.interestRate}%',
+                                      ),
                                       Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          CText('loanAmount'.tr,
-                                              style: AppTypography
-                                                  .bodySecondary
-                                                  .copyWith(fontSize: 12)),
+                                          CText(
+                                            'loanAmount'.tr,
+                                            style: AppTypography.bodySecondary
+                                                .copyWith(fontSize: 12),
+                                          ),
                                           Gaps.hXs,
                                           GestureDetector(
                                             onTap: () => _showEditLoanDialog(
@@ -286,20 +298,20 @@ context.read<EligibilityBloc>().add(AutoSelectAllFunds(allFundIds));
                                               children: [
                                                 CText(
                                                   formatCurrency.format(
-                                                      displayLender.loanAmount),
-                                                  style: AppTypography
-                                                      .bodyWhite
-                                                      .copyWith(
-                                                    fontSize: 14,
-                                                    fontWeight:
-                                                        FontWeight.w500,
+                                                    displayLender.loanAmount,
                                                   ),
+                                                  style: AppTypography.bodyWhite
+                                                      .copyWith(
+                                                        fontSize: 14,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
                                                 ),
                                                 Gaps.wXs,
                                                 const Icon(
                                                   Icons.edit_outlined,
-                                                  color: AppColors
-                                                      .bSecondaryColor,
+                                                  color:
+                                                      AppColors.bSecondaryColor,
                                                   size: 14,
                                                 ),
                                               ],
@@ -307,8 +319,10 @@ context.read<EligibilityBloc>().add(AutoSelectAllFunds(allFundIds));
                                           ),
                                         ],
                                       ),
-                                      _buildDetailColumn('pledgeableMFs'.tr,
-                                          '${displayLender.pledgeableMFs}'),
+                                      _buildDetailColumn(
+                                        'pledgeableMFs'.tr,
+                                        '${displayLender.pledgeableMFs}',
+                                      ),
                                     ],
                                   ),
                                 ],
@@ -316,16 +330,19 @@ context.read<EligibilityBloc>().add(AutoSelectAllFunds(allFundIds));
                             ),
                             Gaps.hLg,
                             Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 CText(
                                   'chooseFundsHint'.tr,
-                                  style: AppTypography.bodySecondary
-                                      .copyWith(fontSize: 12),
+                                  style: AppTypography.bodySecondary.copyWith(
+                                    fontSize: 12,
+                                  ),
                                 ),
-                                const Icon(Icons.info_outline,
-                                    color: AppColors.bSecondaryColor, size: 16),
+                                const Icon(
+                                  Icons.info_outline,
+                                  color: AppColors.bSecondaryColor,
+                                  size: 16,
+                                ),
                               ],
                             ),
                           ],
@@ -333,31 +350,31 @@ context.read<EligibilityBloc>().add(AutoSelectAllFunds(allFundIds));
                       ),
 
                       // --- List of Funds ---
-                   BlocBuilder<EligibilityBloc, EligibilityState>(
-  buildWhen: (previous, current) =>
-      previous.selectedFundIds != current.selectedFundIds,
-  builder: (context, state) {
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: EdgeInsets.zero,
-      itemCount: state.pledgeableFunds.length,
-      itemBuilder: (context, index) {
-        final fund = state.pledgeableFunds[index];
-        final bool isSelected = state.selectedFundIds.contains(fund.fundCode);
-        return FundListItem(
-          key: ValueKey('${fund.fundCode}-${isSelected}'),
-          fund: fund,
-          isSelected: isSelected,
-          onToggle: () => context
-              .read<EligibilityBloc>()
-              .add(ToggleFundSelection(fund.fundCode)),
-        );
-      },
-    );
-  },
-),
-
+                      BlocBuilder<EligibilityBloc, EligibilityState>(
+                        buildWhen: (previous, current) =>
+                            previous.selectedFundIds != current.selectedFundIds,
+                        builder: (context, state) {
+                          return ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            padding: EdgeInsets.zero,
+                            itemCount: state.pledgeableFunds.length,
+                            itemBuilder: (context, index) {
+                              final fund = state.pledgeableFunds[index];
+                              final bool isSelected = state.selectedFundIds
+                                  .contains(fund.fundCode);
+                              return FundListItem(
+                                key: ValueKey('${fund.fundCode}-${isSelected}'),
+                                fund: fund,
+                                isSelected: isSelected,
+                                onToggle: () => context
+                                    .read<EligibilityBloc>()
+                                    .add(ToggleFundSelection(fund.fundCode)),
+                              );
+                            },
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -366,19 +383,22 @@ context.read<EligibilityBloc>().add(AutoSelectAllFunds(allFundIds));
 
             // --- Continue Button ---
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 16.0,
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Builder(
                     builder: (blocContext) => CButton(
-                      text: 'continueWith'
-                          .trParams({'lenderName': selectedLender.name}),
+                      text: 'continueWith'.trParams({
+                        'lenderName': selectedLender.name,
+                      }),
                       onPressed: () {
-                        blocContext
-                            .read<EligibilityBloc>()
-                            .add(ConfirmFundSelection(context));
+                        blocContext.read<EligibilityBloc>().add(
+                          ConfirmFundSelection(context),
+                        );
                       },
                       type: ButtonType.primaryWhite,
                       suffixIcon: const Icon(
@@ -394,8 +414,9 @@ context.read<EligibilityBloc>().add(AutoSelectAllFunds(allFundIds));
                     children: [
                       CText(
                         'Powered by',
-                        style: AppTypography.bodySecondary
-                            .copyWith(fontSize: 12),
+                        style: AppTypography.bodySecondary.copyWith(
+                          fontSize: 12,
+                        ),
                       ),
                       Gaps.wSm,
                       Image.asset(
@@ -412,12 +433,12 @@ context.read<EligibilityBloc>().add(AutoSelectAllFunds(allFundIds));
       },
     );
   }
+
   Widget _buildDetailColumn(String title, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CText(title,
-            style: AppTypography.bodySecondary.copyWith(fontSize: 12)),
+        CText(title, style: AppTypography.bodySecondary.copyWith(fontSize: 12)),
         Gaps.hXs,
         CText(
           value,
@@ -437,9 +458,12 @@ context.read<EligibilityBloc>().add(AutoSelectAllFunds(allFundIds));
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           CText(title, style: AppTypography.bodySecondary),
-          CText(value,
-              style: AppTypography.bodyWhite
-                  .copyWith(fontWeight: FontWeight.w500)),
+          CText(
+            value,
+            style: AppTypography.bodyWhite.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );

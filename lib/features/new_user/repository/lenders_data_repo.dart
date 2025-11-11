@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:las_app/core/network/api_client.dart';
 import 'package:las_app/core/results/result.dart';
 import 'package:las_app/models/funds/mf_details_response_model.dart';
@@ -7,7 +7,7 @@ import 'dart:convert';
 
 class LenderRepository {
   final ApiClient _apiClient;
-  final _storage = const FlutterSecureStorage();
+
 
   LenderRepository(this._apiClient);
 
@@ -3510,20 +3510,17 @@ class LenderRepository {
 }
      ''';
 
-     
-final decoded = jsonDecode(mockResponse) as Map<String, dynamic>;
-final mfDetails = MfDetailsResponse.fromJson(decoded);
+      final decoded = jsonDecode(mockResponse) as Map<String, dynamic>;
+      final mfDetails = MfDetailsResponse.fromJson(decoded);
 
-print("✅ Lenders parsed: ${mfDetails.lenders.length}");
-print("✅ Pledgeable funds parsed: ${mfDetails.pledgeableFunds.length}");
-if (mfDetails.pledgeableFunds.isNotEmpty) {
-  print("✅ First fund: ${mfDetails.pledgeableFunds.first.fundName}");
-}
+      print("✅ Lenders parsed: ${mfDetails.lenders.length}");
+      print("✅ Pledgeable funds parsed: ${mfDetails.pledgeableFunds.length}");
+      if (mfDetails.pledgeableFunds.isNotEmpty) {
+        print("✅ First fund: ${mfDetails.pledgeableFunds.first.fundName}");
+      }
 
-
-// ✅ Return success with the *same parsed object*
-return Success(mfDetails);
-
+      // ✅ Return success with the *same parsed object*
+      return Success(mfDetails);
     } on DioException catch (e) {
       print("⏰ Dio timeout or error: ${e.type}");
       final msg = e.response?.data['message'] ?? e.message ?? 'Network error';
@@ -3533,9 +3530,7 @@ return Success(mfDetails);
     }
   }
 
-
-
-Future<Result<MfDetailsResponse>> editLoanAmount({
+  Future<Result<MfDetailsResponse>> editLoanAmount({
     required String reqId,
     required double loanAmount,
     required String lenderId,
@@ -3544,7 +3539,6 @@ Future<Result<MfDetailsResponse>> editLoanAmount({
     required List<String> isinModify,
   }) async {
     try {
-
       final Map<String, dynamic> body = {
         "req_id": reqId,
         "loan_amount": loanAmount,
@@ -3556,7 +3550,7 @@ Future<Result<MfDetailsResponse>> editLoanAmount({
 
       print("📤 Edit Loan Amount Request: $body");
 
-const mockResponse='''{
+      const mockResponse = '''{
     "status": "success",
     "data": {
         "fund_details": [
@@ -7028,10 +7022,9 @@ const mockResponse='''{
       final decoded = jsonDecode(mockResponse) as Map<String, dynamic>;
 
       if (decoded['status'] == 'success') {
-          print("✅ Loan Amount Updated Successfully");
-      final mfDetails = MfDetailsResponse.fromJson(decoded);
+        print("✅ Loan Amount Updated Successfully");
+        final mfDetails = MfDetailsResponse.fromJson(decoded);
 
-      
         if (mfDetails.pledgeableFunds.isNotEmpty) {
           print("✅ First fund: ${mfDetails.pledgeableFunds.first.fundName}");
         }
@@ -7050,5 +7043,4 @@ const mockResponse='''{
       return Failure('Unexpected error: $e');
     }
   }
-
 }

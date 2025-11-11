@@ -34,40 +34,40 @@ class _EligibilityScreenState extends State<EligibilityScreen> {
     super.dispose();
   }
 
-void _showOverlay(BuildContext context, EligibilityOverlayType type) {
-  // Close any existing bottom sheet safely
-  if (_bottomSheetController != null) {
-    try {
-      _bottomSheetController?.close();
-    } catch (_) {}
-    _bottomSheetController = null;
-  }
+  void _showOverlay(BuildContext context, EligibilityOverlayType type) {
+    // Close any existing bottom sheet safely
+    if (_bottomSheetController != null) {
+      try {
+        _bottomSheetController?.close();
+      } catch (_) {}
+      _bottomSheetController = null;
+    }
 
-  // Pick overlay widget
-  Widget content;
-  if (type == EligibilityOverlayType.fetchingPortfolio) {
-    content = const PortfolioFetchingOverlay();
-  } else if (type == EligibilityOverlayType.eligibilityResult) {
-    content = const EligibilityResultOverlay();
-  } else {
-    return;
-  }
-
-  // Use addPostFrameCallback to delay opening until build is stable
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (!mounted) return;
-    final scaffoldState = Scaffold.maybeOf(context);
-    if (scaffoldState == null || !scaffoldState.mounted) {
-      debugPrint("⚠️ Scaffold not ready, skipping overlay");
+    // Pick overlay widget
+    Widget content;
+    if (type == EligibilityOverlayType.fetchingPortfolio) {
+      content = const PortfolioFetchingOverlay();
+    } else if (type == EligibilityOverlayType.eligibilityResult) {
+      content = const EligibilityResultOverlay();
+    } else {
       return;
     }
 
-_bottomSheetController = scaffoldState.showBottomSheet(
-  (_) => content,
-  backgroundColor: Colors.transparent,
-);
-  });
-}
+    // Use addPostFrameCallback to delay opening until build is stable
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final scaffoldState = Scaffold.maybeOf(context);
+      if (scaffoldState == null || !scaffoldState.mounted) {
+        debugPrint("⚠️ Scaffold not ready, skipping overlay");
+        return;
+      }
+
+      _bottomSheetController = scaffoldState.showBottomSheet(
+        (_) => content,
+        backgroundColor: Colors.transparent,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +82,11 @@ _bottomSheetController = scaffoldState.showBottomSheet(
         body: BlocConsumer<EligibilityBloc, EligibilityState>(
           listener: (context, state) {
             if (state.generalErrorMessage != null) {
-              CSnackBar.show(context, state.generalErrorMessage!, isError: true);
+              CSnackBar.show(
+                context,
+                state.generalErrorMessage!,
+                isError: true,
+              );
               context.read<EligibilityBloc>().add(ErrorMessageCleared());
             }
 
@@ -105,7 +109,7 @@ _bottomSheetController = scaffoldState.showBottomSheet(
             final List<Widget> allStepPages = [
               const Step1InvestmentPage(),
               const Step1PanPage(),
-            Center(child: CText('Step 2.1', style: AppTypography.bodyWhite)),
+              Center(child: CText('Step 2.1', style: AppTypography.bodyWhite)),
               Center(child: CText('Step 2.2', style: AppTypography.bodyWhite)),
               Center(child: CText('Step 3.1', style: AppTypography.bodyWhite)),
               Center(child: CText('Step 4.1', style: AppTypography.bodyWhite)),
@@ -115,7 +119,7 @@ _bottomSheetController = scaffoldState.showBottomSheet(
               child: Column(
                 children: [
                   if (state.majorStep == 1) ...[
-                    Gaps.hXl, 
+                    Gaps.hXl,
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24.0),
                       child: Row(
@@ -132,7 +136,7 @@ _bottomSheetController = scaffoldState.showBottomSheet(
                     ),
                   ],
 
-                  Gaps.hXl, 
+                  Gaps.hXl,
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
                     child: Row(
@@ -152,7 +156,7 @@ _bottomSheetController = scaffoldState.showBottomSheet(
                           backgroundColor: AppColors.bSecondaryColor,
                           circularStrokeCap: CircularStrokeCap.round,
                         ),
-                        Gaps.wMd, 
+                        Gaps.wMd,
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -163,7 +167,7 @@ _bottomSheetController = scaffoldState.showBottomSheet(
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            Gaps.hXs, 
+                            Gaps.hXs,
                             CText(
                               'NextLenderSelection'.tr,
                               style: AppTypography.body.copyWith(
@@ -191,15 +195,21 @@ _bottomSheetController = scaffoldState.showBottomSheet(
                         text: state.isLoading
                             ? 'Submitting'.tr
                             : (state.majorStep == 4
-                                ? 'Submit'.tr
-                                : 'Confirm&Continue'.tr),
+                                  ? 'Submit'.tr
+                                  : 'Confirm&Continue'.tr),
                         onPressed: state.isLoading
                             ? () {}
-                            : () => context.read<EligibilityBloc>().add(NextStepPressed()),
+                            : () => context.read<EligibilityBloc>().add(
+                                NextStepPressed(),
+                              ),
                         type: ButtonType.primaryWhite,
                         suffixIcon: state.isLoading
                             ? null
-                            : const Icon(Icons.arrow_forward, color: AppColors.black, size: 18),
+                            : const Icon(
+                                Icons.arrow_forward,
+                                color: AppColors.black,
+                                size: 18,
+                              ),
                       ),
                     ),
                     Padding(
@@ -213,7 +223,7 @@ _bottomSheetController = scaffoldState.showBottomSheet(
                               color: AppColors.bSecondaryColor,
                             ),
                           ),
-                          Gaps.wXs, 
+                          Gaps.wXs,
                           Image.asset(
                             'assets/images/value_enable_logo.png',
                             height: 20,

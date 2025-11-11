@@ -1,12 +1,11 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/network/api_client.dart';
 import '../../../models/kyc/kyc_response.dart';
 import '../../../models/kyc/kyc_webhook_response.dart';
 
 class KycRepository {
   final ApiClient _apiClient;
-  final _storage = const FlutterSecureStorage();
 
   KycRepository(this._apiClient);
 
@@ -18,7 +17,8 @@ class KycRepository {
     String sourceMode = 'WEB',
     int autoDisbursementConsent = 1,
   }) async {
-    final token = await _storage.read(key: 'token');
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
     if (token == null || token.isEmpty) {
       throw Exception('Token missing! Please login again.');
     }
@@ -52,7 +52,7 @@ class KycRepository {
     required String bankName,
   }) async {
     await _apiClient.loadToken();
-    
+
     final response = await _apiClient.post(
       'customer/webhook-kyc-status',
       data: {

@@ -77,6 +77,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       // ✅ Store globally
       final appState = getIt<AppStateProvider>();
       appState.setToken(response.token!);
+      appState.setMobileNumber(event.mobile);
 
       // The response also contains reqId in response.data.req_id[]
       if (response.reqId != null && response.reqId!.isNotEmpty) {
