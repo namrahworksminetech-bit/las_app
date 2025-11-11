@@ -182,21 +182,22 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
   // ✅ Use pledgeable funds total instead of maxEligibleLimit
   Builder(
     builder: (_) {
-      final totalPledgeable = state.mfDetailsResponse?.pledgeableFunds
-              .fold<double>(0, (sum, fund) => sum + (fund.availableAmount ?? 0)) ??
-          0.0;
+     final totalPledgeable = state.mfDetailsResponse?.pledgeableFunds
+        .fold<double>(0, (sum, fund) => sum + (fund.availableAmount ?? 0)) ??
+    0.0;
 
-      return CText(
-        formatCurrency.format(totalPledgeable),
-        style: AppTypography.h1.copyWith(color: AppColors.bPrimaryColor),
-      );
+return CText(
+  formatCurrency.format(totalPledgeable ?? 0),
+  style: AppTypography.h1.copyWith(color: AppColors.bPrimaryColor),
+);
+
     },
   ),
                               Gaps.hXxs,
                               CText(
                                 'totalPortfolioValue'.trParams({
                                   'value': formatCurrency.format(
-                                      state.mfDetailsResponse?.eligiblePortfolio),
+                                      state.mfDetailsResponse?.eligiblePortfolio ?? 0),
                                 }),
                                 style: AppTypography.caption,
                               ),
@@ -315,37 +316,74 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
     );
   }
 
-  Widget _buildCurrentView(
-      BuildContext context, EligibilityState state) {
-    switch (state.lenderSelectionView) {
-      case LenderSelectionView.lenderList:
-        return const LenderListView(key: ValueKey('lender_list'));
-      case LenderSelectionView.portfolioBreakdown:
-        return PortfolioBreakdownView(
-          key: const ValueKey('breakdown_view'),
-          mfDetailsResponse: state.mfDetailsResponse!,
-          onCategoryTapped: (categoryId) {
-            context
-                .read<EligibilityBloc>()
-                .add(BreakdownCategoryTapped(categoryId));
-          },
-          onRefresh: () => context
-              .read<EligibilityBloc>()
-              .add(RefreshPortfolioPressed()),
-        );
-      case LenderSelectionView.pledgeableDetail:
-        return PledgeableFundsDetailView(
-          key: const ValueKey('detail_view'),
-          onRefresh: () => context
-              .read<EligibilityBloc>()
-              .add(RefreshPortfolioPressed()),
-        );
-
-      case LenderSelectionView.fundSelection:
-        return  FundSelectionView(
-            key: ValueKey('fund_selection_view'));
-      default:
-        return const LenderListView(key: ValueKey('lender_list'));
-    }
+Widget _buildCurrentView(BuildContext context, EligibilityState state) {
+  Widget _noDataView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text(
+            "No details available. Please try again later.",
+            style: TextStyle(fontSize: 16, color: Colors.grey),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: () {
+              context.read<EligibilityBloc>().add(RefreshPortfolioPressed());
+            },
+            icon: const Icon(Icons.refresh, color: Colors.white, size: 18),
+            label: const Text("Retry", style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.bPrimaryColor,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
+
+  switch (state.lenderSelectionView) {
+    case LenderSelectionView.lenderList:
+      return const LenderListView(key: ValueKey('lender_list'));
+
+    case LenderSelectionView.portfolioBreakdown:
+      if (state.mfDetailsResponse == null ||
+          state.mfDetailsResponse?.pledgeableFunds.isEmpty == true) {
+        return _noDataView();
+      }
+      return PortfolioBreakdownView(
+        key: const ValueKey('breakdown_view'),
+        mfDetailsResponse: state.mfDetailsResponse!,
+        onCategoryTapped: (categoryId) {
+          context
+              .read<EligibilityBloc>()
+              .add(BreakdownCategoryTapped(categoryId));
+        },
+        onRefresh: () =>
+            context.read<EligibilityBloc>().add(RefreshPortfolioPressed()),
+      );
+
+    case LenderSelectionView.pledgeableDetail:
+      if (state.mfDetailsResponse == null ||
+          state.mfDetailsResponse?.pledgeableFunds.isEmpty == true) {
+        return _noDataView();
+      }
+      return PledgeableFundsDetailView(
+        key: const ValueKey('detail_view'),
+        onRefresh: () =>
+            context.read<EligibilityBloc>().add(RefreshPortfolioPressed()),
+      );
+
+    case LenderSelectionView.fundSelection:
+      return const FundSelectionView(key: ValueKey('fund_selection_view'));
+
+    default:
+      return const LenderListView(key: ValueKey('lender_list'));
+  }
+}
 }

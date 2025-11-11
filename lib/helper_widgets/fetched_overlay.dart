@@ -68,7 +68,7 @@ class EligibilityResultOverlay extends StatelessWidget {
                 color: AppColors.success,
               ),
               children: [
-                TextSpan(text: '₹ '.tr),
+                TextSpan(text: ''.tr),
                 TextSpan(text: formatCurrency.format(totalPledgeable)),
               ],
             ),
