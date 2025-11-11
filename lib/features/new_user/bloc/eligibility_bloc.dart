@@ -331,10 +331,9 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
           return;
         }
 
-        // ✅ Save reqId globally
+
         getIt<AppStateProvider>().setReqId(reqId);
 
-        // ✅ Now generate OTP
         final otpResult = await repository.generateOtp();
 
         otpResult.when(
@@ -465,98 +464,80 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     }
   }
 
-  Future<void> _onFetchStep2Data(
-    FetchStep2Data event,
-    Emitter<EligibilityState> emit,
-  ) async {
-    if (state.isLoading || state.isPortfolioRefreshing) return;
 
-    print("🔄 Fetching lenders and portfolio data...");
+Future<void> _onFetchStep2Data(
+  FetchStep2Data event,
+  Emitter<EligibilityState> emit,
+) async {
+  if (state.isLoading || state.isPortfolioRefreshing) return;
 
-    try {
-      final reqId = getIt<AppStateProvider>().reqId;
-      if (reqId == null) {
-        emit(
-          state.copyWith(
-            isLoading: false,
-            generalErrorMessage:
-                "Missing request ID. Please restart the process.",
-          ),
-        );
-        return;
-      }
+  print("🔄 Fetching lenders and portfolio data...");
 
-      final result = await lenderRepository.fetchLendersAndPortfolio(
-        reqId: reqId,
-      );
-
-      await result.when(
-        success: (mfResponse) async {
-          print("✅ Lenders parsed: ${mfResponse.lenders.length}");
-          print(
-            "✅ Pledgeable funds parsed: ${mfResponse.pledgeableFunds.length}",
-          );
-          print("✅ Pledgeable Amount: ${mfResponse.pledgeableAmount}");
-          print("✅ Non-Pledgeable Amount: ${mfResponse.nonPledgeableAmount}");
-          print("✅ Demat Amount: ${mfResponse.dematAmount}");
-          print("✅ Eligible Portfolio: ${mfResponse.eligiblePortfolio}");
-          print("✅ Max Eligible Limit: ${mfResponse.maxEligibleLimit}");
-
-          // 🔹 Convert API lenders to UI model
-          final lenders = mfResponse.lenders.map((l) {
-            return Lender(
-              id: l.id.toString(),
-              name: l.name ?? '-',
-              logoAsset: l.logo ?? '',
-              interestRate: l.loanInterest ?? 0.0,
-              loanAmount: l.loanAmount ?? 0.0,
-              pledgeableMFs: l.eligibleFundsCount ?? 0,
-              tag: '',
-            );
-          }).toList();
-
-          // final totalEligiblePortfolio = lenders.fold<double>(
-          //   0.0,
-          //   (sum, l) => sum + (l.loanAmount),
-          // );
-          //
-          // final portfolio = PortfolioData(
-          //   totalValue: totalEligiblePortfolio,
-          //   eligibleCreditLimit: totalEligiblePortfolio,
-          //   pledgeableFunds: totalEligiblePortfolio,
-          // );
-
-          // ✅ Emit updated state directly with mfResponse data
-          emit(
-            state.copyWith(
-              isLoading: false,
-              lenders: lenders,
-              pledgeableFunds: mfResponse.pledgeableFunds,
-              mfDetailsResponse: mfResponse,
-              // portfolioData: portfolio,
-              // Optional: derived summary data for UI
-            ),
-          );
-
-          print("🟢 Stored lender + MF data successfully.");
-        },
-        failure: (error) {
-          print("❌ Failed to fetch Step 2 data: $error");
-          emit(state.copyWith(isLoading: false, generalErrorMessage: error));
-        },
-      );
-    } catch (e, stack) {
-      print("❌ Exception while fetching Step 2 data: $e");
-      print("🧠 Stacktrace: $stack");
-      emit(
-        state.copyWith(
-          isLoading: false,
-          generalErrorMessage: "Failed to fetch lender data.",
-        ),
-      );
+  try {
+    final reqId = getIt<AppStateProvider>().reqId;
+    if (reqId == null) {
+      emit(state.copyWith(
+        isLoading: false,
+        generalErrorMessage: "Missing request ID. Please restart the process.",
+      ));
+      return;
     }
-  }
 
+    final result = await lenderRepository.fetchLendersAndPortfolio(reqId: reqId);
+
+    await result.when(
+      success: (mfResponse) async {
+        print("✅ Lenders parsed: ${mfResponse.lenders.length}");
+        print("✅ Pledgeable funds parsed: ${mfResponse.pledgeableFunds.length}");
+        print("✅ Pledgeable Amount: ${mfResponse.pledgeableAmount}");
+        print("✅ Non-Pledgeable Amount: ${mfResponse.nonPledgeableAmount}");
+        print("✅ Demat Amount: ${mfResponse.dematAmount}");
+        print("✅ Eligible Portfolio: ${mfResponse.eligiblePortfolio}");
+        print("✅ Max Eligible Limit: ${mfResponse.maxEligibleLimit}");
+
+ 
+        final lenders = mfResponse.lenders.map((l) {
+          return Lender(
+            id: l.id.toString(),
+            name: l.name ?? '-',
+            logoAsset: l.logo ?? '',
+            interestRate: l.loanInterest ?? 0.0,
+            loanAmount: l.loanAmount ?? 0.0,
+            pledgeableMFs: l.eligibleFundsCount ?? 0,
+            tag: '',
+          );
+        }).toList();
+
+        // ✅ Emit updated state directly with mfResponse data
+        emit(state.copyWith(
+          isLoading: false,
+          lenders: lenders,
+          pledgeableFunds: mfResponse.pledgeableFunds,
+          mfDetailsResponse: mfResponse,
+          // Optional: derived summary data for UI
+         
+        ));
+
+        print("🟢 Stored lender + MF data successfully.");
+      },
+      failure: (error) {
+        print("❌ Failed to fetch Step 2 data: $error");
+        emit(state.copyWith(
+          isLoading: false,
+          generalErrorMessage: error,
+        ));
+      },
+    );
+  } catch (e, stack) {
+    print("❌ Exception while fetching Step 2 data: $e");
+    print("🧠 Stacktrace: $stack");
+    emit(state.copyWith(
+      isLoading: false,
+      generalErrorMessage: "Failed to fetch lender data.",
+    ));
+  }
+}
+  
   void _onLenderSelected(LenderSelected event, Emitter<EligibilityState> emit) {
     final newSelectedId = (state.selectedLenderId == event.lenderId)
         ? null
@@ -731,28 +712,30 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
   }
 
   void _onViewDetailsToggled(
-    ViewDetailsToggled event,
-    Emitter<EligibilityState> emit,
-  ) {
-    final currentView = state.lenderSelectionView;
+  ViewDetailsToggled event,
+  Emitter<EligibilityState> emit,
+) {
+  final currentView = state.lenderSelectionView;
+  late final LenderSelectionView nextView;
 
-    late final LenderSelectionView nextView;
-
-    if (currentView == LenderSelectionView.lenderList ||
-        currentView == LenderSelectionView.fundSelection) {
-      nextView = LenderSelectionView.portfolioBreakdown;
-    } else if (currentView == LenderSelectionView.portfolioBreakdown ||
-        currentView == LenderSelectionView.pledgeableDetail) {
-      nextView = LenderSelectionView.lenderList;
-    } else {
-      nextView = LenderSelectionView.lenderList;
-    }
-
-    emit(
-      state.copyWith(lenderSelectionView: nextView, clearSelectedLender: true),
-    );
+  if (currentView == LenderSelectionView.lenderList ||
+      currentView == LenderSelectionView.fundSelection) {
+    nextView = LenderSelectionView.portfolioBreakdown;
+  } else if (currentView == LenderSelectionView.portfolioBreakdown ||
+      currentView == LenderSelectionView.pledgeableDetail) {
+    nextView = LenderSelectionView.lenderList;
+  } else {
+    nextView = LenderSelectionView.lenderList;
   }
 
+  emit(
+    state.copyWith(
+      lenderSelectionView: nextView,
+      clearSelectedLender: true,
+    ),
+  );
+}
+  
   Future<void> _onRefreshPortfolioPressed(
     RefreshPortfolioPressed event,
     Emitter<EligibilityState> emit,
@@ -930,7 +913,7 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     SaveEditedLoanAmount event,
     Emitter<EligibilityState> emit,
   ) async {
-    try {
+    try { 
       emit(state.copyWith(isLoading: true));
 
       final reqId = getIt<AppStateProvider>().reqId ?? '';
