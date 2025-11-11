@@ -168,25 +168,36 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
                               ),
                               Gaps.hSm,
 
-  // ✅ Use pledgeable funds total instead of maxEligibleLimit
-  Builder(
-    builder: (_) {
-     final totalPledgeable = state.mfDetailsResponse?.pledgeableFunds
-        .fold<double>(0, (sum, fund) => sum + (fund.availableAmount ?? 0)) ??
-    0.0;
+                              // ✅ Use pledgeable funds total instead of maxEligibleLimit
+                              Builder(
+                                builder: (_) {
+                                  final totalPledgeable =
+                                      state.mfDetailsResponse?.pledgeableFunds
+                                          .fold<double>(
+                                            0,
+                                            (sum, fund) =>
+                                                sum +
+                                                (fund.availableAmount ?? 0),
+                                          ) ??
+                                      0.0;
 
-return CText(
-  formatCurrency.format(totalPledgeable ?? 0),
-  style: AppTypography.h1.copyWith(color: AppColors.bPrimaryColor),
-);
-
-    },
-  ),
+                                  return CText(
+                                    formatCurrency.format(totalPledgeable ?? 0),
+                                    style: AppTypography.h1.copyWith(
+                                      color: AppColors.bPrimaryColor,
+                                    ),
+                                  );
+                                },
+                              ),
                               Gaps.hXxs,
                               CText(
                                 'totalPortfolioValue'.trParams({
                                   'value': formatCurrency.format(
-                                      state.mfDetailsResponse?.eligiblePortfolio ?? 0),
+                                    state
+                                            .mfDetailsResponse
+                                            ?.eligiblePortfolio ??
+                                        0,
+                                  ),
                                 }),
                                 style: AppTypography.caption,
                               ),
@@ -345,9 +356,9 @@ Widget _buildCurrentView(BuildContext context, EligibilityState state) {
         key: const ValueKey('breakdown_view'),
         mfDetailsResponse: state.mfDetailsResponse!,
         onCategoryTapped: (categoryId) {
-          context
-              .read<EligibilityBloc>()
-              .add(BreakdownCategoryTapped(categoryId));
+          context.read<EligibilityBloc>().add(
+            BreakdownCategoryTapped(categoryId),
+          );
         },
         onRefresh: () =>
             context.read<EligibilityBloc>().add(RefreshPortfolioPressed()),
@@ -370,5 +381,4 @@ Widget _buildCurrentView(BuildContext context, EligibilityState state) {
     default:
       return const LenderListView(key: ValueKey('lender_list'));
   }
-}
 }
