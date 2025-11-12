@@ -125,4 +125,6 @@ final Map<String, String> enUS = {
   'cibilNote': "Relax, this won't affect your CIBIL score.",
   'enterMobileNumber': "Enter mobile number",
   'enterEmail': "Enter your Email",
+  'startKycProcess': "Starting KYC Process...",
+  'pleaseWaitWhileWePrepare': "Please wait while we prepare your verification",
 };

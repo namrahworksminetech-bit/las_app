@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:las_app/core/app_state_provider.dart';
 import 'package:las_app/core/injection_container.dart';
 import 'package:las_app/core/network/api_client.dart';
@@ -10,7 +10,7 @@ import 'package:las_app/models/pan_verification/pan_verify_response_model.dart';
 class PanRepository {
   final ApiClient _apiClient;
   final AppStateProvider _appState = getIt<AppStateProvider>();
-  final _storage = const FlutterSecureStorage();
+
 
   PanRepository(this._apiClient);
 
@@ -26,7 +26,8 @@ class PanRepository {
     required String email,
   }) async {
     try {
-      final token = await _storage.read(key: 'token');
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
       if (token == null || token.isEmpty) {
         throw Exception('Token missing! Please login again.');
       }
@@ -136,7 +137,8 @@ class PanRepository {
     }
 
     try {
-      final token = await _storage.read(key: 'token');
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
       print("🔐 Token before verify OTP: $token");
 
       if (token == null || token.isEmpty) {
@@ -188,11 +190,13 @@ class PanRepository {
 
   // ✅ Save token after OTP verification (Login)
   Future<void> saveToken(String token) async {
-    await _storage.write(key: 'token', value: token);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('token', token);
   }
 
   // ✅ Clear token if needed
   Future<void> clearToken() async {
-    await _storage.delete(key: 'token');
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('token');
   }
 }

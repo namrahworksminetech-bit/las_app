@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get/get_utils/src/extensions/export.dart';
 import 'package:get_it/get_it.dart';
+import 'package:las_app/common_widgets/c_text.dart';
+import 'package:las_app/core/theme/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/location_service.dart';
@@ -13,10 +16,11 @@ class KycService {
     BuildContext context, {
     required String lenderCode,
     required String reqId,
+    String? stepName,
     VoidCallback? onSuccess,
   }) async {
     final apiClient = GetIt.instance<ApiClient>();
-    
+
     final eligibilityBloc = EligibilityBloc(
       repository: PanRepository(apiClient),
       lenderRepository: LenderRepository(apiClient),
@@ -52,7 +56,9 @@ class KycService {
                   decoration: BoxDecoration(
                     color: const Color(0xFF1F2937),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.bPrimaryColor.withOpacity(0.3)),
+                    border: Border.all(
+                      color: AppColors.bPrimaryColor.withOpacity(0.3),
+                    ),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -70,22 +76,22 @@ class KycService {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const Text(
-                        'Starting KYC Process...',
-                        style: TextStyle(
-                          color: AppColors.white,
-                          fontSize: 16,
+                      CText(
+                        stepName ?? 'startKycProcess'.tr,
+                        style: AppTypography.bodyWhite.copyWith(
                           fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          color: Colors.white,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        'Please wait while we prepare your verification',
-                        style: TextStyle(
-                          color: AppColors.bSecondaryColor,
+                      CText(
+                        'pleaseWaitWhileWePrepare'.tr,
+                        style: AppTypography.bodyWhite.copyWith(
+                          fontWeight: FontWeight.w600,
                           fontSize: 14,
+                          color: AppColors.bSecondaryColor,
                         ),
-                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),

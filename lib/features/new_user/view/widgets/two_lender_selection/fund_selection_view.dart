@@ -10,6 +10,7 @@ import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
+import 'package:las_app/features/new_user/view/widgets/three_kyc_verification/step_checker_view.dart';
 import 'package:las_app/features/new_user/view/widgets/two_lender_selection/fund_list_item.dart';
 
 class FundSelectionView extends StatelessWidget {
@@ -396,9 +397,19 @@ class FundSelectionView extends StatelessWidget {
                         'lenderName': selectedLender.name,
                       }),
                       onPressed: () {
-                        blocContext.read<EligibilityBloc>().add(
-                          ConfirmFundSelection(context),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => BlocProvider.value(
+                              value: context.read<EligibilityBloc>(),
+                              child: const KycVerificationScreen(),
+                            ),
+                          ),
                         );
+
+                        // blocContext.read<EligibilityBloc>().add(
+                        //   ConfirmFundSelection(context),
+                        // );
                       },
                       type: ButtonType.primaryWhite,
                       suffixIcon: const Icon(

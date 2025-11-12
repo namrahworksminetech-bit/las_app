@@ -111,11 +111,13 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
   }
 
   void _onOtpChanged(OtpChanged event, Emitter<EligibilityState> emit) {
-    emit(state.copyWith(
-      otp: event.otp, 
-      otpError: false,
-      rtaOtpError: null, // Clear RTA OTP error when typing
-    ));
+    emit(
+      state.copyWith(
+        otp: event.otp,
+        otpError: false,
+        rtaOtpError: null, // Clear RTA OTP error when typing
+      ),
+    );
   }
 
   Future<void> _onSubmitOtp(
@@ -331,7 +333,6 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
           return;
         }
 
-
         getIt<AppStateProvider>().setReqId(reqId);
 
         final otpResult = await repository.generateOtp();
@@ -464,80 +465,86 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     }
   }
 
+  Future<void> _onFetchStep2Data(
+    FetchStep2Data event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    if (state.isLoading || state.isPortfolioRefreshing) return;
 
-Future<void> _onFetchStep2Data(
-  FetchStep2Data event,
-  Emitter<EligibilityState> emit,
-) async {
-  if (state.isLoading || state.isPortfolioRefreshing) return;
+    print("🔄 Fetching lenders and portfolio data...");
 
-  print("🔄 Fetching lenders and portfolio data...");
+    try {
+      final reqId = getIt<AppStateProvider>().reqId;
+      if (reqId == null) {
+        emit(
+          state.copyWith(
+            isLoading: false,
+            generalErrorMessage:
+                "Missing request ID. Please restart the process.",
+          ),
+        );
+        return;
+      }
 
-  try {
-    final reqId = getIt<AppStateProvider>().reqId;
-    if (reqId == null) {
-      emit(state.copyWith(
-        isLoading: false,
-        generalErrorMessage: "Missing request ID. Please restart the process.",
-      ));
-      return;
-    }
+      final result = await lenderRepository.fetchLendersAndPortfolio(
+        reqId: reqId,
+      );
 
-    final result = await lenderRepository.fetchLendersAndPortfolio(reqId: reqId);
-
-    await result.when(
-      success: (mfResponse) async {
-        print("✅ Lenders parsed: ${mfResponse.lenders.length}");
-        print("✅ Pledgeable funds parsed: ${mfResponse.pledgeableFunds.length}");
-        print("✅ Pledgeable Amount: ${mfResponse.pledgeableAmount}");
-        print("✅ Non-Pledgeable Amount: ${mfResponse.nonPledgeableAmount}");
-        print("✅ Demat Amount: ${mfResponse.dematAmount}");
-        print("✅ Eligible Portfolio: ${mfResponse.eligiblePortfolio}");
-        print("✅ Max Eligible Limit: ${mfResponse.maxEligibleLimit}");
-
- 
-        final lenders = mfResponse.lenders.map((l) {
-          return Lender(
-            id: l.id.toString(),
-            name: l.name ?? '-',
-            logoAsset: l.logo ?? '',
-            interestRate: l.loanInterest ?? 0.0,
-            loanAmount: l.loanAmount ?? 0.0,
-            pledgeableMFs: l.eligibleFundsCount ?? 0,
-            tag: '',
+      await result.when(
+        success: (mfResponse) async {
+          print("✅ Lenders parsed: ${mfResponse.lenders.length}");
+          print(
+            "✅ Pledgeable funds parsed: ${mfResponse.pledgeableFunds.length}",
           );
-        }).toList();
+          print("✅ Pledgeable Amount: ${mfResponse.pledgeableAmount}");
+          print("✅ Non-Pledgeable Amount: ${mfResponse.nonPledgeableAmount}");
+          print("✅ Demat Amount: ${mfResponse.dematAmount}");
+          print("✅ Eligible Portfolio: ${mfResponse.eligiblePortfolio}");
+          print("✅ Max Eligible Limit: ${mfResponse.maxEligibleLimit}");
 
-        // ✅ Emit updated state directly with mfResponse data
-        emit(state.copyWith(
-          isLoading: false,
-          lenders: lenders,
-          pledgeableFunds: mfResponse.pledgeableFunds,
-          mfDetailsResponse: mfResponse,
-          // Optional: derived summary data for UI
-         
-        ));
+          final lenders = mfResponse.lenders.map((l) {
+            return Lender(
+              id: l.id.toString(),
+              name: l.name ?? '-',
+              logoAsset: l.logo ?? '',
+              interestRate: l.loanInterest ?? 0.0,
+              loanAmount: l.loanAmount ?? 0.0,
+              pledgeableMFs: l.eligibleFundsCount ?? 0,
+              tag: '',
+            );
+          }).toList();
 
-        print("🟢 Stored lender + MF data successfully.");
-      },
-      failure: (error) {
-        print("❌ Failed to fetch Step 2 data: $error");
-        emit(state.copyWith(
+          // ✅ Emit updated state directly with mfResponse data
+          emit(
+            state.copyWith(
+              isLoading: false,
+              lenders: lenders,
+              pledgeableFunds: mfResponse.pledgeableFunds,
+              mfDetailsResponse: mfResponse,
+
+              // Optional: derived summary data for UI
+            ),
+          );
+
+          print("🟢 Stored lender + MF data successfully.");
+        },
+        failure: (error) {
+          print("❌ Failed to fetch Step 2 data: $error");
+          emit(state.copyWith(isLoading: false, generalErrorMessage: error));
+        },
+      );
+    } catch (e, stack) {
+      print("❌ Exception while fetching Step 2 data: $e");
+      print("🧠 Stacktrace: $stack");
+      emit(
+        state.copyWith(
           isLoading: false,
-          generalErrorMessage: error,
-        ));
-      },
-    );
-  } catch (e, stack) {
-    print("❌ Exception while fetching Step 2 data: $e");
-    print("🧠 Stacktrace: $stack");
-    emit(state.copyWith(
-      isLoading: false,
-      generalErrorMessage: "Failed to fetch lender data.",
-    ));
+          generalErrorMessage: "Failed to fetch lender data.",
+        ),
+      );
+    }
   }
-}
-  
+
   void _onLenderSelected(LenderSelected event, Emitter<EligibilityState> emit) {
     final newSelectedId = (state.selectedLenderId == event.lenderId)
         ? null
@@ -712,30 +719,27 @@ Future<void> _onFetchStep2Data(
   }
 
   void _onViewDetailsToggled(
-  ViewDetailsToggled event,
-  Emitter<EligibilityState> emit,
-) {
-  final currentView = state.lenderSelectionView;
-  late final LenderSelectionView nextView;
+    ViewDetailsToggled event,
+    Emitter<EligibilityState> emit,
+  ) {
+    final currentView = state.lenderSelectionView;
+    late final LenderSelectionView nextView;
 
-  if (currentView == LenderSelectionView.lenderList ||
-      currentView == LenderSelectionView.fundSelection) {
-    nextView = LenderSelectionView.portfolioBreakdown;
-  } else if (currentView == LenderSelectionView.portfolioBreakdown ||
-      currentView == LenderSelectionView.pledgeableDetail) {
-    nextView = LenderSelectionView.lenderList;
-  } else {
-    nextView = LenderSelectionView.lenderList;
+    if (currentView == LenderSelectionView.lenderList ||
+        currentView == LenderSelectionView.fundSelection) {
+      nextView = LenderSelectionView.portfolioBreakdown;
+    } else if (currentView == LenderSelectionView.portfolioBreakdown ||
+        currentView == LenderSelectionView.pledgeableDetail) {
+      nextView = LenderSelectionView.lenderList;
+    } else {
+      nextView = LenderSelectionView.lenderList;
+    }
+
+    emit(
+      state.copyWith(lenderSelectionView: nextView, clearSelectedLender: true),
+    );
   }
 
-  emit(
-    state.copyWith(
-      lenderSelectionView: nextView,
-      clearSelectedLender: true,
-    ),
-  );
-}
-  
   Future<void> _onRefreshPortfolioPressed(
     RefreshPortfolioPressed event,
     Emitter<EligibilityState> emit,
@@ -913,7 +917,7 @@ Future<void> _onFetchStep2Data(
     SaveEditedLoanAmount event,
     Emitter<EligibilityState> emit,
   ) async {
-    try { 
+    try {
       emit(state.copyWith(isLoading: true));
 
       final reqId = getIt<AppStateProvider>().reqId ?? '';
@@ -1276,10 +1280,12 @@ Future<void> _onFetchStep2Data(
 
     final reqId = getIt<AppStateProvider>().reqId;
     if (reqId == null || reqId.isEmpty) {
-      emit(state.copyWith(
-        isRtaOtpVerifying: false,
-        rtaOtpError: 'Session expired. Please login again.',
-      ));
+      emit(
+        state.copyWith(
+          isRtaOtpVerifying: false,
+          rtaOtpError: 'Session expired. Please login again.',
+        ),
+      );
       return;
     }
 
@@ -1295,33 +1301,36 @@ Future<void> _onFetchStep2Data(
       result.when(
         success: (response) {
           if (response.status == 'success') {
-            emit(state.copyWith(
-              isRtaOtpVerifying: false,
-              rtaOtpError: null,
-              snackbarMessage: 'OTP verified successfully!',
-            ));
+            emit(
+              state.copyWith(
+                isRtaOtpVerifying: false,
+                rtaOtpError: null,
+                snackbarMessage: 'OTP verified successfully!',
+              ),
+            );
           } else {
-            final errorMessage = response.message.trim().isNotEmpty 
-                ? response.message 
+            final errorMessage = response.message.trim().isNotEmpty
+                ? response.message
                 : 'OTP verification failed. Please try again.';
-            emit(state.copyWith(
-              isRtaOtpVerifying: false,
-              rtaOtpError: errorMessage,
-            ));
+            emit(
+              state.copyWith(
+                isRtaOtpVerifying: false,
+                rtaOtpError: errorMessage,
+              ),
+            );
           }
         },
         failure: (error) {
-          emit(state.copyWith(
-            isRtaOtpVerifying: false,
-            rtaOtpError: error,
-          ));
+          emit(state.copyWith(isRtaOtpVerifying: false, rtaOtpError: error));
         },
       );
     } catch (e) {
-      emit(state.copyWith(
-        isRtaOtpVerifying: false,
-        rtaOtpError: 'Something went wrong. Please try again.',
-      ));
+      emit(
+        state.copyWith(
+          isRtaOtpVerifying: false,
+          rtaOtpError: 'Something went wrong. Please try again.',
+        ),
+      );
     }
   }
 

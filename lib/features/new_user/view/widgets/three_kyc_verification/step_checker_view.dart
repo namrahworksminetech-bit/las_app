@@ -28,12 +28,13 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   Timer? _statusTimer;
   late final PledgeStatusRepository _pledgeRepo;
   String? _lastStatus;
+  bool _hasStartedKyc = false;
 
   @override
   void initState() {
     super.initState();
     _pledgeRepo = PledgeStatusRepository(GetIt.instance<ApiClient>());
-    _startStatusPolling();
+    // Don't start polling immediately - wait for user to click a step
   }
 
   void _startStatusPolling() {
@@ -159,16 +160,25 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     print('🎯 ReqId: $reqId');
     print('📋 Step Index: $stepIndex');
 
+    final List<String> stepNames = [
+      "fillBasicInfo".tr,
+      "aadharPanVerification".tr,
+      "linkAccountMandate".tr,
+      "loanAgreementSigning".tr,
+    ];
+
     KycService.startKyc(
       context,
       lenderCode: 'BFL',
       reqId: reqId.toString(),
+      stepName: stepNames[stepIndex],
       onSuccess: () {
-        print('✅ KYC URL opened successfully - checking status immediately');
-        // Check status immediately after KYC success
-        Future.delayed(const Duration(seconds: 1), () {
-          _checkPledgeStatus();
-        });
+        print('✅ KYC URL opened successfully - starting status polling');
+        // Only start polling after successful KYC start
+        if (!_hasStartedKyc) {
+          _hasStartedKyc = true;
+          _startStatusPolling();
+        }
       },
     );
   }

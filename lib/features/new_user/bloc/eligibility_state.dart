@@ -111,7 +111,7 @@ class EligibilityState extends Equatable {
     this.editedLoanAmounts = const {},
     this.pledgeableFunds = const [],
     this.selectedFundIds = const {},
-    this.previousSelectedFundIds = const {}, // ✅ Correctly placed
+    this.previousSelectedFundIds = const {}, //  Correctly placed
     this.kycStepChecks = const [false, false, false, false],
     this.otp = '',
     this.isSubmitting = false,
@@ -246,7 +246,8 @@ class EligibilityState extends Equatable {
       kycUrl: kycUrl ?? this.kycUrl,
       kycLoading: kycLoading ?? this.kycLoading,
       kycError: kycError ?? this.kycError,
-      hasSeenEligibilityResult: hasSeenEligibilityResult ?? this.hasSeenEligibilityResult,
+      hasSeenEligibilityResult:
+          hasSeenEligibilityResult ?? this.hasSeenEligibilityResult,
       isRtaOtpVerifying: isRtaOtpVerifying ?? this.isRtaOtpVerifying,
       rtaOtpError: rtaOtpError ?? this.rtaOtpError,
       userMobileNumber: userMobileNumber ?? this.userMobileNumber,

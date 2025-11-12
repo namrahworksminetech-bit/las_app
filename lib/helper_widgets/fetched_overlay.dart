@@ -23,15 +23,20 @@ class EligibilityResultOverlay extends StatelessWidget {
     );
 
     // Access the BLoC state
-    final mfDetailsResponse =
-        context.watch<EligibilityBloc>().state.mfDetailsResponse;
+    final mfDetailsResponse = context
+        .watch<EligibilityBloc>()
+        .state
+        .mfDetailsResponse;
 
     // Calculate total pledgeable funds dynamically
-    final totalPledgeable = mfDetailsResponse?.pledgeableFunds
-            .fold<double>(0, (sum, fund) => sum + (fund.availableAmount ?? 0)) ??
+    final totalPledgeable =
+        mfDetailsResponse?.pledgeableFunds.fold<double>(
+          0,
+          (sum, fund) => sum + (fund.availableAmount ?? 0),
+        ) ??
         0.0;
 
-    // small helper to safely add events (prevents crash if bloc closed)
+    // Helper to safely add events to BLoC (avoids crashes if bloc closed)
     void safeAdd(EligibilityBloc bloc, EligibilityEvent event) {
       try {
         bloc.add(event);
@@ -73,11 +78,8 @@ class EligibilityResultOverlay extends StatelessWidget {
           // Dynamic total pledgeable value
           RichText(
             text: TextSpan(
-              style: AppTypography.h0.copyWith(
-                color: AppColors.success,
-              ),
+              style: AppTypography.h0.copyWith(color: AppColors.success),
               children: [
-                TextSpan(text: ''.tr),
                 TextSpan(text: formatCurrency.format(totalPledgeable)),
               ],
             ),
@@ -95,40 +97,42 @@ class EligibilityResultOverlay extends StatelessWidget {
           // Button to proceed
           CButton(
             text: 'seeLoanOffers'.tr,
-            onPressed: () {
-              try {
-                final eligibilityBloc = context.read<EligibilityBloc>();
-
-              // Close the bottom sheet / overlay first (if this widget is inside one)
-              // We attempt to pop the bottom sheet safely. If it isn't a route, this will just pop the route.
-              // Wrap in try/catch so we don't crash in unexpected contexts.
-              try {
-                if (Navigator.of(context).canPop()) {
-                  Navigator.of(context).pop(); // closes bottom sheet or route
-                }
-              } catch (e) {
-                debugPrint('Failed to pop overlay before navigation: $e');
-              }
-
-              // Trigger data fetch for lender list + portfolio
-              safeAdd(eligibilityBloc, FetchStep2Data());
-
-              // Navigate to LenderSelectionScreen and reuse the same bloc instance.
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (navCtx) => BlocProvider.value(
-                    value: eligibilityBloc,
-                    child: const LenderSelectionScreen(),
-                  ),
-                ),
-              );
-            },
             type: ButtonType.secondaryBlack,
             suffixIcon: const Icon(
               Icons.arrow_forward,
               color: AppColors.black,
               size: 18,
             ),
+            onPressed: () {
+              try {
+                final eligibilityBloc = context.read<EligibilityBloc>();
+
+                // Close the bottom sheet / overlay first (if this widget is inside one)
+                try {
+                  if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop(); // closes bottom sheet or route
+                  }
+                } catch (e) {
+                  debugPrint('Failed to pop overlay before navigation: $e');
+                }
+
+                // Trigger data fetch for lender list + portfolio
+                safeAdd(eligibilityBloc, FetchStep2Data());
+
+                // Navigate to LenderSelectionScreen and reuse the same bloc instance.
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (navCtx) => BlocProvider.value(
+                      value: eligibilityBloc,
+                      child: const LenderSelectionScreen(),
+                    ),
+                  ),
+                );
+              } catch (e, st) {
+                debugPrint('Error navigating to lender selection: $e');
+                debugPrintStack(stackTrace: st);
+              }
+            },
           ),
 
           Gaps.hMd,
