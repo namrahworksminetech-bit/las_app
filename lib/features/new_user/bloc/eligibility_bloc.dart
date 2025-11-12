@@ -5,7 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:las_app/app.dart';
 import 'package:las_app/core/app_state_provider.dart';
 import 'package:las_app/core/results/result.dart';
-import 'package:las_app/features/new_user/repository/lenders_data_repo.dart';
+import 'package:las_app/features/new_user/repository/lenders_data_repo.dart'
+    hide DioException;
 import 'package:las_app/features/new_user/repository/rta_otp_repo.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -816,121 +817,122 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
       );
     }
   }
-Future<void> _onEditLoanAmountPressed(
-  EditLoanAmountPressed event,
-  Emitter<EligibilityState> emit,
-) async {
-  print('📤 Edit loan amount triggered for lender ${event.lenderId}');
-  emit(state.copyWith(isLoading: true));
 
-  try {
-    final reqId = getIt<AppStateProvider>().reqId ?? '';
-    final lenderId = event.lenderId;
+  Future<void> _onEditLoanAmountPressed(
+    EditLoanAmountPressed event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    print('📤 Edit loan amount triggered for lender ${event.lenderId}');
+    emit(state.copyWith(isLoading: true));
 
-    if (reqId.isEmpty) {
+    try {
+      final reqId = getIt<AppStateProvider>().reqId ?? '';
+      final lenderId = event.lenderId;
+
+      if (reqId.isEmpty) {
+        emit(
+          state.copyWith(
+            isLoading: false,
+            snackbarMessage: 'Missing reqId. Please login again.',
+          ),
+        );
+        return;
+      }
+
+      final previousFunds = state.previousSelectedFundIds;
+      final currentFunds = state.selectedFundIds;
+      final allFunds = state.pledgeableFunds;
+
+      // 🧮 Identify fund changes
+      final addedFunds = currentFunds.difference(previousFunds);
+      final removedFunds = previousFunds.difference(currentFunds);
+
+      // ✅ Build ISIN lists only if funds changed
+      // ✅ Build ISIN lists only if funds changed
+      final isinAdd = addedFunds.isNotEmpty
+          ? addedFunds.map<String>((id) {
+              final fund = allFunds.firstWhere(
+                (f) => f.fundCode == id,
+                orElse: () => allFunds.first,
+              );
+              return "${fund.fundCode}:${fund.folioNo}";
+            }).toList()
+          : <String>[];
+
+      final isinRemove = removedFunds.isNotEmpty
+          ? removedFunds.map<String>((id) {
+              final fund = allFunds.firstWhere(
+                (f) => f.fundCode == id,
+                orElse: () => allFunds.first,
+              );
+              return "${fund.fundCode}:${fund.folioNo}";
+            }).toList()
+          : <String>[];
+
+      // ✅ Modify funds only when their values actually changed
+      final isinModify = state.pledgeableFunds
+          .where((f) => currentFunds.contains(f.fundCode))
+          .map<String>((f) {
+            final folio = f.folioNo ?? '';
+            final updatedAmount = event.loanAmount.toStringAsFixed(2);
+            return "${f.fundCode}:$folio:$updatedAmount";
+          })
+          .toList();
+      print('📤 ISIN_ADD: $isinAdd');
+      print('📤 ISIN_REMOVE: $isinRemove');
+      print('📤 ISIN_MODIFY: $isinModify');
+      print('📋 reqId: $reqId');
+      print('💰 New Loan Amount: ${event.loanAmount}');
+
+      final result = await lenderRepository.editLoanAmount(
+        reqId: reqId,
+        loanAmount: event.loanAmount,
+        lenderId: lenderId.toString(), // ✅ ensure string
+        isinAdd: isinAdd,
+        isinRemove: isinRemove,
+        isinModify: isinModify,
+      );
+
+      result.when(
+        success: (response) {
+          print('✅ Loan amount updated successfully');
+          emit(
+            state.copyWith(
+              isLoading: false,
+              mfDetailsResponse: response,
+              pledgeableFunds: response.pledgeableFunds,
+              lenders: response.lenders.map((l) {
+                return Lender(
+                  id: l.id.toString(),
+                  name: l.name ?? '-',
+                  logoAsset: l.logo ?? '',
+                  interestRate: l.loanInterest ?? 0.0,
+                  loanAmount: l.loanAmount ?? 0.0,
+                  pledgeableMFs: l.eligibleFundsCount ?? 0,
+                  tag: '',
+                );
+              }).toList(),
+              snackbarMessage: 'Loan amount updated successfully!',
+            ),
+          );
+        },
+        failure: (error) {
+          print('❌ Failed to update loan amount: $error');
+          emit(
+            state.copyWith(isLoading: false, snackbarMessage: error.toString()),
+          );
+        },
+      );
+    } catch (e, st) {
+      print('🚨 Exception while editing loan amount: $e\n$st');
       emit(
         state.copyWith(
           isLoading: false,
-          snackbarMessage: 'Missing reqId. Please login again.',
+          snackbarMessage: 'Something went wrong while updating the amount.',
         ),
       );
-      return;
     }
-
-    final previousFunds = state.previousSelectedFundIds;
-    final currentFunds = state.selectedFundIds;
-    final allFunds = state.pledgeableFunds;
-
-    // 🧮 Identify fund changes
-    final addedFunds = currentFunds.difference(previousFunds);
-    final removedFunds = previousFunds.difference(currentFunds);
-
-    // ✅ Build ISIN lists only if funds changed
-   // ✅ Build ISIN lists only if funds changed
-final isinAdd = addedFunds.isNotEmpty
-    ? addedFunds.map<String>((id) {
-        final fund =
-            allFunds.firstWhere((f) => f.fundCode == id, orElse: () => allFunds.first);
-        return "${fund.fundCode}:${fund.folioNo}";
-      }).toList()
-    : <String>[];
-
-final isinRemove = removedFunds.isNotEmpty
-    ? removedFunds.map<String>((id) {
-        final fund =
-            allFunds.firstWhere((f) => f.fundCode == id, orElse: () => allFunds.first);
-        return "${fund.fundCode}:${fund.folioNo}";
-      }).toList()
-    : <String>[];
-
-// ✅ Modify funds only when their values actually changed
-final isinModify = state.pledgeableFunds
-    .where((f) => currentFunds.contains(f.fundCode))
-    .map<String>((f) {
-      final folio = f.folioNo ?? '';
-      final updatedAmount = event.loanAmount.toStringAsFixed(2);
-      return "${f.fundCode}:$folio:$updatedAmount";
-    })
-    .toList();
-    print('📤 ISIN_ADD: $isinAdd');
-    print('📤 ISIN_REMOVE: $isinRemove');
-    print('📤 ISIN_MODIFY: $isinModify');
-    print('📋 reqId: $reqId');
-    print('💰 New Loan Amount: ${event.loanAmount}');
-
-   
-    final result = await lenderRepository.editLoanAmount(
-      reqId: reqId,
-      loanAmount: event.loanAmount,
-  lenderId: lenderId.toString(), // ✅ ensure string
-      isinAdd: isinAdd,
-      isinRemove: isinRemove,
-      isinModify: isinModify,
-    );
-
-    result.when(
-      success: (response) {
-        print('✅ Loan amount updated successfully');
-        emit(
-          state.copyWith(
-            isLoading: false,
-            mfDetailsResponse: response,
-            pledgeableFunds: response.pledgeableFunds,
-            lenders: response.lenders.map((l) {
-              return Lender(
-                id: l.id.toString(),
-                name: l.name ?? '-',
-                logoAsset: l.logo ?? '',
-                interestRate: l.loanInterest ?? 0.0,
-                loanAmount: l.loanAmount ?? 0.0,
-                pledgeableMFs: l.eligibleFundsCount ?? 0,
-                tag: '',
-              );
-            }).toList(),
-            snackbarMessage: 'Loan amount updated successfully!',
-          ),
-        );
-      },
-      failure: (error) {
-        print('❌ Failed to update loan amount: $error');
-        emit(
-          state.copyWith(
-            isLoading: false,
-            snackbarMessage: error.toString(),
-          ),
-        );
-      },
-    );
-  } catch (e, st) {
-    print('🚨 Exception while editing loan amount: $e\n$st');
-    emit(
-      state.copyWith(
-        isLoading: false,
-        snackbarMessage: 'Something went wrong while updating the amount.',
-      ),
-    );
   }
-}
 
   Future<void> _onSaveEditedLoanAmount(
     SaveEditedLoanAmount event,

@@ -397,19 +397,19 @@ class FundSelectionView extends StatelessWidget {
                         'lenderName': selectedLender.name,
                       }),
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => BlocProvider.value(
-                              value: context.read<EligibilityBloc>(),
-                              child: const KycVerificationScreen(),
-                            ),
-                          ),
-                        );
-
-                        // blocContext.read<EligibilityBloc>().add(
-                        //   ConfirmFundSelection(context),
+                        // Navigator.push(
+                        //   context,
+                        //   MaterialPageRoute(
+                        //     builder: (_) => BlocProvider.value(
+                        //       value: context.read<EligibilityBloc>(),
+                        //       child: const KycVerificationScreen(),
+                        //     ),
+                        //   ),
                         // );
+
+                        blocContext.read<EligibilityBloc>().add(
+                          ConfirmFundSelection(context),
+                        );
                       },
                       type: ButtonType.primaryWhite,
                       suffixIcon: const Icon(
