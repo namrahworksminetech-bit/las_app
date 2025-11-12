@@ -1,11 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import 'package:las_app/core/app_state_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:las_app/core/network/api_client.dart';
 import 'package:las_app/core/results/result.dart';
 import 'package:las_app/models/funds/mf_details_response_model.dart';
-import 'dart:convert';
 
 class LenderRepository {
   final ApiClient _apiClient;
@@ -3578,16 +3576,59 @@ class LenderRepository {
         return Failure("Missing auth token. Please login again.");
       }
 
-      final Map<String, dynamic> body = {
-        "req_id": reqId,
-        "loan_amount": loanAmount,
-        "lender_id": lenderId,
-        "isin_add": isinAdd,
-        "isin_remove": isinRemove,
-        "isin_modify": isinModify,
-      };
+   final body = {
+  "req_id": reqId,
+  "loan_amount": loanAmount,
+  "lender_id": lenderId.toString(), // ✅ must be string
+  "isin_add": [],
+  "isin_remove": [],
+  "isin_modify": [] // ✅ empty if no fund modification
+};
 
-      print("📤 Edit Loan Amount Request: $body");
+    print("📤 Edit Loan Amount Request: $body");
+//mockone add here
+
+      // When API is ready, uncomment this:
+      final response = await _apiClient.post(
+      "https://api-dev.valuenable.in/lamf/customer/edit-loan-amount",
+      data: body,
+      options: Options(
+        headers: {
+          'Authorization': 'Bearer $authToken',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        // ✅ Allow parsing body even for 400/500 status codes
+        validateStatus: (status) => status != null && status < 500,
+      ),
+    );
+
+    final decoded = response.data as Map<String, dynamic>;
+    print("📥 Response: $decoded");
+
+    if (response.statusCode == 400) {
+      final msg = decoded['message'] ?? 'Invalid request';
+      print("⚠️ Server responded with 400: $msg");
+      return Failure(msg);
+    }
+
+    if (decoded['status'] == 'success') {
+      print("✅ Loan Amount Updated Successfully");
+      final mfDetails = MfDetailsResponse.fromJson(decoded);
+      return Success(mfDetails);
+    } else {
+      final msg = decoded['message'] ?? 'Unknown API error';
+      return Failure(msg);
+    }
+  } on DioException catch (e) {
+    print("⏰ Dio timeout or error: ${e.type}");
+    final msg = e.response?.data?['message'] ?? e.message ?? 'Network error';
+    return Failure(msg);
+  } catch (e, st) {
+    print("💥 Unexpected error: $e\n$st");
+    return Failure('Unexpected error: $e');
+  }
+}}
 
       //       const mockResponse = '''{
       //     "status": "success",
