@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:las_app/core/app_state_provider.dart';
 import 'package:las_app/core/injection_container.dart';
 import 'package:las_app/core/network/api_client.dart';
@@ -10,11 +10,12 @@ import 'package:las_app/models/pan_verification/pan_verify_response_model.dart';
 class PanRepository {
   final ApiClient _apiClient;
   final AppStateProvider _appState = getIt<AppStateProvider>();
+  final _storage = const FlutterSecureStorage();
 
   PanRepository(this._apiClient);
 
   // Toggle this flag to switch between mock and live APIs easily
-  static const bool useMock = true;
+  static const bool useMock = false;
 
   // 🔹 Step 1: Verify PAN
   Future<Result<PanVerifyResponseModel>> verifyPan({
@@ -25,9 +26,7 @@ class PanRepository {
     required String email,
   }) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token') ?? _appState.token;
-
+      final token = await _storage.read(key: 'token');
       if (token == null || token.isEmpty) {
         throw Exception('Token missing! Please login again.');
       }
@@ -46,25 +45,25 @@ class PanRepository {
       };
 
       // 🟢 MOCK RESPONSE (fast test mode)
-      if (useMock) {
-        await Future.delayed(const Duration(seconds: 1));
-        final mockResponse = {
-          "status": "success",
-          "data": {
-            "id": reqId,
-            "mobile_verified": false,
-            "name_verified": false,
-            "dob_verified": false,
-            "lender_code": null,
-            "status": "pan_verified",
-          },
-          "message": "PAN Verified successfully",
-        };
-        return Success(PanVerifyResponseModel.fromJson(mockResponse));
-      }
+      // if (useMock) {
+      //   await Future.delayed(const Duration(seconds: 1));
+      //   final mockResponse = {
+      //     "status": "success",
+      //     "data": {
+      //       "id": "a3866a0c-b63b-11f0-adb1-0ac0d6a50e11",
+      //       "mobile_verified": false,
+      //       "name_verified": false,
+      //       "dob_verified": false,
+      //       "lender_code": null,
+      //       "status": "pan_verified"
+      //     },
+      //     "message": "PAN Verified successfully"
+      //   };
+      //   return Success(PanVerifyResponseModel.fromJson(mockResponse));
+      // }
 
       // 🧾 Live API call (uncomment when server stabilizes)
-      /*
+      
       final response = await _apiClient.post(
         'customer/verify-pan',
         data: body,
@@ -78,10 +77,10 @@ class PanRepository {
       );
 
       return Success(PanVerifyResponseModel.fromJson(response.data));
-      */
+      
+
     } on DioException catch (e) {
-      final message =
-          e.response?.data['message'] ?? e.message ?? 'Network error';
+      final message = e.response?.data['message'] ?? e.message ?? 'Network error';
       return Failure(message);
     } catch (e) {
       return Failure('Unexpected error: $e');
@@ -98,28 +97,29 @@ class PanRepository {
 
     try {
       // 🟢 MOCK RESPONSE
-      if (useMock) {
-        await Future.delayed(const Duration(seconds: 1));
-        final mockResponse = {
-          "status": "success",
-          "data": {"client_ref_no": reqId},
-          "message": "OTP sent successfully",
-        };
-        return Success(PanGenerateOtpResponseModel.fromJson(mockResponse));
-      }
+      // if (useMock) {
+      //   await Future.delayed(const Duration(seconds: 1));
+      //   final mockResponse = {
+      //     "status": "success",
+      //     "data": {
+      //       "client_ref_no": "a3866a0c-b63b-11f0-adb1-0ac0d6a50e11",
+      //     },
+      //     "message": "OTP sent successfully"
+      //   };
+      //   return Success(PanGenerateOtpResponseModel.fromJson(mockResponse));
+      // }
 
       // 🧾 Live API call
-      /*
+      
       final response = await _apiClient.post(
         'customer/generate-otp',
         data: {'req_id': reqId},
       );
       return Success(PanGenerateOtpResponseModel.fromJson(response.data));
-      */
+      
+
     } on DioException catch (e) {
-      return Failure(
-        e.response?.data['message'] ?? e.message ?? 'Network error',
-      );
+      return Failure(e.response?.data['message'] ?? e.message ?? 'Network error');
     } catch (e) {
       return Failure('Unexpected error: $e');
     }
@@ -136,9 +136,7 @@ class PanRepository {
     }
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token') ?? _appState.token;
-
+      final token = await _storage.read(key: 'token');
       print("🔐 Token before verify OTP: $token");
 
       if (token == null || token.isEmpty) {
@@ -146,18 +144,20 @@ class PanRepository {
       }
 
       // 🟢 MOCK RESPONSE
-      if (useMock) {
-        await Future.delayed(const Duration(seconds: 1));
-        final mockResponse = {
-          "status": "success",
-          "data": {"req_id": reqId},
-          "message": "OTP verified successfully",
-        };
-        return Success(PanVerifyResponseModel.fromJson(mockResponse));
-      }
+      // if (useMock) {
+      //   await Future.delayed(const Duration(seconds: 1));
+      //   final mockResponse = {
+      //     "status": "success",
+      //     "data": {
+      //       "req_id": "a3866a0c-b63b-11f0-adb1-0ac0d6a50e11"
+      //     },
+      //     "message": "OTP verified successfully"
+      //   };
+      //   return Success(PanVerifyResponseModel.fromJson(mockResponse));
+      // }
 
       // 🧾 Live API call
-      /*
+      
       final response = await _apiClient.post(
         'customer/verify-otp',
         data: {
@@ -174,12 +174,11 @@ class PanRepository {
       );
 
       return Success(PanVerifyResponseModel.fromJson(response.data));
-      */
+      
+
     } on DioException catch (e) {
       print("❌ Dio error: ${e.response?.data}");
-      return Failure(
-        e.response?.data['message'] ?? e.message ?? 'Network error',
-      );
+      return Failure(e.response?.data['message'] ?? e.message ?? 'Network error');
     } catch (e) {
       print("❌ Unexpected error: $e");
       return Failure('Unexpected error: $e');
@@ -189,15 +188,11 @@ class PanRepository {
 
   // ✅ Save token after OTP verification (Login)
   Future<void> saveToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('token', token);
-    _appState.setToken(token);
+    await _storage.write(key: 'token', value: token);
   }
 
   // ✅ Clear token if needed
   Future<void> clearToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
-    _appState.clear();
+    await _storage.delete(key: 'token');
   }
 }
