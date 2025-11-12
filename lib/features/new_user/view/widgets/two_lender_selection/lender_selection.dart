@@ -9,6 +9,7 @@ import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/common_widgets/c_text.dart';
+import 'package:las_app/common_widgets/c_snackbar.dart';
 import 'package:las_app/features/new_user/view/widgets/two_lender_selection/fund_selection_view.dart';
 import 'package:las_app/features/new_user/view/widgets/two_lender_selection/lender_list_view.dart';
 import 'package:las_app/features/new_user/view/widgets/two_lender_selection/pledgable_funds_details_view.dart';
@@ -33,7 +34,17 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
     return Scaffold(
       backgroundColor: AppColors.black,
       body: SafeArea(
-        child: BlocBuilder<EligibilityBloc, EligibilityState>(
+        child: BlocConsumer<EligibilityBloc, EligibilityState>(
+          listener: (context, state) {
+            if (state.generalErrorMessage != null) {
+              CSnackBar.show(
+                context,
+                state.generalErrorMessage!,
+                isError: true,
+              );
+              context.read<EligibilityBloc>().add(ErrorMessageCleared());
+            }
+          },
           builder: (context, state) {
             final bool showFullHeader =
                 state.lenderSelectionView == LenderSelectionView.lenderList ||

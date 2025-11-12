@@ -90,21 +90,25 @@ class EligibilityResultOverlay extends StatelessWidget {
           CButton(
             text: 'seeLoanOffers'.tr,
             onPressed: () {
-              final eligibilityBloc = context.read<EligibilityBloc>();
+              try {
+                final eligibilityBloc = context.read<EligibilityBloc>();
 
-              // 🔹 Trigger data fetch for lender list + portfolio
-              eligibilityBloc.add(FetchStep2Data());
-              Navigator.pop(context);
-              // 🔹 Navigate to LenderSelectionScreen
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => BlocProvider.value(
-                    value: eligibilityBloc,
-                    child: const LenderSelectionScreen(),
+                // 🔹 Trigger data fetch for lender list + portfolio
+                eligibilityBloc.add(FetchStep2Data());
+                Navigator.pop(context);
+                // 🔹 Navigate to LenderSelectionScreen
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => BlocProvider.value(
+                      value: eligibilityBloc,
+                      child: const LenderSelectionScreen(),
+                    ),
                   ),
-                ),
-              );
+                );
+              } catch (e) {
+                print('Error navigating: $e');
+              }
             },
             type: ButtonType.secondaryBlack,
             suffixIcon: const Icon(

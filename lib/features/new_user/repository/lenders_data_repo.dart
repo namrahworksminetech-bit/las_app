@@ -26,8 +26,8 @@ class LenderRepository {
         'customer/get-mf-details',
         data: {'req_id': reqId},
         options: Options(
-          sendTimeout: const Duration(seconds: 60),
-          receiveTimeout: const Duration(minutes: 2),
+          sendTimeout: const Duration(seconds: 120),
+          receiveTimeout: const Duration(seconds: 120),
           headers: {
             'Authorization': 'Bearer $authToken',
             'Accept': 'application/json',
