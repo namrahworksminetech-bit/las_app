@@ -150,7 +150,7 @@ class PledgeFundsOtpScreen extends StatelessWidget {
                          current.snackbarMessage != null;
                 },
                 listener: (context, state) {
-                  if (state.snackbarMessage!.contains('OTP verified successfully')) {
+                  if (state.snackbarMessage!.contains('SuccessFul!')) {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(

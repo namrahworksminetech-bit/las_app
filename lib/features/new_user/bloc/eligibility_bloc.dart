@@ -60,6 +60,9 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     on<LenderContinuePressed>(_onLenderContinuePressed);
     on<ProceedToLenderSelection>(_onProceedToLenderSelection);
 
+
+on<ClearSnackbar>(_onClearSnackbar);
+
     on<ToggleFundSelection>(_onToggleFundSelection);
     on<ConfirmFundSelection>(_onConfirmFundSelection);
     on<ToggleKycStep>(_onToggleKycStep);
@@ -80,6 +83,14 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     on<VerifyRtaOtp>(_onVerifyRtaOtp);
     on<SetUserMobileNumber>(_onSetUserMobileNumber);
   }
+
+  Future<void> _onClearSnackbar(
+  ClearSnackbar event,
+  Emitter<EligibilityState> emit,
+) async {
+  emit(state.copyWith(snackbarMessage: '')); // or null if you use nullable
+}
+
 
   void _onAutoSelectAllFunds(
     AutoSelectAllFunds event,
@@ -885,28 +896,28 @@ final isinModify = state.pledgeableFunds
     );
 
     result.when(
-      success: (response) {
-        print('✅ Loan amount updated successfully');
-        emit(
-          state.copyWith(
-            isLoading: false,
-            mfDetailsResponse: response,
-            pledgeableFunds: response.pledgeableFunds,
-            lenders: response.lenders.map((l) {
-              return Lender(
-                id: l.id.toString(),
-                name: l.name ?? '-',
-                logoAsset: l.logo ?? '',
-                interestRate: l.loanInterest ?? 0.0,
-                loanAmount: l.loanAmount ?? 0.0,
-                pledgeableMFs: l.eligibleFundsCount ?? 0,
-                tag: '',
-              );
-            }).toList(),
-            snackbarMessage: 'Loan amount updated successfully!',
-          ),
-        );
-      },
+    success: (response) {
+  print('✅ Loan amount updated successfully');
+
+  // Update the lender’s amount locally to reflect UI changes instantly
+  final updatedLenders = state.lenders.map((lender) {
+    if (lender.id == event.lenderId.toString()) {
+      return lender.copyWith(loanAmount: event.loanAmount);
+    }
+    return lender;
+  }).toList();
+
+  // If backend returned updated pledgeableFunds etc., use them
+  emit(
+    state.copyWith(
+      isLoading: false,
+      mfDetailsResponse: response,
+      lenders: updatedLenders,
+      pledgeableFunds: response.pledgeableFunds,
+      snackbarMessage: 'Loan amount updated successfully!',
+    ),
+  );
+},
       failure: (error) {
         print('❌ Failed to update loan amount: $error');
         emit(
@@ -927,51 +938,84 @@ final isinModify = state.pledgeableFunds
     );
   }
 }
+Future<void> _onSaveEditedLoanAmount(
+  SaveEditedLoanAmount event,
+  Emitter<EligibilityState> emit,
+) async {
+  try {
+    // Start loader
+    emit(state.copyWith(isLoading: true));
 
-  Future<void> _onSaveEditedLoanAmount(
-    SaveEditedLoanAmount event,
-    Emitter<EligibilityState> emit,
-  ) async {
-    try { 
-      emit(state.copyWith(isLoading: true));
+    final reqId = getIt<AppStateProvider>().reqId ?? '';
+    final isinModify = state.selectedFundIds.toList();
 
-      final reqId = getIt<AppStateProvider>().reqId ?? '';
-      final isinModify = state.selectedFundIds.toList();
+    print("📤 Calling editLoanAmount API...");
+    print("🧩 reqId: $reqId | lenderId: ${event.lenderId} | newAmount: ${event.amount}");
+    print("🔄 ISIN Modify: $isinModify");
 
-      print("📤 Calling editLoanAmount API...");
-      print(
-        "🧩 reqId: $reqId | lenderId: ${event.lenderId} | newAmount: ${event.amount}",
+    final result = await lenderRepository.editLoanAmount(
+      reqId: reqId,
+      loanAmount: event.amount,
+      lenderId: event.lenderId,
+      isinAdd: const [],
+      isinRemove: const [],
+      isinModify: isinModify,
+    );
+
+    // SUCCESS
+    if (result is Success<MfDetailsResponse>) {
+      final updatedResponse = result.value;
+      print("✅ Loan amount updated successfully via API!");
+      print("✅ New lenders list: ${updatedResponse.lenders.length}");
+
+      // Update lenders locally (so UI shows the new amount immediately)
+      final updatedLenders = state.lenders.map((l) {
+        if (l.id == event.lenderId) {
+          return l.copyWith(loanAmount: event.amount);
+        }
+        return l;
+      }).toList();
+
+      emit(
+        state.copyWith(
+          mfDetailsResponse: updatedResponse,
+          lenders: updatedLenders,
+          pledgeableFunds: updatedResponse.pledgeableFunds,
+          isLoading: false,
+          // IMPORTANT: set a message so the listener can show a snackbar now that loading finished
+          snackbarMessage: 'Loan amount updated successfully!',
+        ),
       );
-      print("🔄 ISIN Modify: $isinModify");
-
-      final result = await lenderRepository.editLoanAmount(
-        reqId: reqId,
-        loanAmount: event.amount,
-        lenderId: event.lenderId,
-        isinAdd: const [],
-        isinRemove: const [],
-        isinModify: isinModify,
-      );
-
-      if (result is Success<MfDetailsResponse>) {
-        final updatedResponse = result.value;
-
-        print("✅ Loan amount updated successfully via API!");
-        print("✅ New lenders list: ${updatedResponse.lenders.length}");
-
-        emit(
-          state.copyWith(mfDetailsResponse: updatedResponse, isLoading: false),
-        );
-      } else if (result is Failure) {
-        print("❌ API call failed: ${result}");
-        emit(state.copyWith(isLoading: false));
-      }
-    } catch (e, stack) {
-      print("💥 Error in _onSaveEditedLoanAmount: $e");
-      print(stack);
-      emit(state.copyWith(isLoading: false));
+      return;
     }
+
+    // FAILURE
+    if (result is Failure) {
+      print("❌ API call failed: $result");
+      // Try to extract a helpful message from Failure, otherwise fallback
+      final String errorMsg = 'Failed to update loan amount';
+      emit(
+        state.copyWith(
+          isLoading: false,
+          snackbarMessage: errorMsg,
+        ),
+      );
+      return;
+    }
+
+    // Fallback if result is neither Success nor Failure (defensive)
+    emit(state.copyWith(isLoading: false, snackbarMessage: 'Unexpected response from server.'));
+  } catch (e, stack) {
+    print("💥 Error in _onSaveEditedLoanAmount: $e");
+    print(stack);
+    emit(
+      state.copyWith(
+        isLoading: false,
+        snackbarMessage: 'Something went wrong while updating the amount.',
+      ),
+    );
   }
+}
 
   void _onProceedToLenderSelection(
     ProceedToLenderSelection event,

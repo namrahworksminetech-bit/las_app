@@ -97,7 +97,6 @@ class EligibilityState extends Equatable {
     this.generalErrorMessage,
     this.panNumberError,
     this.panFullNameError,
-    this.mfDetailsResponse,
     this.panDobError,
     this.panStatus = PanVerificationStatus.initial,
     this.otpStatus = PanOtpStatus.initial,
@@ -109,12 +108,17 @@ class EligibilityState extends Equatable {
     this.selectedLenderId,
     this.isPortfolioRefreshing = false,
     this.editedLoanAmounts = const {},
+    this.editLoanResult = const {},
     this.pledgeableFunds = const [],
     this.selectedFundIds = const {},
-    this.previousSelectedFundIds = const {}, // ✅ Correctly placed
+    this.previousSelectedFundIds = const {},
+    this.mfDetailsResponse,
+    this.lastSaveMessage,
+    this.lastSavedLenderId,
     this.kycStepChecks = const [false, false, false, false],
     this.otp = '',
     this.isSubmitting = false,
+      this.loadingLenderId,
     this.otpError = false,
     this.otpResent = false,
     this.kycUrl,
@@ -126,32 +130,48 @@ class EligibilityState extends Equatable {
     this.userMobileNumber,
   });
 
-  // 🔹 Fields
+  // Core fields
   final int majorStep;
   final int pageIndex;
   final EligibilityFormData formData;
   final MfDetailsResponse? mfDetailsResponse;
 
+  // New: lender-specific edit results: lenderId -> true/false/null
+  final Map<String, bool?> editLoanResult;
+
+
+final String? lastSavedLenderId;
+final String? lastSaveMessage;
+  // Verification / UI state
   final PanVerificationStatus panStatus;
   final PanOtpStatus otpStatus;
   final String? snackbarMessage;
 
+  // Errors
   final String? generalErrorMessage;
   final String? panNumberError;
   final String? panFullNameError;
   final String? panDobError;
 
+  // Loading / overlays
   final bool isLoading;
+  final String? loadingLenderId; // new field (id of lender currently saving)
+
   final EligibilityOverlayType currentOverlay;
 
+  // Lender selection & lists
   final LenderSelectionView lenderSelectionView;
   final List<Lender> lenders;
   final String? selectedLenderId;
   final bool isPortfolioRefreshing;
+
+  // Edited amounts and pledgeable funds
   final Map<String, double> editedLoanAmounts;
   final List<PledgeableFund> pledgeableFunds;
   final Set<String> selectedFundIds;
-  final Set<String> previousSelectedFundIds; // ✅ Added field
+  final Set<String> previousSelectedFundIds;
+
+  // KYC / OTP / misc
   final List<bool> kycStepChecks;
   final String otp;
   final bool isSubmitting;
@@ -165,37 +185,40 @@ class EligibilityState extends Equatable {
   final String? rtaOtpError;
   final String? userMobileNumber;
 
-  // 🔹 CopyWith
   EligibilityState copyWith({
     int? majorStep,
     int? pageIndex,
     EligibilityFormData? formData,
+    MfDetailsResponse? mfDetailsResponse,
     bool? isLoading,
     String? generalErrorMessage,
     String? panNumberError,
     String? panFullNameError,
     String? panDobError,
-    bool clearErrors = false,
+    PanVerificationStatus? panStatus,
+    PanOtpStatus? otpStatus,
+    String? snackbarMessage,
+    bool clearSnackbar = false,
     EligibilityOverlayType? currentOverlay,
     LenderSelectionView? lenderSelectionView,
     List<Lender>? lenders,
     String? selectedLenderId,
     bool clearSelectedLender = false,
-    MfDetailsResponse? mfDetailsResponse,
     bool? isPortfolioRefreshing,
+    String? loadingLenderId,
+     String? lastSavedLenderId,
+  String? lastSaveMessage,
+
     Map<String, double>? editedLoanAmounts,
+    Map<String, bool?>? editLoanResult,
     List<PledgeableFund>? pledgeableFunds,
     Set<String>? selectedFundIds,
-    Set<String>? previousSelectedFundIds, // ✅ Added param
+    Set<String>? previousSelectedFundIds,
     List<bool>? kycStepChecks,
     String? otp,
     bool? isSubmitting,
     bool? otpError,
     bool? otpResent,
-    PanVerificationStatus? panStatus,
-    PanOtpStatus? otpStatus,
-    String? snackbarMessage,
-    bool clearSnackbar = false,
     String? kycUrl,
     bool? kycLoading,
     String? kycError,
@@ -203,48 +226,41 @@ class EligibilityState extends Equatable {
     bool? isRtaOtpVerifying,
     String? rtaOtpError,
     String? userMobileNumber,
+    bool clearErrors = false,
   }) {
     return EligibilityState(
       majorStep: majorStep ?? this.majorStep,
       pageIndex: pageIndex ?? this.pageIndex,
       formData: formData ?? this.formData,
-      isLoading: isLoading ?? this.isLoading,
       mfDetailsResponse: mfDetailsResponse ?? this.mfDetailsResponse,
-      generalErrorMessage: clearErrors
-          ? null
-          : generalErrorMessage ?? this.generalErrorMessage,
-      panNumberError: clearErrors
-          ? null
-          : panNumberError ?? this.panNumberError,
-      panFullNameError: clearErrors
-          ? null
-          : panFullNameError ?? this.panFullNameError,
-      panDobError: clearErrors ? null : panDobError ?? this.panDobError,
+      generalErrorMessage: clearErrors ? null : (generalErrorMessage ?? this.generalErrorMessage),
+      panNumberError: clearErrors ? null : (panNumberError ?? this.panNumberError),
+      panFullNameError: clearErrors ? null : (panFullNameError ?? this.panFullNameError),
+      panDobError: clearErrors ? null : (panDobError ?? this.panDobError),
+      panStatus: panStatus ?? this.panStatus,
+      otpStatus: otpStatus ?? this.otpStatus,
+      snackbarMessage: clearSnackbar ? null : (snackbarMessage ?? this.snackbarMessage),
+      isLoading: isLoading ?? this.isLoading,
       currentOverlay: currentOverlay ?? this.currentOverlay,
       lenderSelectionView: lenderSelectionView ?? this.lenderSelectionView,
+lastSavedLenderId: lastSavedLenderId ?? this.lastSavedLenderId,
+    lastSaveMessage: lastSaveMessage ?? this.lastSaveMessage,
       lenders: lenders ?? this.lenders,
-      selectedLenderId: clearSelectedLender
-          ? null
-          : selectedLenderId ?? this.selectedLenderId,
-      isPortfolioRefreshing:
-          isPortfolioRefreshing ?? this.isPortfolioRefreshing,
+      selectedLenderId: clearSelectedLender ? null : (selectedLenderId ?? this.selectedLenderId),
+      isPortfolioRefreshing: isPortfolioRefreshing ?? this.isPortfolioRefreshing,
       editedLoanAmounts: editedLoanAmounts ?? this.editedLoanAmounts,
+      editLoanResult: editLoanResult ?? this.editLoanResult,
       pledgeableFunds: pledgeableFunds ?? this.pledgeableFunds,
       selectedFundIds: selectedFundIds ?? this.selectedFundIds,
-      previousSelectedFundIds:
-          previousSelectedFundIds ?? this.previousSelectedFundIds, // ✅ Added
+      previousSelectedFundIds: previousSelectedFundIds ?? this.previousSelectedFundIds,
       kycStepChecks: kycStepChecks ?? this.kycStepChecks,
       otp: otp ?? this.otp,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       otpError: otpError ?? this.otpError,
       otpResent: otpResent ?? this.otpResent,
-      panStatus: panStatus ?? this.panStatus,
-      otpStatus: otpStatus ?? this.otpStatus,
-      snackbarMessage: clearSnackbar
-          ? null
-          : snackbarMessage ?? this.snackbarMessage,
       kycUrl: kycUrl ?? this.kycUrl,
       kycLoading: kycLoading ?? this.kycLoading,
+      loadingLenderId: loadingLenderId ?? this.loadingLenderId,
       kycError: kycError ?? this.kycError,
       hasSeenEligibilityResult: hasSeenEligibilityResult ?? this.hasSeenEligibilityResult,
       isRtaOtpVerifying: isRtaOtpVerifying ?? this.isRtaOtpVerifying,
@@ -285,6 +301,7 @@ class EligibilityState extends Equatable {
     selectedFundIds,
     previousSelectedFundIds, // ✅ Added here too
     kycStepChecks,
+    editLoanResult,
     otp,
     isSubmitting,
     otpError,
