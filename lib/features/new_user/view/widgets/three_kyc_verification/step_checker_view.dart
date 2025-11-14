@@ -59,11 +59,18 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     result.when(
       success: (data) {
         if (mounted) {
-          // Extract status from nested structure: data.data.status[0]
-          final statusArray = data['data']?['status'] as List?;
-          final status = statusArray?.isNotEmpty == true
-              ? statusArray!.first as String?
-              : null;
+          // Extract status from nested structure: data.data.status
+          // Handle both String and List cases
+          final statusData = data['data']?['status'];
+          final String? status;
+          
+          if (statusData is String) {
+            status = statusData;
+          } else if (statusData is List && statusData.isNotEmpty) {
+            status = statusData.first as String?;
+          } else {
+            status = null;
+          }
 
           // Only update if status changed
           if (status != null && status != _lastStatus) {
