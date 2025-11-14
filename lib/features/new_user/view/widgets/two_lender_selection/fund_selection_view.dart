@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -17,20 +19,114 @@ class FundSelectionView extends StatelessWidget {
   const FundSelectionView({super.key});
 
   // 🧮 Loan edit dialog
-  Future<void> _showEditLoanDialog(
-    BuildContext blocContext,
-    Lender lender,
-    double currentAmount,
-  ) async {
-    final TextEditingController amountController = TextEditingController(
-      text: currentAmount.toStringAsFixed(0),
+Future<void> _showEditLoanDialog(
+  BuildContext blocContext,
+  Lender lender,
+  double currentAmount,
+) async {
+  final TextEditingController amountController = TextEditingController(
+    text: currentAmount.toStringAsFixed(0),
+  );
+
+  final eligibleLimit = lender.loanAmount ?? 0.0;
+  final eligibilityBloc = blocContext.read<EligibilityBloc>();
+
+  final newAmount = await showDialog<double>(
+    context: blocContext,
+    barrierDismissible: false,
+    builder: (dialogContext) {
+      return StatefulBuilder(builder: (context, setState) {
+        bool isSubmitting = false;
+
+     Future<void> _onConfirm() async {
+  final enteredAmount = double.tryParse(amountController.text);
+  print("💰 Entered: $enteredAmount | Eligible Limit: $eligibleLimit");
+
+  if (enteredAmount == null || enteredAmount <= 0) {
+    CSnackBar.show(blocContext, 'Invalid amount entered', isError: true);
+    return;
+  }
+
+  if (enteredAmount > eligibleLimit) {
+    CSnackBar.show(
+      blocContext,
+      'Amount exceeds eligible limit (₹${eligibleLimit.toStringAsFixed(0)})',
+      isError: true,
     );
+    return;
+  }
 
-    final eligibleLimit = lender.loanAmount;
+  // show a full-screen blocking loader immediately
+  showDialog<void>(
+    context: blocContext,
+    barrierDismissible: false,
+    useRootNavigator: true,
+    builder: (_) => WillPopScope(
+      onWillPop: () async => false,
+      child: Container(
+        color: Colors.black54,
+        child: const Center(
+          child: SizedBox(
+            width: 56,
+            height: 56,
+            child: CircularProgressIndicator(strokeWidth: 3),
+          ),
+        ),
+      ),
+    ),
+  );
 
-    final newAmount = await showDialog<double>(
-      context: blocContext,
-      builder: (dialogContext) {
+  // dispatch the save event AFTER showing loader
+  eligibilityBloc.add(SaveEditedLoanAmount(lender.id, enteredAmount));
+
+  try {
+    // wait for the bloc to finish for this lender and provide the dedicated save message
+    final finalState = await eligibilityBloc.stream
+        .firstWhere((s) =>
+            s.isLoading == false &&
+            s.lastSavedLenderId != null &&
+            s.lastSavedLenderId == lender.id &&
+            s.lastSaveMessage != null &&
+            s.lastSaveMessage!.trim().isNotEmpty)
+        .timeout(const Duration(seconds: 30));
+
+    // close the full-screen loader
+    try {
+      Navigator.of(blocContext, rootNavigator: true).pop();
+    } catch (_) {}
+
+    // show the save-specific message from bloc
+    CSnackBar.show(blocContext, finalState.lastSaveMessage!);
+
+    // close the edit dialog and return the entered amount
+    if (Navigator.of(dialogContext).canPop()) {
+      Navigator.of(dialogContext).pop(enteredAmount);
+    }
+  } on TimeoutException {
+    // close loader if still open
+    try {
+      Navigator.of(blocContext, rootNavigator: true).pop();
+    } catch (_) {}
+
+    CSnackBar.show(blocContext, 'Request timed out. Please try again.', isError: true);
+
+    if (Navigator.of(dialogContext).canPop()) {
+      Navigator.of(dialogContext).pop();
+    }
+  } catch (e) {
+    // close loader if still open
+    try {
+      Navigator.of(blocContext, rootNavigator: true).pop();
+    } catch (_) {}
+
+    CSnackBar.show(blocContext, 'Something went wrong', isError: true);
+
+    if (Navigator.of(dialogContext).canPop()) {
+      Navigator.of(dialogContext).pop();
+    }
+  }
+}
+
         return AlertDialog(
           backgroundColor: const Color(0xFF1F2937),
           shape: RoundedRectangleBorder(
@@ -46,9 +142,7 @@ class FundSelectionView extends StatelessWidget {
             children: [
               TextField(
                 controller: amountController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: false,
-                ),
+                keyboardType: const TextInputType.numberWithOptions(decimal: false),
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 style: AppTypography.bodyWhite.copyWith(fontSize: 24),
                 textAlign: TextAlign.center,
@@ -78,7 +172,11 @@ class FundSelectionView extends StatelessWidget {
           actions: [
             TextButton(
               child: CText('cancel'.tr, style: AppTypography.bodySecondary),
-              onPressed: () => Navigator.of(dialogContext).pop(),
+              onPressed: () {
+                if (Navigator.of(dialogContext).canPop()) {
+                  Navigator.of(dialogContext).pop();
+                }
+              },
             ),
             TextButton(
               child: CText(
@@ -87,50 +185,15 @@ class FundSelectionView extends StatelessWidget {
                   color: AppColors.bPrimaryColor,
                 ),
               ),
-              onPressed: () {
-                final enteredAmount = double.tryParse(amountController.text);
-                print(
-                  "💰 Entered: $enteredAmount | Eligible Limit: $eligibleLimit",
-                );
-
-                if (enteredAmount != null && enteredAmount > 0) {
-                  if (enteredAmount <= eligibleLimit) {
-                    Navigator.of(dialogContext).pop(enteredAmount);
-
-                    // ✅ Show success snackbar using CSnackBar
-                    CSnackBar.show(
-                      blocContext,
-                      'Loan amount updated to ₹${enteredAmount.toStringAsFixed(0)}',
-                    );
-                  } else {
-                    // ⚠️ Show error snackbar for exceeding limit
-                    CSnackBar.show(
-                      blocContext,
-                      'Amount exceeds eligible limit (₹${eligibleLimit.toStringAsFixed(0)})',
-                      isError: true,
-                    );
-                  }
-                } else {
-                  // ❌ Show error snackbar for invalid input
-                  CSnackBar.show(
-                    blocContext,
-                    'Invalid amount entered',
-                    isError: true,
-                  );
-                }
-              },
+              onPressed: _onConfirm,
             ),
           ],
         );
-      },
-    );
+      });
+    },
+  );
 
-    if (newAmount != null) {
-      blocContext.read<EligibilityBloc>().add(
-        SaveEditedLoanAmount(lender.id, newAmount),
-      );
-    }
-  }
+}
 
   @override
   Widget build(BuildContext context) {

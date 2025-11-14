@@ -13,17 +13,18 @@ class LenderListView extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<EligibilityBloc>().state;
 
+    // Show the spinner while loading (existing behavior)
     if (state.lenders.isEmpty && state.isLoading) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.bPrimaryColor),
       );
     }
+
+    // If there are no lenders yet, show a loader instead of "No lenders available"
+    // (useful when API is very slow and you want the user to see a spinner)
     if (state.lenders.isEmpty && !state.isLoading) {
-      return Center(
-        child: CText(
-          'Nolendersavailable'.tr,
-          style: TextStyle(color: AppColors.bSecondaryColor),
-        ),
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.bPrimaryColor),
       );
     }
 
@@ -37,20 +38,21 @@ class LenderListView extends StatelessWidget {
             state.editedLoanAmounts[lender.id] ?? lender.loanAmount;
         final displayLender = lender.copyWith(loanAmount: displayAmount);
 
+        final isSavingForThisLender =
+            state.isLoading && state.selectedLenderId == lender.id;
+
         return LenderCard(
           lender: displayLender,
+          snackbarMessage: state.snackbarMessage,
           isSelected: state.selectedLenderId == lender.id,
-          onTap: () =>
-              context.read<EligibilityBloc>().add(LenderSelected(lender.id)),
+          isSaving: isSavingForThisLender,
+          lastSavedLenderId: state.lastSavedLenderId, // NEW
+          lastSaveMessage: state.lastSaveMessage, // NEW
+          onTap: () => context.read<EligibilityBloc>().add(LenderSelected(lender.id)),
           onAmountSaved: (newAmount) {
-            context.read<EligibilityBloc>().add(
-              SaveEditedLoanAmount(lender.id, newAmount),
-            );
+            context.read<EligibilityBloc>().add(SaveEditedLoanAmount(lender.id, newAmount));
           },
-
-          onContinue: () => context.read<EligibilityBloc>().add(
-            LenderContinuePressed(lender.id),
-          ),
+          onContinue: () => context.read<EligibilityBloc>().add(LenderContinuePressed(lender.id)),
         );
       },
     );

@@ -92,7 +92,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       emit(
         state.copyWith(
           token: response.token,
-          snackbarMessage: 'OTP verified successfully!',
+          snackbarMessage: ' OTP Verified Successfully!',
         ),
       );
     } else {

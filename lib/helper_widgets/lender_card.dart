@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; 
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:las_app/common_widgets/c_button.dart';
+import 'package:las_app/common_widgets/c_snackbar.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/scheduler.dart';
 
-
-class LenderCard extends StatefulWidget { 
+class LenderCard extends StatefulWidget {
   final Lender lender;
   final bool isSelected;
-  final VoidCallback onTap; 
-  
+  final VoidCallback onTap;
+  final bool isSaving;
+  final String? snackbarMessage; // you can keep or remove this if unused
+  final String? lastSavedLenderId;   // NEW
+  final String? lastSaveMessage;  // NEW
   final ValueChanged<double> onAmountSaved;
   final VoidCallback onContinue;
 
@@ -19,10 +24,13 @@ class LenderCard extends StatefulWidget {
     required this.lender,
     required this.isSelected,
     required this.onTap,
-    required this.onAmountSaved, 
+    required this.isSaving,
+    required this.snackbarMessage,
+    required this.lastSavedLenderId,  // NEW
+    required this.lastSaveMessage,    // NEW
+    required this.onAmountSaved,
     required this.onContinue,
   });
-
   @override
   State<LenderCard> createState() => _LenderCardState();
 }
@@ -31,34 +39,47 @@ class _LenderCardState extends State<LenderCard> {
   bool _isEditing = false;
   late TextEditingController _amountController;
   final FocusNode _focusNode = FocusNode();
-  final formatCurrency = NumberFormat.currency(locale: 'en_IN', symbol: '₹ ', decimalDigits: 0);
-
+  final formatCurrency =
+      NumberFormat.currency(locale: 'en_IN', symbol: '₹ ', decimalDigits: 0);
 
   @override
   void initState() {
     super.initState();
-    _amountController = TextEditingController(
-      
-      text: widget.lender.loanAmount.toStringAsFixed(0)
-    );
-
-    
+    _amountController =
+        TextEditingController(text: widget.lender.loanAmount?.toStringAsFixed(0) ?? '0');
     _focusNode.addListener(_handleFocusChange);
   }
 
   @override
-  void didUpdateWidget(covariant LenderCard oldWidget) {
-      super.didUpdateWidget(oldWidget);
-      
-      
-      if (!_isEditing && oldWidget.lender.loanAmount != widget.lender.loanAmount) {
-          _amountController.text = widget.lender.loanAmount.toStringAsFixed(0);
-      }
-      
-      if (oldWidget.isSelected && !widget.isSelected && _isEditing) {
-          _stopEditing(save: false); 
-      }
+  @override
+void didUpdateWidget(covariant LenderCard oldWidget) {
+  super.didUpdateWidget(oldWidget);
+
+  // keep text in sync and other existing logic...
+  if (!_isEditing &&
+      (oldWidget.lender.loanAmount ?? 0) != (widget.lender.loanAmount ?? 0)) {
+    _amountController.text = (widget.lender.loanAmount ?? 0).toStringAsFixed(0);
   }
+  if (oldWidget.isSelected && !widget.isSelected && _isEditing) {
+    _stopEditing(save: false);
+  }
+
+  // === NEW: show save-snack ONLY once for this card when saving finished ===
+  final finishedSaving = oldWidget.isSaving && !widget.isSaving;
+  final isResultForThisLender = widget.lastSavedLenderId != null && widget.lastSavedLenderId == widget.lender.id;
+  final messageChanged = oldWidget.lastSaveMessage != widget.lastSaveMessage;
+  final hasMessage = widget.lastSaveMessage != null && widget.lastSaveMessage!.trim().isNotEmpty;
+
+  if (finishedSaving && isResultForThisLender && hasMessage && messageChanged) {
+    final msg = widget.lastSaveMessage!;
+    // schedule after frame to avoid "called during build" error
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      // use your CSnackBar or ScaffoldMessenger — choose one. Using CSnackBar here:
+      CSnackBar.show(context, msg, isError: msg.toLowerCase().contains('fail') || msg.toLowerCase().contains('error'));
+      // Do NOT dispatch ClearSnackbar here — we rely on bloc to keep state stable.
+    });
+  }
+}
 
   @override
   void dispose() {
@@ -69,54 +90,72 @@ class _LenderCardState extends State<LenderCard> {
   }
 
   void _handleFocusChange() {
-    
     if (!_focusNode.hasFocus && _isEditing) {
       _stopEditing(save: true);
     }
   }
 
   void _startEditing() {
-    if (!widget.isSelected) return; 
+    if (!widget.isSelected || widget.isSaving) return;
     setState(() {
       _isEditing = true;
-      
+
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _amountController.selection = TextSelection(
-          baseOffset: 0, extentOffset: _amountController.text.length);
-         _focusNode.requestFocus();
+            baseOffset: 0, extentOffset: _amountController.text.length);
+        _focusNode.requestFocus();
       });
     });
   }
 
+  void _showError(String msg) {
+    // safe to call here because this is user-initiated
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   void _stopEditing({required bool save}) {
-     if (!_isEditing) return; 
+    if (!_isEditing) return;
 
-     double? newAmount;
-     if (save) {
-        newAmount = double.tryParse(_amountController.text);
-        if (newAmount == null || newAmount <= 0) {
-           
-           _amountController.text = widget.lender.loanAmount.toStringAsFixed(0); 
-           ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Invalid amount entered'), backgroundColor: Colors.orange)
-           );
-           newAmount = null; 
+    double? newAmount;
+    if (save) {
+      newAmount = double.tryParse(_amountController.text);
+      if (newAmount == null || newAmount <= 0) {
+        // invalid input
+        _amountController.text = (widget.lender.loanAmount ?? 0).toStringAsFixed(0);
+        _showError('Invalid amount entered');
+        newAmount = null;
+      } else {
+        // VALIDATION: Ensure edited amount does not exceed lender.loanAmount
+        // (as you specified: lender.loanAmount is the main amount that should not be exceeded)
+        final double allowed = widget.lender.loanAmount ?? 0.0;
+        if (allowed > 0 && newAmount > allowed) {
+          final formattedAllowed = formatCurrency.format(allowed);
+          _amountController.text = (widget.lender.loanAmount ?? 0).toStringAsFixed(0);
+
+          _showError('Amount cannot exceed the limit of $formattedAllowed');
+          newAmount = null;
         }
-     } else {
-        
-        _amountController.text = widget.lender.loanAmount.toStringAsFixed(0);
-     }
+      }
+    } else {
+      _amountController.text = (widget.lender.loanAmount ?? 0).toStringAsFixed(0);
+    }
 
-     setState(() {
-       _isEditing = false;
-     });
-     
-     _focusNode.unfocus();
+    setState(() {
+      _isEditing = false;
+    });
 
-     
-     if (newAmount != null) {
-        widget.onAmountSaved(newAmount);
-     }
+    _focusNode.unfocus();
+
+    if (newAmount != null) {
+      widget.onAmountSaved(newAmount);
+    }
   }
 
   @override
@@ -126,12 +165,9 @@ class _LenderCardState extends State<LenderCard> {
         widget.isSelected ? AppColors.black : const Color(0xFF1A1A1A);
 
     return GestureDetector(
-      
-      
-      onTap: widget.onTap, 
+      onTap: widget.onTap,
       child: AnimatedContainer(
         duration: animDuration,
-        
         margin: const EdgeInsets.only(bottom: 16.0),
         padding: const EdgeInsets.all(16.0),
         decoration: BoxDecoration(
@@ -141,14 +177,13 @@ class _LenderCardState extends State<LenderCard> {
             color: widget.isSelected ? AppColors.bPrimaryColor : Colors.transparent,
             width: 1.5,
           ),
-           boxShadow: widget.isSelected ? [ /* ... shadow ... */ ] : [],
+          boxShadow: widget.isSelected ? [/* ... */] : [],
         ),
         child: Column(
           children: [
-           Row(
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                
                 Container(
                   width: 40,
                   height: 40,
@@ -174,22 +209,20 @@ class _LenderCardState extends State<LenderCard> {
                               ),
                             );
                           },
-                          errorBuilder: (_, __, ___) => const Icon(Icons.business,
-                              color: Colors.grey, size: 24),
+                          errorBuilder: (_, __, ___) =>
+                              const Icon(Icons.business, color: Colors.grey, size: 24),
                         )
                       : const Icon(Icons.business, color: Colors.grey, size: 24),
                 ),
                 const SizedBox(width: 12),
-                
                 Expanded(
                   child: Text(
-                    widget.lender.name,
+                    widget.lender.name ?? '',
                     style: const TextStyle(
                         color: AppColors.white, fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
-                
-                if (widget.lender.tag.isNotEmpty)
+                if ((widget.lender.tag ?? '').isNotEmpty)
                   Align(
                     alignment: Alignment.topRight,
                     child: Container(
@@ -199,7 +232,7 @@ class _LenderCardState extends State<LenderCard> {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        widget.lender.tag,
+                        widget.lender.tag ?? '',
                         style: const TextStyle(
                             color: AppColors.black,
                             fontSize: 10,
@@ -210,60 +243,66 @@ class _LenderCardState extends State<LenderCard> {
               ],
             ),
             const SizedBox(height: 16),
-            
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _buildDetailColumn('Interest Rate', '${widget.lender.interestRate}%'),
-                
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Loan Amount', style: TextStyle(color: AppColors.bSecondaryColor, fontSize: 12)),
+                    const Text('Loan Amount',
+                        style: TextStyle(color: AppColors.bSecondaryColor, fontSize: 12)),
                     const SizedBox(height: 4),
-                    
                     AnimatedSwitcher(
-                       duration: animDuration,
-                       transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
-                       child: _isEditing
-                          ? SizedBox( 
+                      duration: animDuration,
+                      transitionBuilder: (child, animation) =>
+                          FadeTransition(opacity: animation, child: child),
+                      child: _isEditing
+                          ? SizedBox(
                               key: const ValueKey('amount_textfield'),
-                              width: 100, 
-                              child: IntrinsicWidth( 
+                              width: 100,
+                              child: IntrinsicWidth(
                                 child: TextField(
                                   controller: _amountController,
                                   focusNode: _focusNode,
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: false),
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(decimal: false),
                                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                                  style: const TextStyle(color: AppColors.white, fontSize: 14, fontWeight: FontWeight.w500),
-                                  textAlign: TextAlign.start, 
+                                  style: const TextStyle(
+                                      color: AppColors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500),
+                                  textAlign: TextAlign.start,
                                   cursorColor: AppColors.bPrimaryColor,
                                   decoration: const InputDecoration(
                                     prefixText: '₹ ',
-                                    prefixStyle: TextStyle(color: AppColors.white, fontSize: 14, fontWeight: FontWeight.w500),
-                                    isDense: true, 
-                                    contentPadding: EdgeInsets.symmetric(vertical: 2), 
-                                    enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.bSecondaryColor)),
-                                    focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.bPrimaryColor)),
+                                    prefixStyle: TextStyle(
+                                        color: AppColors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500),
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.symmetric(vertical: 2),
+                                    enabledBorder:
+                                        UnderlineInputBorder(borderSide: BorderSide(color: AppColors.bSecondaryColor)),
+                                    focusedBorder:
+                                        UnderlineInputBorder(borderSide: BorderSide(color: AppColors.bPrimaryColor)),
                                   ),
-                                  
                                   onSubmitted: (_) => _stopEditing(save: true),
                                 ),
                               ),
                             )
-                          : Text( 
+                          : Text(
                               key: const ValueKey('amount_text'),
-                              formatCurrency.format(widget.lender.loanAmount),
-                              style: const TextStyle(color: AppColors.white, fontSize: 14, fontWeight: FontWeight.w500),
+                              formatCurrency.format(widget.lender.loanAmount ?? 0),
+                              style: const TextStyle(
+                                  color: AppColors.white, fontSize: 14, fontWeight: FontWeight.w500),
                             ),
                     ),
                   ],
                 ),
-                 
-                _buildDetailColumn('Pledgeable MFs', '${widget.lender.pledgeableMFs}'),
+                _buildDetailColumn('Pledgeable MFs', '${widget.lender.pledgeableMFs ?? ''}'),
               ],
             ),
-            
             AnimatedSize(
               duration: animDuration,
               curve: Curves.easeInOut,
@@ -272,24 +311,36 @@ class _LenderCardState extends State<LenderCard> {
                       padding: const EdgeInsets.only(top: 16.0),
                       child: Row(
                         children: [
-                          
                           Expanded(
                             child: CButton(
-                              
                               text: _isEditing ? 'Save Amount' : 'Edit Loan Amount',
-                              onPressed: _isEditing ? () => _stopEditing(save: true) : _startEditing,
+                              onPressed: widget.isSaving
+                                  ? null
+                                  : (_isEditing ? () => _stopEditing(save: true) : _startEditing),
                               type: ButtonType.secondaryGrey,
+                              suffixIcon: widget.isSaving
+                                  ? SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(left: 8.0),
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: AppColors.black,
+                                        ),
+                                      ),
+                                    )
+                                  : null,
                             ),
                           ),
-                          
                           const SizedBox(width: 16),
                           Expanded(
                             child: CButton(
                               text: 'Continue',
                               onPressed: widget.onContinue,
                               type: ButtonType.primaryWhite,
-                              suffixIcon: const Icon(Icons.arrow_forward,
-                                  color: AppColors.black, size: 18),
+                              suffixIcon:
+                                  const Icon(Icons.arrow_forward, color: AppColors.black, size: 18),
                             ),
                           ),
                         ],
@@ -303,7 +354,6 @@ class _LenderCardState extends State<LenderCard> {
     );
   }
 
-  
   Widget _buildDetailColumn(String title, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

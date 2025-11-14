@@ -315,39 +315,48 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
   }
 
   Widget _buildCurrentView(BuildContext context, EligibilityState state) {
-    Widget _noDataView() {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              "No details available. Please try again later.",
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () {
-                try {
-                  context.read<EligibilityBloc>().add(RefreshPortfolioPressed());
-                } catch (e) {
-                  debugPrint('EligibilityBloc.add() failed: $e');
-                }
-              },
-              icon: const Icon(Icons.refresh, color: Colors.white, size: 18),
-              label: const Text("Retry", style: TextStyle(color: Colors.white)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.bPrimaryColor,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-          ],
+    Widget _noDataView({required bool isLoading}) {
+  if (isLoading) {
+    return const Center(
+      child: CircularProgressIndicator(
+        valueColor: AlwaysStoppedAnimation<Color>(AppColors.bPrimaryColor),
+      ),
+    );
+  }
+
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Text(
+          "No details available. Please try again later.",
+          style: TextStyle(fontSize: 16, color: Colors.grey),
+          textAlign: TextAlign.center,
         ),
-      );
-    }
+        const SizedBox(height: 16),
+        ElevatedButton.icon(
+          onPressed: () {
+            try {
+              context.read<EligibilityBloc>().add(RefreshPortfolioPressed());
+            } catch (e) {
+              debugPrint('EligibilityBloc.add() failed: $e');
+            }
+          },
+          icon: const Icon(Icons.refresh, color: Colors.white, size: 18),
+          label: const Text("Retry", style: TextStyle(color: Colors.white)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.bPrimaryColor,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 
     switch (state.lenderSelectionView) {
       case LenderSelectionView.lenderList:
@@ -356,7 +365,7 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
       case LenderSelectionView.portfolioBreakdown:
         if (state.mfDetailsResponse == null ||
             state.mfDetailsResponse?.pledgeableFunds.isEmpty == true) {
-          return _noDataView();
+          return _noDataView(isLoading: state.isLoading);
         }
         return PortfolioBreakdownView(
           key: const ValueKey('breakdown_view'),
@@ -377,7 +386,7 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
       case LenderSelectionView.pledgeableDetail:
         if (state.mfDetailsResponse == null ||
             state.mfDetailsResponse?.pledgeableFunds.isEmpty == true) {
-          return _noDataView();
+          return _noDataView(isLoading: state.isLoading);
         }
         return PledgeableFundsDetailView(
           key: const ValueKey('detail_view'),

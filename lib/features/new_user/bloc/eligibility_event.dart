@@ -174,6 +174,12 @@ class ResendOtp extends EligibilityEvent {
   List<Object?> get props => [];
 }
 
+// events.dart
+class ClearSnackbar extends EligibilityEvent {
+  const ClearSnackbar();
+}
+
+
 class StartKycEvent extends EligibilityEvent {
   final String reqId;
   final String lenderCode;
