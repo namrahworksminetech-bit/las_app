@@ -39,7 +39,7 @@ class LenderListView extends StatelessWidget {
         final displayLender = lender.copyWith(loanAmount: displayAmount);
 
         final isSavingForThisLender =
-            state.isLoading && state.selectedLenderId == lender.id;
+            state.isEditingLoan  && state.selectedLenderId == lender.id;
 
         return LenderCard(
           lender: displayLender,

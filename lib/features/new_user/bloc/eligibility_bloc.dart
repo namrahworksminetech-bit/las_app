@@ -944,7 +944,14 @@ Future<void> _onSaveEditedLoanAmount(
 ) async {
   try {
     // Start loader
-    emit(state.copyWith(isLoading: true));
+    emit(
+      state.copyWith(
+          isEditingLoan: true,
+        isLoading: true,
+        lastSavedLenderId: null,
+        lastSaveMessage: null,
+      ),
+    );
 
     final reqId = getIt<AppStateProvider>().reqId ?? '';
     final isinModify = state.selectedFundIds.toList();
@@ -965,10 +972,7 @@ Future<void> _onSaveEditedLoanAmount(
     // SUCCESS
     if (result is Success<MfDetailsResponse>) {
       final updatedResponse = result.value;
-      print("✅ Loan amount updated successfully via API!");
-      print("✅ New lenders list: ${updatedResponse.lenders.length}");
 
-      // Update lenders locally (so UI shows the new amount immediately)
       final updatedLenders = state.lenders.map((l) {
         if (l.id == event.lenderId) {
           return l.copyWith(loanAmount: event.amount);
@@ -981,9 +985,11 @@ Future<void> _onSaveEditedLoanAmount(
           mfDetailsResponse: updatedResponse,
           lenders: updatedLenders,
           pledgeableFunds: updatedResponse.pledgeableFunds,
+            isEditingLoan: false,
           isLoading: false,
-          // IMPORTANT: set a message so the listener can show a snackbar now that loading finished
-          snackbarMessage: 'Loan amount updated successfully!',
+          lastSavedLenderId: event.lenderId,
+          lastSaveMessage: "Loan amount updated successfully!",
+          snackbarMessage: "Loan amount updated successfully!",
         ),
       );
       return;
@@ -991,27 +997,36 @@ Future<void> _onSaveEditedLoanAmount(
 
     // FAILURE
     if (result is Failure) {
-      print("❌ API call failed: $result");
-      // Try to extract a helpful message from Failure, otherwise fallback
-      final String errorMsg = 'Failed to update loan amount';
+      const msg = "Failed to update loan amount";
       emit(
         state.copyWith(
           isLoading: false,
-          snackbarMessage: errorMsg,
+            isEditingLoan: false,
+          lastSavedLenderId: event.lenderId,
+          lastSaveMessage: msg,
+          snackbarMessage: msg,
         ),
       );
       return;
     }
 
-    // Fallback if result is neither Success nor Failure (defensive)
-    emit(state.copyWith(isLoading: false, snackbarMessage: 'Unexpected response from server.'));
-  } catch (e, stack) {
-    print("💥 Error in _onSaveEditedLoanAmount: $e");
-    print(stack);
     emit(
       state.copyWith(
         isLoading: false,
-        snackbarMessage: 'Something went wrong while updating the amount.',
+          isEditingLoan: false,
+        lastSavedLenderId: event.lenderId,
+        lastSaveMessage: "Unexpected server response",
+        snackbarMessage: "Unexpected server response",
+      ),
+    );
+  } catch (e, stack) {
+    emit(
+      state.copyWith(
+        isLoading: false,
+          isEditingLoan: false,
+        lastSavedLenderId: event.lenderId,
+        lastSaveMessage: "Something went wrong",
+        snackbarMessage: "Something went wrong",
       ),
     );
   }
