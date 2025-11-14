@@ -102,6 +102,7 @@ class EligibilityState extends Equatable {
     this.otpStatus = PanOtpStatus.initial,
     this.snackbarMessage,
     this.isLoading = false,
+    this.isEditingLoan=false,
     this.currentOverlay = EligibilityOverlayType.none,
     this.lenderSelectionView = LenderSelectionView.lenderList,
     this.lenders = const [],
@@ -133,6 +134,8 @@ class EligibilityState extends Equatable {
   // Core fields
   final int majorStep;
   final int pageIndex;
+  final bool isEditingLoan;
+
   final EligibilityFormData formData;
   final MfDetailsResponse? mfDetailsResponse;
 
@@ -206,6 +209,7 @@ final String? lastSaveMessage;
     bool clearSelectedLender = false,
     bool? isPortfolioRefreshing,
     String? loadingLenderId,
+    
      String? lastSavedLenderId,
   String? lastSaveMessage,
 
@@ -216,6 +220,8 @@ final String? lastSaveMessage;
     Set<String>? previousSelectedFundIds,
     List<bool>? kycStepChecks,
     String? otp,
+    isEditingLoan= false,
+
     bool? isSubmitting,
     bool? otpError,
     bool? otpResent,
@@ -238,6 +244,8 @@ final String? lastSaveMessage;
       panFullNameError: clearErrors ? null : (panFullNameError ?? this.panFullNameError),
       panDobError: clearErrors ? null : (panDobError ?? this.panDobError),
       panStatus: panStatus ?? this.panStatus,
+      isEditingLoan: isEditingLoan ?? this.isEditingLoan,
+
       otpStatus: otpStatus ?? this.otpStatus,
       snackbarMessage: clearSnackbar ? null : (snackbarMessage ?? this.snackbarMessage),
       isLoading: isLoading ?? this.isLoading,

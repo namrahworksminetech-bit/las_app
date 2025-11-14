@@ -64,23 +64,26 @@ void didUpdateWidget(covariant LenderCard oldWidget) {
     _stopEditing(save: false);
   }
 
-  // === NEW: show save-snack ONLY once for this card when saving finished ===
-  final finishedSaving = oldWidget.isSaving && !widget.isSaving;
-  final isResultForThisLender = widget.lastSavedLenderId != null && widget.lastSavedLenderId == widget.lender.id;
-  final messageChanged = oldWidget.lastSaveMessage != widget.lastSaveMessage;
-  final hasMessage = widget.lastSaveMessage != null && widget.lastSaveMessage!.trim().isNotEmpty;
+ final finishedSaving = oldWidget.isSaving && !widget.isSaving;
 
-  if (finishedSaving && isResultForThisLender && hasMessage && messageChanged) {
+final isResultForThisLender =
+    widget.lastSavedLenderId != null &&
+    widget.lastSavedLenderId == widget.lender.id;
+
+final hasMessage = widget.lastSaveMessage != null &&
+    widget.lastSaveMessage!.trim().isNotEmpty;
+
+// ONLY check if saving finished + message exists (remove messageChanged)
+if (finishedSaving && isResultForThisLender && hasMessage) {
+  SchedulerBinding.instance.addPostFrameCallback((_) {
     final msg = widget.lastSaveMessage!;
-    // schedule after frame to avoid "called during build" error
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      // use your CSnackBar or ScaffoldMessenger — choose one. Using CSnackBar here:
-      CSnackBar.show(context, msg, isError: msg.toLowerCase().contains('fail') || msg.toLowerCase().contains('error'));
-      // Do NOT dispatch ClearSnackbar here — we rely on bloc to keep state stable.
-    });
-  }
-}
-
+    CSnackBar.show(
+      context,
+      msg,
+      isError: msg.toLowerCase().contains('fail') || msg.toLowerCase().contains('error'),
+    );
+  });
+}}
   @override
   void dispose() {
     _focusNode.removeListener(_handleFocusChange);
