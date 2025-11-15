@@ -8,6 +8,7 @@ import 'package:las_app/core/results/result.dart';
 import 'package:las_app/features/new_user/repository/lenders_data_repo.dart'
     hide DioException;
 import 'package:las_app/features/new_user/repository/rta_otp_repo.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:las_app/features/new_user/repository/pan_veirfy_repo.dart';
@@ -17,7 +18,8 @@ import 'package:las_app/models/funds/mf_details_response_model.dart';
 import 'package:las_app/models/funds/pledgeable_model.dart';
 import 'package:las_app/models/pan_verification/pan_otp_response_model.dart';
 import 'package:las_app/models/pan_verification/pan_verify_response_model.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import 'package:las_app/common_widgets/webview_screen.dart';
 
 import '../../../core/network/api_client.dart';
 import '../repository/kyc_repo.dart';
@@ -64,8 +66,7 @@ on<JumpToPage>(_onJumpToPage);
     on<LenderContinuePressed>(_onLenderContinuePressed);
     on<ProceedToLenderSelection>(_onProceedToLenderSelection);
 
-
-on<ClearSnackbar>(_onClearSnackbar);
+    on<ClearSnackbar>(_onClearSnackbar);
 
     on<ToggleFundSelection>(_onToggleFundSelection);
     on<ConfirmFundSelection>(_onConfirmFundSelection);
@@ -139,12 +140,11 @@ Future<void> _onAcknowledgeKycNavigation(
 }
 
   Future<void> _onClearSnackbar(
-  ClearSnackbar event,
-  Emitter<EligibilityState> emit,
-) async {
-  emit(state.copyWith(snackbarMessage: '')); // or null if you use nullable
-}
-
+    ClearSnackbar event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    emit(state.copyWith(snackbarMessage: '')); // or null if you use nullable
+  }
 
   void _onAutoSelectAllFunds(
     AutoSelectAllFunds event,
@@ -978,142 +978,142 @@ Future<void> _onConfirmFundSelection(
         isinModify: isinModify,
       );
 
-    result.when(
-    success: (response) {
-  print('✅ Loan amount updated successfully');
+      result.when(
+        success: (response) {
+          print('✅ Loan amount updated successfully');
 
-  // Update the lender’s amount locally to reflect UI changes instantly
-  final updatedLenders = state.lenders.map((lender) {
-    if (lender.id == event.lenderId.toString()) {
-      return lender.copyWith(loanAmount: event.loanAmount);
+          // Update the lender’s amount locally to reflect UI changes instantly
+          final updatedLenders = state.lenders.map((lender) {
+            if (lender.id == event.lenderId.toString()) {
+              return lender.copyWith(loanAmount: event.loanAmount);
+            }
+            return lender;
+          }).toList();
+
+          // If backend returned updated pledgeableFunds etc., use them
+          emit(
+            state.copyWith(
+              isLoading: false,
+              mfDetailsResponse: response,
+              lenders: updatedLenders,
+              pledgeableFunds: response.pledgeableFunds,
+              snackbarMessage: 'Loan amount updated successfully!',
+            ),
+          );
+        },
+        failure: (error) {
+          print('❌ Failed to update loan amount: $error');
+          emit(
+            state.copyWith(isLoading: false, snackbarMessage: error.toString()),
+          );
+        },
+      );
+    } catch (e, st) {
+      print('🚨 Exception while editing loan amount: $e\n$st');
+      emit(
+        state.copyWith(
+          isLoading: false,
+          snackbarMessage: 'Something went wrong while updating the amount.',
+        ),
+      );
     }
-    return lender;
-  }).toList();
+  }
 
-  // If backend returned updated pledgeableFunds etc., use them
-  emit(
-    state.copyWith(
-      isLoading: false,
-      mfDetailsResponse: response,
-      lenders: updatedLenders,
-      pledgeableFunds: response.pledgeableFunds,
-      snackbarMessage: 'Loan amount updated successfully!',
-    ),
-  );
-},
-      failure: (error) {
-        print('❌ Failed to update loan amount: $error');
+  Future<void> _onSaveEditedLoanAmount(
+    SaveEditedLoanAmount event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    try {
+      // Start loader
+      emit(
+        state.copyWith(
+          isEditingLoan: true,
+          isLoading: true,
+          lastSavedLenderId: null,
+          lastSaveMessage: null,
+        ),
+      );
+
+      final reqId = getIt<AppStateProvider>().reqId ?? '';
+      final isinModify = state.selectedFundIds.toList();
+
+      print("📤 Calling editLoanAmount API...");
+      print(
+        "🧩 reqId: $reqId | lenderId: ${event.lenderId} | newAmount: ${event.amount}",
+      );
+      print("🔄 ISIN Modify: $isinModify");
+
+      final result = await lenderRepository.editLoanAmount(
+        reqId: reqId,
+        loanAmount: event.amount,
+        lenderId: event.lenderId,
+        isinAdd: const [],
+        isinRemove: const [],
+        isinModify: isinModify,
+      );
+
+      // SUCCESS
+      if (result is Success<MfDetailsResponse>) {
+        final updatedResponse = result.value;
+
+        final updatedLenders = state.lenders.map((l) {
+          if (l.id == event.lenderId) {
+            return l.copyWith(loanAmount: event.amount);
+          }
+          return l;
+        }).toList();
+
+        emit(
+          state.copyWith(
+            mfDetailsResponse: updatedResponse,
+            lenders: updatedLenders,
+            pledgeableFunds: updatedResponse.pledgeableFunds,
+            isEditingLoan: false,
+            isLoading: false,
+            lastSavedLenderId: event.lenderId,
+            lastSaveMessage: "Loan amount updated successfully!",
+            snackbarMessage: "Loan amount updated successfully!",
+          ),
+        );
+        return;
+      }
+
+      // FAILURE
+      if (result is Failure) {
+        const msg = "Failed to update loan amount";
         emit(
           state.copyWith(
             isLoading: false,
-            snackbarMessage: error.toString(),
+            isEditingLoan: false,
+            lastSavedLenderId: event.lenderId,
+            lastSaveMessage: msg,
+            snackbarMessage: msg,
           ),
         );
-      },
-    );
-  } catch (e, st) {
-    print('🚨 Exception while editing loan amount: $e\n$st');
-    emit(
-      state.copyWith(
-        isLoading: false,
-        snackbarMessage: 'Something went wrong while updating the amount.',
-      ),
-    );
-  }
-}
-Future<void> _onSaveEditedLoanAmount(
-  SaveEditedLoanAmount event,
-  Emitter<EligibilityState> emit,
-) async {
-  try {
-    // Start loader
-    emit(
-      state.copyWith(
-          isEditingLoan: true,
-        isLoading: true,
-        lastSavedLenderId: null,
-        lastSaveMessage: null,
-      ),
-    );
-
-    final reqId = getIt<AppStateProvider>().reqId ?? '';
-    final isinModify = state.selectedFundIds.toList();
-
-    print("📤 Calling editLoanAmount API...");
-    print("🧩 reqId: $reqId | lenderId: ${event.lenderId} | newAmount: ${event.amount}");
-    print("🔄 ISIN Modify: $isinModify");
-
-    final result = await lenderRepository.editLoanAmount(
-      reqId: reqId,
-      loanAmount: event.amount,
-      lenderId: event.lenderId,
-      isinAdd: const [],
-      isinRemove: const [],
-      isinModify: isinModify,
-    );
-
-    // SUCCESS
-    if (result is Success<MfDetailsResponse>) {
-      final updatedResponse = result.value;
-
-      final updatedLenders = state.lenders.map((l) {
-        if (l.id == event.lenderId) {
-          return l.copyWith(loanAmount: event.amount);
-        }
-        return l;
-      }).toList();
+        return;
+      }
 
       emit(
         state.copyWith(
-          mfDetailsResponse: updatedResponse,
-          lenders: updatedLenders,
-          pledgeableFunds: updatedResponse.pledgeableFunds,
-            isEditingLoan: false,
           isLoading: false,
+          isEditingLoan: false,
           lastSavedLenderId: event.lenderId,
-          lastSaveMessage: "Loan amount updated successfully!",
-          snackbarMessage: "Loan amount updated successfully!",
+          lastSaveMessage: "Unexpected server response",
+          snackbarMessage: "Unexpected server response",
         ),
       );
-      return;
-    }
-
-    // FAILURE
-    if (result is Failure) {
-      const msg = "Failed to update loan amount";
+    } catch (e, stack) {
       emit(
         state.copyWith(
           isLoading: false,
-            isEditingLoan: false,
+          isEditingLoan: false,
           lastSavedLenderId: event.lenderId,
-          lastSaveMessage: msg,
-          snackbarMessage: msg,
+          lastSaveMessage: "Something went wrong",
+          snackbarMessage: "Something went wrong",
         ),
       );
-      return;
     }
-
-    emit(
-      state.copyWith(
-        isLoading: false,
-          isEditingLoan: false,
-        lastSavedLenderId: event.lenderId,
-        lastSaveMessage: "Unexpected server response",
-        snackbarMessage: "Unexpected server response",
-      ),
-    );
-  } catch (e, stack) {
-    emit(
-      state.copyWith(
-        isLoading: false,
-          isEditingLoan: false,
-        lastSavedLenderId: event.lenderId,
-        lastSaveMessage: "Something went wrong",
-        snackbarMessage: "Something went wrong",
-      ),
-    );
   }
-}
 
   void _onProceedToLenderSelection(
     ProceedToLenderSelection event,
@@ -1333,7 +1333,7 @@ void _onPreviousStepPressed(
       );
 
       if (response.status == 'success') {
-        await _launchUrl(response.data.url);
+        await _openWebView(response.data.url, event.context);
         emit(state.copyWith(kycLoading: false, kycUrl: response.data.url));
       } else {
         final errorMsg = response.message ?? 'KYC initiation failed';
@@ -1483,17 +1483,16 @@ void _onPreviousStepPressed(
     emit(state.copyWith(userMobileNumber: event.mobileNumber));
   }
 
-  Future<void> _launchUrl(String url) async {
+  Future<void> _openWebView(String url, BuildContext context) async {
     try {
-      final uri = Uri.parse(url);
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => WebViewScreen(url: url),
+        ),
+      );
     } catch (e) {
-      try {
-        final uri = Uri.parse(url);
-        await launchUrl(uri, mode: LaunchMode.platformDefault);
-      } catch (e2) {
-        print('Failed to launch URL: $e2');
-      }
+      print('Failed to open WebView: $e');
     }
   }
 }

@@ -115,6 +115,7 @@ class KycService {
         lenderCode: lenderCode,
         latitude: latitude,
         longitude: longitude,
+        context: context,
       ),
     );
   }
