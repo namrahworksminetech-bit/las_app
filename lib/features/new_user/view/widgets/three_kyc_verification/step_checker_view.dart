@@ -63,7 +63,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
           // Handle both String and List cases
           final statusData = data['data']?['status'];
           final String? status;
-          
+
           if (statusData is String) {
             status = statusData;
           } else if (statusData is List && statusData.isNotEmpty) {
@@ -90,6 +90,12 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     if (status == null) return;
 
     print('📊 Current status: $status');
+
+    if (status == 'completed') {
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context); // closes the WebView
+      }
+    }
 
     List<bool> steps = [false, false, false, false];
 
@@ -179,6 +185,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
       lenderCode: 'BFL',
       reqId: reqId.toString(),
       stepName: stepNames[stepIndex],
+
       onSuccess: () {
         print('✅ KYC URL opened successfully - starting status polling');
         // Only start polling after successful KYC start
@@ -283,62 +290,6 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
               Gaps.hXl,
 
-              // // ===== Test Buttons (Remove in production) =====
-              // BlocBuilder<EligibilityBloc, EligibilityState>(
-              //   builder: (context, state) {
-              //     final checks = state.kycStepChecks;
-              //     final nextStep = checks.indexWhere((step) => !step);
-              //
-              //     return Row(
-              //       children: [
-              //         Expanded(
-              //           child: ElevatedButton(
-              //             onPressed: nextStep != -1
-              //                 ? () {
-              //                     context.read<EligibilityBloc>().add(
-              //                       UpdateKycStep(nextStep, true),
-              //                     );
-              //                   }
-              //                 : null,
-              //             style: ElevatedButton.styleFrom(
-              //               backgroundColor: AppColors.bPrimaryColor,
-              //               padding: const EdgeInsets.symmetric(vertical: 12),
-              //             ),
-              //             child: Text(
-              //               nextStep != -1
-              //                   ? 'Complete Step ${nextStep + 1}'
-              //                   : 'All Done',
-              //               style: const TextStyle(color: Colors.black),
-              //             ),
-              //           ),
-              //         ),
-              //         Gaps.wSm,
-              //         ElevatedButton(
-              //           onPressed: () {
-              //             // Reset to initial state - only update what's needed
-              //             context.read<EligibilityBloc>().add(
-              //               const UpdateKycStepsReset(),
-              //             );
-              //           },
-              //           style: ElevatedButton.styleFrom(
-              //             backgroundColor: AppColors.bSecondaryColor,
-              //             padding: const EdgeInsets.symmetric(
-              //               vertical: 12,
-              //               horizontal: 16,
-              //             ),
-              //           ),
-              //           child: const Text(
-              //             'Reset',
-              //             style: TextStyle(color: Colors.white),
-              //           ),
-              //         ),
-              //       ],
-              //     );
-              //   },
-              // ),
-              // Gaps.hMd,
-
-              // ===== Step List =====
               Expanded(
                 child: BlocBuilder<EligibilityBloc, EligibilityState>(
                   builder: (context, state) {

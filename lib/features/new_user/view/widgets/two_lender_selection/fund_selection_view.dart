@@ -19,181 +19,207 @@ class FundSelectionView extends StatelessWidget {
   const FundSelectionView({super.key});
 
   // 🧮 Loan edit dialog
-Future<void> _showEditLoanDialog(
-  BuildContext blocContext,
-  Lender lender,
-  double currentAmount,
-) async {
-  final TextEditingController amountController = TextEditingController(
-    text: currentAmount.toStringAsFixed(0),
-  );
-
-  final eligibleLimit = lender.loanAmount ?? 0.0;
-  final eligibilityBloc = blocContext.read<EligibilityBloc>();
-
-  final newAmount = await showDialog<double>(
-    context: blocContext,
-    barrierDismissible: false,
-    builder: (dialogContext) {
-      return StatefulBuilder(builder: (context, setState) {
-        bool isSubmitting = false;
-
-     Future<void> _onConfirm() async {
-  final enteredAmount = double.tryParse(amountController.text);
-  print("💰 Entered: $enteredAmount | Eligible Limit: $eligibleLimit");
-
-  if (enteredAmount == null || enteredAmount <= 0) {
-    CSnackBar.show(blocContext, 'Invalid amount entered', isError: true);
-    return;
-  }
-
-  if (enteredAmount > eligibleLimit) {
-    CSnackBar.show(
-      blocContext,
-      'Amount exceeds eligible limit (₹${eligibleLimit.toStringAsFixed(0)})',
-      isError: true,
+  Future<void> _showEditLoanDialog(
+    BuildContext blocContext,
+    Lender lender,
+    double currentAmount,
+  ) async {
+    final TextEditingController amountController = TextEditingController(
+      text: currentAmount.toStringAsFixed(0),
     );
-    return;
-  }
 
-  // show a full-screen blocking loader immediately
-  showDialog<void>(
-    context: blocContext,
-    barrierDismissible: false,
-    useRootNavigator: true,
-    builder: (_) => WillPopScope(
-      onWillPop: () async => false,
-      child: Container(
-        color: Colors.black54,
-        child: const Center(
-          child: SizedBox(
-            width: 56,
-            height: 56,
-            child: CircularProgressIndicator(strokeWidth: 3),
-          ),
-        ),
-      ),
-    ),
-  );
+    final eligibleLimit = lender.loanAmount ?? 0.0;
+    final eligibilityBloc = blocContext.read<EligibilityBloc>();
 
-  // dispatch the save event AFTER showing loader
-  eligibilityBloc.add(SaveEditedLoanAmount(lender.id, enteredAmount));
+    final newAmount = await showDialog<double>(
+      context: blocContext,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            bool isSubmitting = false;
 
-  try {
-    // wait for the bloc to finish for this lender and provide the dedicated save message
-    final finalState = await eligibilityBloc.stream
-        .firstWhere((s) =>
-            s.isLoading == false &&
-            s.lastSavedLenderId != null &&
-            s.lastSavedLenderId == lender.id &&
-            s.lastSaveMessage != null &&
-            s.lastSaveMessage!.trim().isNotEmpty)
-        .timeout(const Duration(seconds: 30));
+            Future<void> _onConfirm() async {
+              final enteredAmount = double.tryParse(amountController.text);
+              print(
+                "💰 Entered: $enteredAmount | Eligible Limit: $eligibleLimit",
+              );
 
-    // close the full-screen loader
-    try {
-      Navigator.of(blocContext, rootNavigator: true).pop();
-    } catch (_) {}
+              if (enteredAmount == null || enteredAmount <= 0) {
+                CSnackBar.show(
+                  blocContext,
+                  'Invalid amount entered',
+                  isError: true,
+                );
+                return;
+              }
 
-    // show the save-specific message from bloc
-    CSnackBar.show(blocContext, finalState.lastSaveMessage!);
+              if (enteredAmount > eligibleLimit) {
+                CSnackBar.show(
+                  blocContext,
+                  'Amount exceeds eligible limit (₹${eligibleLimit.toStringAsFixed(0)})',
+                  isError: true,
+                );
+                return;
+              }
 
-    // close the edit dialog and return the entered amount
-    if (Navigator.of(dialogContext).canPop()) {
-      Navigator.of(dialogContext).pop(enteredAmount);
-    }
-  } on TimeoutException {
-    // close loader if still open
-    try {
-      Navigator.of(blocContext, rootNavigator: true).pop();
-    } catch (_) {}
-
-    CSnackBar.show(blocContext, 'Request timed out. Please try again.', isError: true);
-
-    if (Navigator.of(dialogContext).canPop()) {
-      Navigator.of(dialogContext).pop();
-    }
-  } catch (e) {
-    // close loader if still open
-    try {
-      Navigator.of(blocContext, rootNavigator: true).pop();
-    } catch (_) {}
-
-    CSnackBar.show(blocContext, 'Something went wrong', isError: true);
-
-    if (Navigator.of(dialogContext).canPop()) {
-      Navigator.of(dialogContext).pop();
-    }
-  }
-}
-
-        return AlertDialog(
-          backgroundColor: const Color(0xFF1F2937),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-          title: CText(
-            'Edit Loan Amount',
-            style: AppTypography.h3.copyWith(color: AppColors.white),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: amountController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: false),
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                style: AppTypography.bodyWhite.copyWith(fontSize: 24),
-                textAlign: TextAlign.center,
-                decoration: const InputDecoration(
-                  prefixText: '₹ ',
-                  prefixStyle: TextStyle(color: AppColors.white, fontSize: 24),
-                  enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.bSecondaryColor),
-                  ),
-                  focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.bPrimaryColor),
+              // show a full-screen blocking loader immediately
+              showDialog<void>(
+                context: blocContext,
+                barrierDismissible: false,
+                useRootNavigator: true,
+                builder: (_) => WillPopScope(
+                  onWillPop: () async => false,
+                  child: Container(
+                    color: Colors.black54,
+                    child: const Center(
+                      child: SizedBox(
+                        width: 56,
+                        height: 56,
+                        child: CircularProgressIndicator(strokeWidth: 3),
+                      ),
+                    ),
                   ),
                 ),
-                autofocus: true,
-              ),
-              const SizedBox(height: 10),
-              CText(
-                'Eligible limit: ₹${eligibleLimit.toStringAsFixed(0)}',
-                style: AppTypography.bodySecondary.copyWith(
-                  color: AppColors.bSecondaryColor,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-          actionsPadding: const EdgeInsets.symmetric(horizontal: 8.0),
-          actions: [
-            TextButton(
-              child: CText('cancel'.tr, style: AppTypography.bodySecondary),
-              onPressed: () {
+              );
+
+              // dispatch the save event AFTER showing loader
+              eligibilityBloc.add(
+                SaveEditedLoanAmount(lender.id, enteredAmount),
+              );
+
+              try {
+                // wait for the bloc to finish for this lender and provide the dedicated save message
+                final finalState = await eligibilityBloc.stream
+                    .firstWhere(
+                      (s) =>
+                          s.isLoading == false &&
+                          s.lastSavedLenderId != null &&
+                          s.lastSavedLenderId == lender.id &&
+                          s.lastSaveMessage != null &&
+                          s.lastSaveMessage!.trim().isNotEmpty,
+                    )
+                    .timeout(const Duration(seconds: 30));
+
+                // close the full-screen loader
+                try {
+                  Navigator.of(blocContext, rootNavigator: true).pop();
+                } catch (_) {}
+
+                // show the save-specific message from bloc
+                CSnackBar.show(blocContext, finalState.lastSaveMessage!);
+
+                // close the edit dialog and return the entered amount
+                if (Navigator.of(dialogContext).canPop()) {
+                  Navigator.of(dialogContext).pop(enteredAmount);
+                }
+              } on TimeoutException {
+                // close loader if still open
+                try {
+                  Navigator.of(blocContext, rootNavigator: true).pop();
+                } catch (_) {}
+
+                CSnackBar.show(
+                  blocContext,
+                  'Request timed out. Please try again.',
+                  isError: true,
+                );
+
                 if (Navigator.of(dialogContext).canPop()) {
                   Navigator.of(dialogContext).pop();
                 }
-              },
-            ),
-            TextButton(
-              child: CText(
-                'confirm'.tr,
-                style: AppTypography.bodyWhite.copyWith(
-                  color: AppColors.bPrimaryColor,
-                ),
-              ),
-              onPressed: _onConfirm,
-            ),
-          ],
-        );
-      });
-    },
-  );
+              } catch (e) {
+                // close loader if still open
+                try {
+                  Navigator.of(blocContext, rootNavigator: true).pop();
+                } catch (_) {}
 
-}
+                CSnackBar.show(
+                  blocContext,
+                  'Something went wrong',
+                  isError: true,
+                );
+
+                if (Navigator.of(dialogContext).canPop()) {
+                  Navigator.of(dialogContext).pop();
+                }
+              }
+            }
+
+            return AlertDialog(
+              backgroundColor: const Color(0xFF1F2937),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              title: CText(
+                'Edit Loan Amount',
+                style: AppTypography.h3.copyWith(color: AppColors.white),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: amountController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: false,
+                    ),
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    style: AppTypography.bodyWhite.copyWith(fontSize: 24),
+                    textAlign: TextAlign.center,
+                    decoration: const InputDecoration(
+                      prefixText: '₹ ',
+                      prefixStyle: TextStyle(
+                        color: AppColors.white,
+                        fontSize: 24,
+                      ),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                          color: AppColors.bSecondaryColor,
+                        ),
+                      ),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: AppColors.bPrimaryColor),
+                      ),
+                    ),
+                    autofocus: true,
+                  ),
+                  const SizedBox(height: 10),
+                  CText(
+                    'Eligible limit: ₹${eligibleLimit.toStringAsFixed(0)}',
+                    style: AppTypography.bodySecondary.copyWith(
+                      color: AppColors.bSecondaryColor,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+              actionsPadding: const EdgeInsets.symmetric(horizontal: 8.0),
+              actions: [
+                TextButton(
+                  child: CText('cancel'.tr, style: AppTypography.bodySecondary),
+                  onPressed: () {
+                    if (Navigator.of(dialogContext).canPop()) {
+                      Navigator.of(dialogContext).pop();
+                    }
+                  },
+                ),
+                TextButton(
+                  child: CText(
+                    'confirm'.tr,
+                    style: AppTypography.bodyWhite.copyWith(
+                      color: AppColors.bPrimaryColor,
+                    ),
+                  ),
+                  onPressed: _onConfirm,
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -342,47 +368,59 @@ Future<void> _showEditLoanDialog(
                                         'interestRate'.tr,
                                         '${displayLender.interestRate}%',
                                       ),
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          CText(
-                                            'loanAmount'.tr,
-                                            style: AppTypography.bodySecondary
-                                                .copyWith(fontSize: 12),
-                                          ),
-                                          Gaps.hXs,
-                                          GestureDetector(
-                                            onTap: () => _showEditLoanDialog(
-                                              context,
-                                              selectedLender,
-                                              displayAmount,
+
+                                      // ⬇ Wrap this column inside Expanded
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            CText(
+                                              'loanAmount'.tr,
+                                              style: AppTypography.bodySecondary
+                                                  .copyWith(fontSize: 12),
                                             ),
-                                            child: Row(
-                                              children: [
-                                                CText(
-                                                  formatCurrency.format(
-                                                    displayLender.loanAmount,
-                                                  ),
-                                                  style: AppTypography.bodyWhite
-                                                      .copyWith(
-                                                        fontSize: 14,
-                                                        fontWeight:
-                                                            FontWeight.w500,
+                                            Gaps.hXs,
+                                            GestureDetector(
+                                              onTap: () => _showEditLoanDialog(
+                                                context,
+                                                selectedLender,
+                                                displayAmount,
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: CText(
+                                                      formatCurrency.format(
+                                                        displayLender
+                                                            .loanAmount,
                                                       ),
-                                                ),
-                                                Gaps.wXs,
-                                                const Icon(
-                                                  Icons.edit_outlined,
-                                                  color:
-                                                      AppColors.bSecondaryColor,
-                                                  size: 14,
-                                                ),
-                                              ],
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: AppTypography
+                                                          .bodyWhite
+                                                          .copyWith(
+                                                            fontSize: 14,
+                                                            fontWeight:
+                                                                FontWeight.w500,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  Gaps.wXs,
+                                                  const Icon(
+                                                    Icons.edit_outlined,
+                                                    color: AppColors
+                                                        .bSecondaryColor,
+                                                    size: 14,
+                                                  ),
+                                                ],
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
+
                                       _buildDetailColumn(
                                         'pledgeableMFs'.tr,
                                         '${displayLender.pledgeableMFs}',
@@ -396,10 +434,14 @@ Future<void> _showEditLoanDialog(
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                CText(
-                                  'chooseFundsHint'.tr,
-                                  style: AppTypography.bodySecondary.copyWith(
-                                    fontSize: 12,
+                                Expanded(
+                                  child: CText(
+                                    'chooseFundsHint'.tr,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTypography.bodySecondary.copyWith(
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ),
                                 const Icon(

@@ -185,12 +185,14 @@ class StartKycEvent extends EligibilityEvent {
   final String lenderCode;
   final double latitude;
   final double longitude;
+  final BuildContext context;
 
   const StartKycEvent({
     required this.reqId,
     required this.lenderCode,
     required this.latitude,
     required this.longitude,
+    required this.context,
   });
 
   @override
