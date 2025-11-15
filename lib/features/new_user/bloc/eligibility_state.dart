@@ -119,6 +119,7 @@ class EligibilityState extends Equatable {
     this.kycStepChecks = const [false, false, false, false],
     this.otp = '',
     this.isSubmitting = false,
+     this.shouldNavigateToKyc = false,
       this.loadingLenderId,
     this.otpError = false,
     this.otpResent = false,
@@ -134,6 +135,8 @@ class EligibilityState extends Equatable {
   // Core fields
   final int majorStep;
   final int pageIndex;
+
+  final bool shouldNavigateToKyc;
   final bool isEditingLoan;
 
   final EligibilityFormData formData;
@@ -201,6 +204,7 @@ final String? lastSaveMessage;
     PanVerificationStatus? panStatus,
     PanOtpStatus? otpStatus,
     String? snackbarMessage,
+      bool? shouldNavigateToKyc,
     bool clearSnackbar = false,
     EligibilityOverlayType? currentOverlay,
     LenderSelectionView? lenderSelectionView,
@@ -259,6 +263,8 @@ lastSavedLenderId: lastSavedLenderId ?? this.lastSavedLenderId,
       editedLoanAmounts: editedLoanAmounts ?? this.editedLoanAmounts,
       editLoanResult: editLoanResult ?? this.editLoanResult,
       pledgeableFunds: pledgeableFunds ?? this.pledgeableFunds,
+          shouldNavigateToKyc: shouldNavigateToKyc ?? this.shouldNavigateToKyc,
+
       selectedFundIds: selectedFundIds ?? this.selectedFundIds,
       previousSelectedFundIds: previousSelectedFundIds ?? this.previousSelectedFundIds,
       kycStepChecks: kycStepChecks ?? this.kycStepChecks,
@@ -303,6 +309,7 @@ lastSavedLenderId: lastSavedLenderId ?? this.lastSavedLenderId,
     currentOverlay,
     lenderSelectionView,
     lenders,
+    shouldNavigateToKyc,
     selectedLenderId,
     isPortfolioRefreshing,
     editedLoanAmounts,

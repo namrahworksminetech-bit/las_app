@@ -12,6 +12,7 @@ import 'package:las_app/common_widgets/c_snackbar.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
+import 'package:las_app/features/new_user/view/widgets/three_kyc_verification/step_checker_view.dart';
 
 // Bloc & repository imports
 import '../../../core/network/api_client.dart';
@@ -61,35 +62,46 @@ class _LoginScreenState extends State<LoginScreen> {
             previous.snackbarMessage != current.snackbarMessage ||
             previous.token != current.token ||
             previous.viewStatus != current.viewStatus,
-        listener: (context, state) {
-          // ✅ Snackbar
-          if (state.snackbarMessage != null &&
-              state.snackbarMessage!.isNotEmpty) {
-            CSnackBar.show(
-              context,
-              state.snackbarMessage!,
-              isError:
-                  state.otpError != null ||
-                  state.mobileError != null ||
-                  state.snackbarMessage!.contains('Failed') ||
-                  state.snackbarMessage!.contains('Invalid') ||
-                  state.snackbarMessage!.contains('Forbidden'),
-            );
-            context.read<LoginBloc>().add(LoginSnackbarCleared());
-          }
+       listener: (context, state) {
+  // ✅ Snackbar
+  if (state.snackbarMessage != null &&
+      state.snackbarMessage!.isNotEmpty) {
+    CSnackBar.show(
+      context,
+      state.snackbarMessage!,
+      isError:
+          state.otpError != null ||
+          state.mobileError != null ||
+          state.snackbarMessage!.contains('Failed') ||
+          state.snackbarMessage!.contains('Invalid') ||
+          state.snackbarMessage!.contains('Forbidden'),
+    );
+    context.read<LoginBloc>().add(LoginSnackbarCleared());
+  }
 
-          // ✅ Navigate after OTP verification success
-          if (state.token != null && state.token!.isNotEmpty) {
-            Future.delayed(const Duration(milliseconds: 500), () {
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(
-                  builder: (context) => const EligibilityScreen(),
-                ),
-              );
-            });
-          }
-        },
-        builder: (context, state) {
+  // ✅ Navigate after OTP verification success + pledge status check
+  if (state.token != null && state.token!.isNotEmpty) {
+    // Decide target based on state.pledgeStatus
+    final status = state.pledgeStatus;
+    final normalStatuses = {'not_started', 'pan_verified', 'pending'};
+
+    // If status is null OR in normalStatuses -> go to EligibilityScreen
+    if (status == null || normalStatuses.contains(status)) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const EligibilityScreen(),
+        ),
+      );
+    } else {
+      // For 'verified' and advanced statuses, go to kyc screen
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const KycVerificationScreen(),
+        ),
+      );
+    }
+  }
+},        builder: (context, state) {
           final bloc = context.read<LoginBloc>();
           final bool isOtpView = state.viewStatus == LoginViewStatus.otpSent;
           final bottomInset = MediaQuery.of(context).viewInsets.bottom;

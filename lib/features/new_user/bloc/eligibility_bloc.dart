@@ -45,11 +45,14 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     on<PanNumberUpdated>(_onPanNumberUpdated);
     on<PanFullNameUpdated>(_onPanFullNameUpdated);
     on<PanDobUpdated>(_onPanDobUpdated);
+    on<AcknowledgeKycNavigation>(_onAcknowledgeKycNavigation);
+
     on<VerifyPanPressed>(_onVerifyPanPressed);
     on<SendPanOtpPressed>(_onSendPanOtpPressed);
     on<VerifyPanOtpPressed>(_onVerifyPanOtpPressed);
     on<EligibilitySnackbarCleared>(_onSnackbarCleared);
     on<AutoSelectAllFunds>(_onAutoSelectAllFunds);
+on<JumpToPage>(_onJumpToPage);
 
     on<FetchStep2Data>(_onFetchStep2Data);
     on<LenderSelected>(_onLenderSelected);
@@ -84,6 +87,56 @@ on<ClearSnackbar>(_onClearSnackbar);
     on<VerifyRtaOtp>(_onVerifyRtaOtp);
     on<SetUserMobileNumber>(_onSetUserMobileNumber);
   }
+  
+// Replace your existing handler with this in EligibilityBloc
+void _onJumpToPage(JumpToPage event, Emitter<EligibilityState> emit) {
+  // Defensive: clamp pageIndex to valid range if you want
+  final int target = event.pageIndex.clamp(0, 5);
+
+  // Determine majorStep mapping explicitly
+  final int newMajor = switch (target) {
+    0 => 1, // Investment / fund-type
+    1 => 1, // PAN screen still majorStep 1
+    2 => 2, // lender selection (major step 2)
+    3 => 2,
+    4 => 3, // next major step
+    5 => 4, // final
+    _ => state.majorStep,
+  };
+
+  // Default updates: pageIndex and majorStep
+  var nextState = state.copyWith(
+    pageIndex: target,
+    majorStep: newMajor,
+    // Ensure we clear any overlay if jumping programmatically
+    currentOverlay: EligibilityOverlayType.none,
+    // Clear any transient snackbar/generic error if desired:
+    generalErrorMessage: null,
+  );
+
+  // If we are jumping to page 1 (PAN) from inside lender flow ensure lenderSelectionView
+  // is set back to lenderList so it won't try to fetch when user navigates later.
+  if (target == 1 && state.lenderSelectionView != LenderSelectionView.lenderList) {
+    nextState = nextState.copyWith(lenderSelectionView: LenderSelectionView.lenderList);
+  }
+
+  // If jumping into lender flow (pageIndex 2) and you want a specific subview, you can
+  // set it here; otherwise keep existing value.
+  if (target == 2 && state.lenderSelectionView == null) {
+    nextState = nextState.copyWith(lenderSelectionView: LenderSelectionView.lenderList);
+  }
+
+  // Emit only once with everything applied
+  emit(nextState);
+
+  debugPrint('🔁 JumpToPage -> page:$target major:$newMajor lenderView:${nextState.lenderSelectionView} overlay:${nextState.currentOverlay}');
+}
+Future<void> _onAcknowledgeKycNavigation(
+  AcknowledgeKycNavigation event,
+  Emitter<EligibilityState> emit,
+) async {
+  emit(state.copyWith(shouldNavigateToKyc: false));
+}
 
   Future<void> _onClearSnackbar(
   ClearSnackbar event,
@@ -148,101 +201,117 @@ on<ClearSnackbar>(_onClearSnackbar);
   }
 
   Future<void> _onLenderContinuePressed(
-    LenderContinuePressed event,
-    Emitter<EligibilityState> emit,
-  ) async {
-    print('➡️ Continue pressed for lenderId: ${event.lenderId}');
-    emit(state.copyWith(isLoading: true, generalErrorMessage: null));
+  LenderContinuePressed event,
+  Emitter<EligibilityState> emit,
+) async {
+  print('➡️ Continue pressed for lenderId: ${event.lenderId}');
 
-    try {
-      // 1️⃣ Get selected UI lender
-      final selectedUiLender = state.lenders.firstWhere(
-        (l) => l.id == event.lenderId,
-        orElse: () => throw Exception('Selected lender not found in UI list'),
-      );
+  // Just save selected lender
+  emit(
+    state.copyWith(
+      selectedLenderId: event.lenderId,
+      lenderSelectionView: LenderSelectionView.fundSelection,
+    ),
+  );
+}
 
-      // 2️⃣ Get mfDetailsResponse
-      final mfDetails = state.mfDetailsResponse;
-      if (mfDetails == null)
-        throw Exception('mfDetailsResponse not loaded yet');
 
-      // 3️⃣ Find the full LenderItem details by matching ID
-      final lenderItem = mfDetails.lenders.firstWhere(
-        (l) => l.id.toString() == selectedUiLender.id,
-        orElse: () =>
-            throw Exception('Lender details not found in mfDetailsResponse'),
-      );
+  // Future<void> _onLenderContinuePressed(
+  //   LenderContinuePressed event,
+  //   Emitter<EligibilityState> emit,
+  // ) async {
+  //   print('➡️ Continue pressed for lenderId: ${event.lenderId}');
+  //   emit(state.copyWith(isLoading: true, generalErrorMessage: null));
 
-      // 4️⃣ Extract eligible funds
-      final eligibleFunds = lenderItem.eligibleFunds ?? [];
-      if (eligibleFunds.isEmpty) {
-        emit(
-          state.copyWith(
-            isLoading: false,
-            generalErrorMessage:
-                'No eligible funds found for ${selectedUiLender.name}.',
-          ),
-        );
-        return;
-      }
+  //   try {
+  //     // 1️⃣ Get selected UI lender
+  //     final selectedUiLender = state.lenders.firstWhere(
+  //       (l) => l.id == event.lenderId,
+  //       orElse: () => throw Exception('Selected lender not found in UI list'),
+  //     );
 
-      // 5️⃣ Use pledgeableFunds list from mfDetailsResponse
-      final fundDetails = mfDetails.pledgeableFunds;
-      if (fundDetails.isEmpty) {
-        emit(
-          state.copyWith(
-            isLoading: false,
-            generalErrorMessage: 'No pledgeable fund details found.',
-          ),
-        );
-        return;
-      }
+  //     // 2️⃣ Get mfDetailsResponse
+  //     final mfDetails = state.mfDetailsResponse;
+  //     if (mfDetails == null)
+  //       throw Exception('mfDetailsResponse not loaded yet');
 
-      // 6️⃣ Merge both using helper
-      final mergedFunds = FundsMerger.merge(
-        eligibleFunds: eligibleFunds,
-        fundDetails: fundDetails,
-      );
+  //     // 3️⃣ Find the full LenderItem details by matching ID
+  //     final lenderItem = mfDetails.lenders.firstWhere(
+  //       (l) => l.id.toString() == selectedUiLender.id,
+  //       orElse: () =>
+  //           throw Exception('Lender details not found in mfDetailsResponse'),
+  //     );
 
-      if (mergedFunds.isEmpty) {
-        emit(
-          state.copyWith(
-            isLoading: false,
-            generalErrorMessage:
-                'No matching funds found for ${selectedUiLender.name}.',
-          ),
-        );
-        return;
-      }
+  //     // 4️⃣ Extract eligible funds
+  //     final eligibleFunds = lenderItem.eligibleFunds ?? [];
+  //     if (eligibleFunds.isEmpty) {
+  //       emit(
+  //         state.copyWith(
+  //           isLoading: false,
+  //           generalErrorMessage:
+  //               'No eligible funds found for ${selectedUiLender.name}.',
+  //         ),
+  //       );
+  //       return;
+  //     }
 
-      // 7️⃣ Collect selected IDs (folio numbers)
-      final selectedIds = mergedFunds.map((f) => f.folioNo).toSet();
+  //     // 5️⃣ Use pledgeableFunds list from mfDetailsResponse
+  //     final fundDetails = mfDetails.pledgeableFunds;
+  //     if (fundDetails.isEmpty) {
+  //       emit(
+  //         state.copyWith(
+  //           isLoading: false,
+  //           generalErrorMessage: 'No pledgeable fund details found.',
+  //         ),
+  //       );
+  //       return;
+  //     }
 
-      // 8️⃣ Emit state for next screen
-      emit(
-        state.copyWith(
-          isLoading: false,
-          selectedLenderId: selectedUiLender.id,
-          lenderSelectionView: LenderSelectionView.fundSelection,
-          pledgeableFunds: mergedFunds,
-          selectedFundIds: selectedIds,
-        ),
-      );
+  //     // 6️⃣ Merge both using helper
+  //     final mergedFunds = FundsMerger.merge(
+  //       eligibleFunds: eligibleFunds,
+  //       fundDetails: fundDetails,
+  //     );
 
-      print(
-        '✅ ${mergedFunds.length} pledgeable funds ready for ${selectedUiLender.name}',
-      );
-    } catch (e, st) {
-      print('❌ Error in _onLenderContinuePressed: $e\n$st');
-      emit(
-        state.copyWith(
-          isLoading: false,
-          generalErrorMessage:
-              'Something went wrong while preparing lender funds.',
-        ),
-      );
-    }
-  }
+  //     if (mergedFunds.isEmpty) {
+  //       emit(
+  //         state.copyWith(
+  //           isLoading: false,
+  //           generalErrorMessage:
+  //               'No matching funds found for ${selectedUiLender.name}.',
+  //         ),
+  //       );
+  //       return;
+  //     }
+
+  //     // 7️⃣ Collect selected IDs (folio numbers)
+  //     final selectedIds = mergedFunds.map((f) => f.folioNo).toSet();
+
+  //     // 8️⃣ Emit state for next screen
+  //     emit(
+  //       state.copyWith(
+  //         isLoading: false,
+  //         selectedLenderId: selectedUiLender.id,
+  //         lenderSelectionView: LenderSelectionView.fundSelection,
+  //         pledgeableFunds: mergedFunds,
+  //         selectedFundIds: selectedIds,
+  //       ),
+  //     );
+
+  //     print(
+  //       '✅ ${mergedFunds.length} pledgeable funds ready for ${selectedUiLender.name}',
+  //     );
+  //   } catch (e, st) {
+  //     print('❌ Error in _onLenderContinuePressed: $e\n$st');
+  //     emit(
+  //       state.copyWith(
+  //         isLoading: false,
+  //         generalErrorMessage:
+  //             'Something went wrong while preparing lender funds.',
+  //       ),
+  //     );
+  //   }
+  // }
 
   Future<void> _onResendOtp(
     ResendOtp event,
@@ -476,86 +545,97 @@ on<ClearSnackbar>(_onClearSnackbar);
       );
     }
   }
+Future<void> _onFetchStep2Data(
+  FetchStep2Data event,
+  Emitter<EligibilityState> emit,
+) async {
+  // ✅ Prevent repeated fetch if we already have mfDetailsResponse
+  if (state.mfDetailsResponse != null) {
+    print("⚡ MF Details already fetched, skipping API call");
+    return;
+  }
 
-  Future<void> _onFetchStep2Data(
-    FetchStep2Data event,
-    Emitter<EligibilityState> emit,
-  ) async {
-    if (state.isLoading || state.isPortfolioRefreshing) return;
+  print("🔄 Fetching lenders and portfolio data...");
+  emit(state.copyWith(
+    isLoading: true,
+    generalErrorMessage: null, // clear old errors
+  ));
 
-    print("🔄 Fetching lenders and portfolio data...");
-
-    try {
-      final reqId = getIt<AppStateProvider>().reqId;
-      if (reqId == null) {
-        emit(
-          state.copyWith(
-            isLoading: false,
-            generalErrorMessage:
-                "Missing request ID. Please restart the process.",
-          ),
-        );
-        return;
-      }
-
-      final result = await lenderRepository.fetchLendersAndPortfolio(
-        reqId: reqId,
-      );
-
-      await result.when(
-        success: (mfResponse) async {
-          print("✅ Lenders parsed: ${mfResponse.lenders.length}");
-          print(
-            "✅ Pledgeable funds parsed: ${mfResponse.pledgeableFunds.length}",
-          );
-          print("✅ Pledgeable Amount: ${mfResponse.pledgeableAmount}");
-          print("✅ Non-Pledgeable Amount: ${mfResponse.nonPledgeableAmount}");
-          print("✅ Demat Amount: ${mfResponse.dematAmount}");
-          print("✅ Eligible Portfolio: ${mfResponse.eligiblePortfolio}");
-          print("✅ Max Eligible Limit: ${mfResponse.maxEligibleLimit}");
-
-          final lenders = mfResponse.lenders.map((l) {
-            return Lender(
-              id: l.id.toString(),
-              name: l.name ?? '-',
-              logoAsset: l.logo ?? '',
-              interestRate: l.loanInterest ?? 0.0,
-              loanAmount: l.loanAmount ?? 0.0,
-              pledgeableMFs: l.eligibleFundsCount ?? 0,
-              tag: '',
-            );
-          }).toList();
-
-          // ✅ Emit updated state directly with mfResponse data
-          emit(
-            state.copyWith(
-              isLoading: false,
-              lenders: lenders,
-              pledgeableFunds: mfResponse.pledgeableFunds,
-              mfDetailsResponse: mfResponse,
-
-              // Optional: derived summary data for UI
-            ),
-          );
-
-          print("🟢 Stored lender + MF data successfully.");
-        },
-        failure: (error) {
-          print("❌ Failed to fetch Step 2 data: $error");
-          emit(state.copyWith(isLoading: false, generalErrorMessage: error));
-        },
-      );
-    } catch (e, stack) {
-      print("❌ Exception while fetching Step 2 data: $e");
-      print("🧠 Stacktrace: $stack");
+  try {
+    final reqId = getIt<AppStateProvider>().reqId;
+    if (reqId == null) {
       emit(
         state.copyWith(
           isLoading: false,
-          generalErrorMessage: "Failed to fetch lender data.",
+          generalErrorMessage:
+              "Missing request ID. Please restart the process.",
         ),
       );
+      return;
     }
+
+    final result = await lenderRepository.fetchLendersAndPortfolio(
+      reqId: reqId,
+    );
+
+    await result.when(
+      success: (mfResponse) async {
+        print("✅ Lenders parsed: ${mfResponse.lenders.length}");
+        print(
+          "✅ Pledgeable funds parsed: ${mfResponse.pledgeableFunds.length}",
+        );
+        print("✅ Pledgeable Amount: ${mfResponse.pledgeableAmount}");
+        print("✅ Non-Pledgeable Amount: ${mfResponse.nonPledgeableAmount}");
+        print("✅ Demat Amount: ${mfResponse.dematAmount}");
+        print("✅ Eligible Portfolio: ${mfResponse.eligiblePortfolio}");
+        print("✅ Max Eligible Limit: ${mfResponse.maxEligibleLimit}");
+
+        final lenders = mfResponse.lenders.map((l) {
+          return Lender(
+            id: l.id.toString(),
+            name: l.name ?? '-',
+            logoAsset: l.logo ?? '',
+            interestRate: l.loanInterest ?? 0.0,
+            loanAmount: l.loanAmount ?? 0.0,
+            pledgeableMFs: l.eligibleFundsCount ?? 0,
+            tag: '',
+          );
+        }).toList();
+
+        // ✅ Emit updated state directly with mfResponse data
+        emit(
+          state.copyWith(
+            isLoading: false,
+            lenders: lenders,
+            pledgeableFunds: mfResponse.pledgeableFunds,
+            mfDetailsResponse: mfResponse,
+          ),
+        );
+
+        print("🟢 Stored lender + MF data successfully.");
+      },
+      failure: (error) {
+        print("❌ API Error, retrying silently…");
+
+        emit(state.copyWith(
+          generalErrorMessage: null,
+          isLoading: true, // keep overlay ON
+        ));
+
+        add(FetchStep2Data()); // Retry again
+      },
+    );
+  } catch (e, stack) {
+    print("❌ Exception while fetching Step 2 data: $e");
+    print("🧠 Stacktrace: $stack");
+    emit(
+      state.copyWith(
+        isLoading: false,
+        generalErrorMessage: "Server down please try again later",
+      ),
+    );
   }
+}
 
   void _onLenderSelected(LenderSelected event, Emitter<EligibilityState> emit) {
     final newSelectedId = (state.selectedLenderId == event.lenderId)
@@ -623,112 +703,106 @@ on<ClearSnackbar>(_onClearSnackbar);
     );
   }
 
-  Future<void> _onConfirmFundSelection(
-    ConfirmFundSelection event,
-    Emitter<EligibilityState> emit,
-  ) async {
-    print('🧩 Confirming Fund Selection...');
-    print('Selected Fund IDs: ${state.selectedFundIds}');
-    print('Edited Amounts: ${state.editedLoanAmounts}');
+Future<void> _onConfirmFundSelection(
+  ConfirmFundSelection event,
+  Emitter<EligibilityState> emit,
+) async {
+  print('🧩 Confirming Fund Selection...');
+  print('Selected Fund IDs: ${state.selectedFundIds}');
+  print('Edited Amounts: ${state.editedLoanAmounts}');
 
-    emit(state.copyWith(isLoading: true));
+  emit(state.copyWith(isLoading: true, generalErrorMessage: null));
 
-    try {
-      final lenderId = state.selectedLenderId ?? '';
-      final reqId = getIt<AppStateProvider>().reqId ?? '';
-      print("📋 Current reqId: $reqId");
+  try {
+    final lenderId = state.selectedLenderId ?? '';
+    final reqId = getIt<AppStateProvider>().reqId ?? '';
+    print("📋 Current reqId: $reqId");
 
-      if (reqId.isEmpty) {
+    if (reqId.isEmpty) {
+      emit(
+        state.copyWith(
+          isLoading: false,
+          generalErrorMessage: 'Missing reqId. Please login again.',
+        ),
+      );
+      return;
+    }
+
+    final loanAmount = state.editedLoanAmounts[lenderId] ??
+        state.selectedLender?.loanAmount ??
+        0.0;
+
+    // 🧮 Build ISIN lists for add/remove/modify
+    final previousFunds = state.previousSelectedFundIds;
+    final currentFunds = state.selectedFundIds;
+
+    final isinAdd = currentFunds.difference(previousFunds).toList();
+    final isinRemove = previousFunds.difference(currentFunds).toList();
+
+    // 🧠 For modify: pattern 'fundCode:folioNo:amount'
+    final isinModify = state.pledgeableFunds
+        .where((f) => currentFunds.contains(f.fundCode))
+        .map(
+          (f) =>
+              "${f.fundCode}:${f.folioNo ?? ''}:${(f.availableAmount ?? 0.0).toStringAsFixed(2)}",
+        )
+        .toList();
+
+    print('📤 ISIN_ADD: $isinAdd');
+    print('📤 ISIN_REMOVE: $isinRemove');
+    print('📤 ISIN_MODIFY: $isinModify');
+
+    // 🪄 Call repository
+    final result = await lenderRepository.editLoanAmount(
+      reqId: reqId,
+      loanAmount: loanAmount,
+      lenderId: lenderId,
+      isinAdd: isinAdd,
+      isinRemove: isinRemove,
+      isinModify: isinModify,
+    );
+
+    await result.when(
+      success: (updatedData) async {
+        print('✅ Loan Amount Updated Successfully');
+
+        // Update state with new data and signal UI to navigate
         emit(
           state.copyWith(
+            mfDetailsResponse: updatedData,
+            pledgeableFunds: updatedData.pledgeableFunds,
+            lenders: updatedData.lenders.map((l) {
+              return Lender(
+                id: l.id.toString(),
+                name: l.name ?? '-',
+                logoAsset: l.logo ?? '',
+                interestRate: l.loanInterest ?? 0.0,
+                loanAmount: l.loanAmount ?? 0.0,
+                pledgeableMFs: l.eligibleFundsCount ?? 0,
+                tag: '',
+              );
+            }).toList(),
             isLoading: false,
-            generalErrorMessage: 'Missing reqId. Please login again.',
+            // <-- NEW: tell the UI it can navigate when ready
+            shouldNavigateToKyc: true,
+            generalErrorMessage: null,
           ),
         );
-        return;
-      }
 
-      final loanAmount =
-          state.editedLoanAmounts[lenderId] ??
-          state.selectedLender?.loanAmount ??
-          0.0;
-
-      // 🧮 Build ISIN lists for add/remove/modify
-      final previousFunds = state.previousSelectedFundIds;
-      final currentFunds = state.selectedFundIds;
-
-      final isinAdd = currentFunds.difference(previousFunds).toList();
-      final isinRemove = previousFunds.difference(currentFunds).toList();
-
-      // 🧠 For modify: pattern 'fundCode:folioNo:amount'
-      final isinModify = state.pledgeableFunds
-          .where((f) => currentFunds.contains(f.fundCode))
-          .map(
-            (f) =>
-                "${f.fundCode}:${f.folioNo ?? ''}:${(f.availableAmount ?? 0.0).toStringAsFixed(2)}",
-          )
-          .toList();
-
-      print('📤 ISIN_ADD: $isinAdd');
-      print('📤 ISIN_REMOVE: $isinRemove');
-      print('📤 ISIN_MODIFY: $isinModify');
-
-      // 🪄 Call updated repository method
-      final result = await lenderRepository.editLoanAmount(
-        reqId: reqId,
-        loanAmount: loanAmount,
-        lenderId: lenderId,
-        isinAdd: isinAdd,
-        isinRemove: isinRemove,
-        isinModify: isinModify,
-      );
-
-      await result.when(
-        success: (updatedData) async {
-          print('✅ Loan Amount Updated Successfully');
-
-          emit(
-            state.copyWith(
-              mfDetailsResponse: updatedData,
-              pledgeableFunds: updatedData.pledgeableFunds,
-              lenders: updatedData.lenders.map((l) {
-                return Lender(
-                  id: l.id.toString(),
-                  name: l.name ?? '-',
-                  logoAsset: l.logo ?? '',
-                  interestRate: l.loanInterest ?? 0.0,
-                  loanAmount: l.loanAmount ?? 0.0,
-                  pledgeableMFs: l.eligibleFundsCount ?? 0,
-                  tag: '',
-                );
-              }).toList(),
-              isLoading: false,
-            ),
-          );
-          // ✅ Navigate to KYC screen after successful update
-          final context = event.context;
-          if (context.mounted) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => BlocProvider.value(
-                  value: context.read<EligibilityBloc>(),
-                  child: const KycVerificationScreen(),
-                ),
-              ),
-            );
-          }
-        },
-        failure: (error) {
-          print('❌ API failed: $error');
-          emit(state.copyWith(isLoading: false, generalErrorMessage: error));
-        },
-      );
-    } catch (e, st) {
-      print('❌ Unexpected error in ConfirmFundSelection: $e\n$st');
-      emit(state.copyWith(isLoading: false, generalErrorMessage: e.toString()));
-    }
+        // IMPORTANT: do NOT navigate from the bloc.
+        // UI (BlocListener) should observe shouldNavigateToKyc and handle navigation.
+      },
+      failure: (error) {
+        print('❌ API failed: $error');
+        emit(state.copyWith(isLoading: false, generalErrorMessage: error));
+      },
+    );
+  } catch (e, st) {
+    print('❌ Unexpected error in ConfirmFundSelection: $e\n$st');
+    emit(state.copyWith(isLoading: false, generalErrorMessage: e.toString()));
   }
+}
+
 
   void _onViewDetailsToggled(
     ViewDetailsToggled event,
@@ -1062,196 +1136,181 @@ Future<void> _onSaveEditedLoanAmount(
   }
 
   //steps pressed
-  Future<void> _onNextStepPressed(
-    NextStepPressed event,
-    Emitter<EligibilityState> emit,
-  ) async {
-    bool proceed = true;
+  //steps pressed
+Future<void> _onNextStepPressed(
+  NextStepPressed event,
+  Emitter<EligibilityState> emit,
+) async {
+  bool proceed = true;
 
-    if (state.pageIndex == 0) {
-      if (state.formData.investmentType == InvestmentType.none) {
-        emit(
-          state.copyWith(
-            generalErrorMessage: 'Please select an investment type.',
-          ),
-        );
-        proceed = false;
-      }
-    } else if (state.pageIndex == 1) {
-      final pan = state.formData.panNumber;
-      final name = state.formData.panFullName;
-      final dob = state.formData.panDob;
+  if (state.pageIndex == 0) {
+    if (state.formData.investmentType == InvestmentType.none) {
+      emit(
+        state.copyWith(
+          generalErrorMessage: 'Please select an investment type.',
+        ),
+      );
+      proceed = false;
+    }
+  } 
+  else if (state.pageIndex == 1) {
+    final pan = state.formData.panNumber;
+    final name = state.formData.panFullName;
+    final dob = state.formData.panDob;
 
-      String? panError, nameError, dobError;
+    String? panError, nameError, dobError;
 
-      if (pan == null || pan.isEmpty) {
-        panError = 'PAN number is required.';
-        proceed = false;
-      } else if (pan.length != 10) {
-        panError = 'Please enter a valid 10-digit PAN.';
-        proceed = false;
-      }
+    if (pan == null || pan.isEmpty) {
+      panError = 'PAN number is required.';
+      proceed = false;
+    } else if (pan.length != 10) {
+      panError = 'Please enter a valid 10-digit PAN.';
+      proceed = false;
+    }
 
-      if (name == null || name.isEmpty) {
-        nameError = 'Name is required.';
-        proceed = false;
-      }
+    if (name == null || name.isEmpty) {
+      nameError = 'Name is required.';
+      proceed = false;
+    }
 
-      if (dob == null || dob.isEmpty) {
-        dobError = 'Date of Birth is required.';
-        proceed = false;
-      }
+    if (dob == null || dob.isEmpty) {
+      dobError = 'Date of Birth is required.';
+      proceed = false;
+    }
 
-      if (!proceed) {
-        emit(
-          state.copyWith(
-            panNumberError: panError,
-            panFullNameError: nameError,
-            panDobError: dobError,
-          ),
-        );
-      } else {
-        emit(
-          state.copyWith(
-            isLoading: true,
-            clearErrors: true,
-            currentOverlay: EligibilityOverlayType.fetchingPortfolio,
-          ),
-        );
-
-        await Future.delayed(const Duration(seconds: 10));
-
-        bool panIsEligible = true;
-
-        // Check if user has already seen eligibility result
-        if (state.hasSeenEligibilityResult) {
-          // Skip overlay and go directly to lender selection
-          emit(
-            state.copyWith(
-              isLoading: false,
-              currentOverlay: EligibilityOverlayType.none,
-            ),
-          );
-          add(ProceedToLenderSelection());
-        } else {
-          // Show eligibility result overlay for first time
-          emit(
-            state.copyWith(
-              isLoading: false,
-              currentOverlay: EligibilityOverlayType.eligibilityResult,
-            ),
-          );
-        }
-      }
+    if (!proceed) {
+      emit(
+        state.copyWith(
+          panNumberError: panError,
+          panFullNameError: nameError,
+          panDobError: dobError,
+        ),
+      );
       return;
-    } else if (state.pageIndex == 2) {
+    }
+
+    // 🔥 Correct: open fetching overlay
+    emit(
+      state.copyWith(
+        isLoading: true,
+        clearErrors: true,
+        currentOverlay: EligibilityOverlayType.fetchingPortfolio,
+      ),
+    );
+
+    // 🔥 Correct: call API
+    add(FetchStep2Data());
+
+    // ❌ DO NOT add any overlay logic here.
+    return;
+  }
+
+  if (!proceed) return;
+
+  switch (state.pageIndex) {
+    case 0:
+      emit(state.copyWith(pageIndex: 1, majorStep: 1, clearErrors: true));
+      break;
+
+    case 2:
       if (state.selectedLenderId == null) {
         emit(
           state.copyWith(
             generalErrorMessage: 'Please select a lender to continue.',
           ),
         );
-        proceed = false;
+        return;
       }
-    }
+      emit(
+        state.copyWith(
+          pageIndex: 4,
+          majorStep: 3,
+          clearErrors: true,
+          clearSelectedLender: true,
+        ),
+      );
+      break;
 
-    if (!proceed) return;
+    case 3:
+      emit(state.copyWith(pageIndex: 4, majorStep: 3, clearErrors: true));
+      break;
 
-    switch (state.pageIndex) {
-      case 0:
-        emit(state.copyWith(pageIndex: 1, majorStep: 1, clearErrors: true));
-        break;
+    case 4:
+      emit(state.copyWith(pageIndex: 5, majorStep: 4, clearErrors: true));
+      break;
 
-      case 2:
-        emit(
-          state.copyWith(
-            pageIndex: 4,
-            majorStep: 3,
-            clearErrors: true,
-            clearSelectedLender: true,
-          ),
-        );
-        break;
+    case 5:
+      emit(state.copyWith(isLoading: true));
+      print('Form submitted: ${state.formData}');
+      await Future.delayed(const Duration(seconds: 2));
+      emit(state.copyWith(isLoading: false));
+      break;
 
-      case 3:
-        emit(state.copyWith(pageIndex: 4, majorStep: 3, clearErrors: true));
-        break;
+    default:
+      emit(state.copyWith(clearErrors: true));
+  }
+}
 
-      case 4:
-        emit(state.copyWith(pageIndex: 5, majorStep: 4, clearErrors: true));
-        break;
 
-      case 5:
-        emit(state.copyWith(isLoading: true));
-        print('Form submitted: ${state.formData}');
-        await Future.delayed(const Duration(seconds: 2));
-        emit(state.copyWith(isLoading: false));
-        break;
+void _onPreviousStepPressed(
+  PreviousStepPressed event,
+  Emitter<EligibilityState> emit,
+) {
+  // keep clearing transient UI state
+  emit(
+    state.copyWith(
+      clearErrors: true,
+      generalErrorMessage: null,
+      clearSelectedLender: true,
+    ),
+  );
 
-      default:
-        emit(state.copyWith(clearErrors: true));
-        break;
+  // keep your existing page 2 (lender selection) internal handling
+  if (state.pageIndex == 2) {
+    if (state.lenderSelectionView == LenderSelectionView.pledgeableDetail) {
+      emit(state.copyWith(lenderSelectionView: LenderSelectionView.portfolioBreakdown));
+      return;
+    } else if (state.lenderSelectionView == LenderSelectionView.portfolioBreakdown) {
+      emit(state.copyWith(lenderSelectionView: LenderSelectionView.lenderList));
+      return;
+    } else if (state.lenderSelectionView == LenderSelectionView.fundSelection) {
+      emit(state.copyWith(lenderSelectionView: LenderSelectionView.lenderList));
+      return;
     }
   }
 
-  void _onPreviousStepPressed(
-    PreviousStepPressed event,
-    Emitter<EligibilityState> emit,
-  ) {
-    emit(
-      state.copyWith(
-        clearErrors: true,
-        generalErrorMessage: null,
-        clearSelectedLender: true,
-      ),
-    );
+  // ------- Minimal page-level back handling -------
+  switch (state.pageIndex) {
+    case 0:
+      // already at investment page — nothing to do here
+      break;
 
-    if (state.pageIndex == 2) {
-      if (state.lenderSelectionView == LenderSelectionView.pledgeableDetail) {
-        emit(
-          state.copyWith(
-            lenderSelectionView: LenderSelectionView.portfolioBreakdown,
-          ),
-        );
-        return;
-      } else if (state.lenderSelectionView ==
-          LenderSelectionView.portfolioBreakdown) {
-        emit(
-          state.copyWith(lenderSelectionView: LenderSelectionView.lenderList),
-        );
-        return;
-      } else if (state.lenderSelectionView ==
-          LenderSelectionView.fundSelection) {
-        emit(
-          state.copyWith(lenderSelectionView: LenderSelectionView.lenderList),
-        );
-        return;
-      }
-    }
+    case 1:
+      // <- CHANGE: PAN page should go back to mutual-fund (investment) page
+      emit(state.copyWith(pageIndex: 0, majorStep: 1));
+      break;
 
-    switch (state.pageIndex) {
-      case 0:
-        print("Cannot go back further from the first page.");
-        break;
-      case 1:
-        emit(state.copyWith(pageIndex: 0, majorStep: 1));
-        break;
-      case 2:
-        emit(state.copyWith(pageIndex: 1, majorStep: 1));
-        break;
-      case 3:
-        emit(state.copyWith(pageIndex: 2, majorStep: 2));
-        break;
-      case 4:
-        emit(state.copyWith(pageIndex: 2, majorStep: 2));
-        break;
-      case 5:
-        emit(state.copyWith(pageIndex: 4, majorStep: 3));
-        break;
-      default:
-        break;
-    }
+    case 2:
+      emit(state.copyWith(pageIndex: 1, majorStep: 1));
+      break;
+
+    case 3:
+      emit(state.copyWith(pageIndex: 2, majorStep: 2));
+      break;
+
+    case 4:
+      emit(state.copyWith(pageIndex: 2, majorStep: 2));
+      break;
+
+    case 5:
+      emit(state.copyWith(pageIndex: 4, majorStep: 3));
+      break;
+
+    default:
+      break;
   }
+}
+
 
   void _onErrorMessageCleared(
     ErrorMessageCleared event,

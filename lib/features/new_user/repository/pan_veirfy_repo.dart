@@ -15,7 +15,7 @@ class PanRepository {
   PanRepository(this._apiClient);
 
   // Toggle this flag to switch between mock and live APIs easily
-  static const bool useMock = false;
+  static const bool useMock = true;
 
   // 🔹 Step 1: Verify PAN
   Future<Result<PanVerifyResponseModel>> verifyPan({
@@ -98,25 +98,25 @@ class PanRepository {
 
     try {
      // 🟢 MOCK RESPONSE
-      // if (useMock) {
-      //   await Future.delayed(const Duration(seconds: 1));
-      //   final mockResponse = {
-      //     "status": "success",
-      //     "data": {
-      //       "client_ref_no": "a3866a0c-b63b-11f0-adb1-0ac0d6a50e11",
-      //     },
-      //     "message": "OTP sent successfully"
-      //   };
-      //   return Success(PanGenerateOtpResponseModel.fromJson(mockResponse));
-      // }
+      if (useMock) {
+        await Future.delayed(const Duration(seconds: 1));
+        final mockResponse = {
+          "status": "success",
+          "data": {
+            "client_ref_no": "a3866a0c-b63b-11f0-adb1-0ac0d6a50e11",
+          },
+          "message": "OTP sent successfully"
+        };
+        return Success(PanGenerateOtpResponseModel.fromJson(mockResponse));
+      }
 
       // 🧾 Live API call
       
-      final response = await _apiClient.post(
-        'customer/generate-otp',
-        data: {'req_id': reqId},
-      );
-      return Success(PanGenerateOtpResponseModel.fromJson(response.data));
+      // final response = await _apiClient.post(
+      //   'customer/generate-otp',
+      //   data: {'req_id': reqId},
+      // );
+      // return Success(PanGenerateOtpResponseModel.fromJson(response.data));
       
 
     } on DioException catch (e) {
@@ -145,37 +145,37 @@ class PanRepository {
         throw Exception('Token missing! Please login again.');
       }
 
-      //🟢 MOCK RESPONSE
-      // if (useMock) {
-      //   await Future.delayed(const Duration(seconds: 1));
-      //   final mockResponse = {
-      //     "status": "success",
-      //     "data": {
-      //       "req_id": "a3866a0c-b63b-11f0-adb1-0ac0d6a50e11"
-      //     },
-      //     "message": "OTP Verified Successfully!"
-      //   };
-      //   return Success(PanVerifyResponseModel.fromJson(mockResponse));
-      // }
+     // 🟢 MOCK RESPONSE
+      if (useMock) {
+        await Future.delayed(const Duration(seconds: 1));
+        final mockResponse = {
+          "status": "success",
+          "data": {
+            "req_id": "a3866a0c-b63b-11f0-adb1-0ac0d6a50e11"
+          },
+          "message": "OTP Verified Successfully!"
+        };
+        return Success(PanVerifyResponseModel.fromJson(mockResponse));
+      }
 
       // 🧾 Live API call
       
-      final response = await _apiClient.post(
-        'customer/verify-otp',
-        data: {
-          'req_id': reqId,
-          'otp': otp,
-        },
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-        ),
-      );
+      // final response = await _apiClient.post(
+      //   'customer/verify-otp',
+      //   data: {
+      //     'req_id': reqId,
+      //     'otp': otp,
+      //   },
+      //   options: Options(
+      //     headers: {
+      //       'Authorization': 'Bearer $token',
+      //       'Accept': 'application/json',
+      //       'Content-Type': 'application/json',
+      //     },
+      //   ),
+      // );
 
-      return Success(PanVerifyResponseModel.fromJson(response.data));
+      // return Success(PanVerifyResponseModel.fromJson(response.data));
       
 
     } on DioException catch (e) {

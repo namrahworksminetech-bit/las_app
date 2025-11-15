@@ -15,35 +15,24 @@ class EligibilityResultOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Currency formatter
+    // Format ₹ amounts
     final formatCurrency = NumberFormat.currency(
       locale: 'en_IN',
       symbol: '₹ ',
       decimalDigits: 0,
     );
 
-    // Access the BLoC state
-    final mfDetailsResponse = context
-        .watch<EligibilityBloc>()
-        .state
-        .mfDetailsResponse;
+    // Watch eligibility state
+    final state = context.watch<EligibilityBloc>().state;
 
-    // Calculate total pledgeable funds dynamically
-    final totalPledgeable =
-        mfDetailsResponse?.pledgeableFunds.fold<double>(
+    final mfDetailsResponse = state.mfDetailsResponse;
+
+    // Calculate total pledgeable
+    final totalPledgeable = mfDetailsResponse?.pledgeableFunds.fold<double>(
           0,
           (sum, fund) => sum + (fund.availableAmount ?? 0),
         ) ??
         0.0;
-
-    // Helper to safely add events to BLoC (avoids crashes if bloc closed)
-    void safeAdd(EligibilityBloc bloc, EligibilityEvent event) {
-      try {
-        bloc.add(event);
-      } catch (e, st) {
-        debugPrint('EligibilityBloc.add() failed: $e\n$st');
-      }
-    }
 
     return Container(
       padding: const EdgeInsets.all(Gaps.xl),
@@ -59,9 +48,10 @@ class EligibilityResultOverlay extends StatelessWidget {
             style: AppTypography.bodyWhite.copyWith(color: AppColors.black),
             textAlign: TextAlign.center,
           ),
+
           Gaps.hXxl,
 
-          // Center Image
+          // Image
           SizedBox(
             width: 150,
             height: 150,
@@ -75,7 +65,7 @@ class EligibilityResultOverlay extends StatelessWidget {
 
           Gaps.hXl,
 
-          // Dynamic total pledgeable value
+          // Amount
           RichText(
             text: TextSpan(
               style: AppTypography.h0.copyWith(color: AppColors.success),
@@ -94,7 +84,7 @@ class EligibilityResultOverlay extends StatelessWidget {
 
           Gaps.hXxl,
 
-          // Button to proceed
+          // Continue button
           CButton(
             text: 'seeLoanOffers'.tr,
             type: ButtonType.secondaryBlack,
@@ -107,29 +97,22 @@ class EligibilityResultOverlay extends StatelessWidget {
               try {
                 final eligibilityBloc = context.read<EligibilityBloc>();
 
-                // Close the bottom sheet / overlay first (if this widget is inside one)
-                try {
-                  if (Navigator.of(context).canPop()) {
-                    Navigator.of(context).pop(); // closes bottom sheet or route
-                  }
-                } catch (e) {
-                  debugPrint('Failed to pop overlay before navigation: $e');
+                // Close bottom sheet safely
+                if (Navigator.of(context).canPop()) {
+                  Navigator.of(context).pop();
                 }
 
-                // Trigger data fetch for lender list + portfolio
-                safeAdd(eligibilityBloc, FetchStep2Data());
-
-                // Navigate to LenderSelectionScreen and reuse the same bloc instance.
+                // Navigate to lender selection with same bloc instance
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (navCtx) => BlocProvider.value(
+                    builder: (routeCtx) => BlocProvider.value(
                       value: eligibilityBloc,
                       child: const LenderSelectionScreen(),
                     ),
                   ),
                 );
               } catch (e, st) {
-                debugPrint('Error navigating to lender selection: $e');
+                debugPrint("Navigation error: $e");
                 debugPrintStack(stackTrace: st);
               }
             },

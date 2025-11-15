@@ -104,16 +104,22 @@ class ToggleFundSelection extends EligibilityEvent {
 }
 
 class ConfirmFundSelection extends EligibilityEvent {
-  final BuildContext context;
-
-  ConfirmFundSelection(this.context);
+  const ConfirmFundSelection();
 }
+class JumpToPage extends EligibilityEvent {
+  final int pageIndex;
+  const JumpToPage(this.pageIndex);
+}
+class AcknowledgeKycNavigation extends EligibilityEvent {}
+
 
 class ProceedToLenderSelection extends EligibilityEvent {}
 
 class NextStepPressed extends EligibilityEvent {}
 
-class PreviousStepPressed extends EligibilityEvent {}
+class PreviousStepPressed extends EligibilityEvent {
+   const PreviousStepPressed();
+}
 
 class ErrorMessageCleared extends EligibilityEvent {}
 

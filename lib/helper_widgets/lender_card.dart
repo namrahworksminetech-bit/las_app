@@ -5,7 +5,6 @@ import 'package:las_app/common_widgets/c_button.dart';
 import 'package:las_app/common_widgets/c_snackbar.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/scheduler.dart';
 
 class LenderCard extends StatefulWidget {
@@ -13,9 +12,9 @@ class LenderCard extends StatefulWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final bool isSaving;
-  final String? snackbarMessage; // you can keep or remove this if unused
-  final String? lastSavedLenderId;   // NEW
-  final String? lastSaveMessage;  // NEW
+  final String? snackbarMessage;
+  final String? lastSavedLenderId;  
+  final String? lastSaveMessage;  
   final ValueChanged<double> onAmountSaved;
   final VoidCallback onContinue;
 
@@ -26,8 +25,8 @@ class LenderCard extends StatefulWidget {
     required this.onTap,
     required this.isSaving,
     required this.snackbarMessage,
-    required this.lastSavedLenderId,  // NEW
-    required this.lastSaveMessage,    // NEW
+    required this.lastSavedLenderId, 
+    required this.lastSaveMessage,   
     required this.onAmountSaved,
     required this.onContinue,
   });
@@ -57,7 +56,7 @@ void didUpdateWidget(covariant LenderCard oldWidget) {
 
   // keep text in sync and other existing logic...
   if (!_isEditing &&
-      (oldWidget.lender.loanAmount ?? 0) != (widget.lender.loanAmount ?? 0)) {
+      (oldWidget.lender.loanAmount ) != (widget.lender.loanAmount ?? 0)) {
     _amountController.text = (widget.lender.loanAmount ?? 0).toStringAsFixed(0);
   }
   if (oldWidget.isSelected && !widget.isSelected && _isEditing) {
@@ -122,10 +121,15 @@ if (finishedSaving && isResultForThisLender && hasMessage) {
       ),
     );
   }
+void _stopEditing({required bool save}) {
+  if (!_isEditing) return;
 
-  void _stopEditing({required bool save}) {
-    if (!_isEditing) return;
-
+  if (!save) {
+    _amountController.text =
+        (widget.lender.loanAmount ?? 0).toStringAsFixed(0);
+    setState(() => _isEditing = false);
+    return; // 🆕 important patch
+  }
     double? newAmount;
     if (save) {
       newAmount = double.tryParse(_amountController.text);
@@ -337,15 +341,16 @@ if (finishedSaving && isResultForThisLender && hasMessage) {
                             ),
                           ),
                           const SizedBox(width: 16),
-                          Expanded(
-                            child: CButton(
-                              text: 'Continue',
-                              onPressed: widget.onContinue,
-                              type: ButtonType.primaryWhite,
-                              suffixIcon:
-                                  const Icon(Icons.arrow_forward, color: AppColors.black, size: 18),
-                            ),
-                          ),
+                       Expanded(
+  child: CButton(
+    text: 'Continue',
+    onPressed: widget.onContinue,
+    type: ButtonType.primaryWhite,
+    suffixIcon:
+        const Icon(Icons.arrow_forward, color: AppColors.black, size: 18),
+  ),
+),
+
                         ],
                       ),
                     )
