@@ -31,14 +31,14 @@ part 'eligibility_state.dart';
 class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
   final PanRepository repository;
   final LenderRepository lenderRepository;
-  final KycRepository _kycRepository;
+  final KycRepo _kycRepository;
   final RtaOtpRepository _rtaOtpRepository;
 
   EligibilityBloc({
     required this.repository,
     required this.lenderRepository,
     required ApiClient apiClient,
-  }) : _kycRepository = KycRepository(apiClient),
+  }) : _kycRepository = KycRepo(apiClient),
        _rtaOtpRepository = RtaOtpRepository(apiClient),
        super(const EligibilityState()) {
     _loadEligibilitySeenFlag();
@@ -1264,14 +1264,20 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     StartKycEvent event,
     Emitter<EligibilityState> emit,
   ) async {
+    print('🚀 _onStartKyc called in bloc');
+    print('📋 reqId: ${event.reqId}');
+    print('📋 lenderCode: ${event.lenderCode}');
+    
     emit(state.copyWith(kycLoading: true, kycError: null));
     try {
+      print('📞 Calling _kycRepository.startKyc...');
       final response = await _kycRepository.startKyc(
         reqId: event.reqId,
         lenderCode: event.lenderCode,
         latitude: event.latitude,
         longitude: event.longitude,
       );
+      print('📞 API Response: ${response.status}');
 
       if (response.status == 'success') {
         await _openWebView(response.data.url, event.context);

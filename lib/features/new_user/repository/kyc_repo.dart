@@ -4,10 +4,10 @@ import '../../../core/network/api_client.dart';
 import '../../../models/kyc/kyc_response.dart';
 import '../../../models/kyc/kyc_webhook_response.dart';
 
-class KycRepository {
+class KycRepo {
   final ApiClient _apiClient;
 
-  KycRepository(this._apiClient);
+  KycRepo(this._apiClient);
 
   Future<KycResponse> startKyc({
     required String reqId,
@@ -17,11 +17,19 @@ class KycRepository {
     String sourceMode = 'WEB',
     int autoDisbursementConsent = 1,
   }) async {
+    print('📞 KycRepository.startKyc called');
+    print('📋 reqId: $reqId');
+    print('📋 lenderCode: $lenderCode');
+    
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
     if (token == null || token.isEmpty) {
+      print('❌ Token missing!');
       throw Exception('Token missing! Please login again.');
     }
+    
+    print('🔑 Token found: ${token.substring(0, 10)}...');
+    print('📞 Making API call to customer/start-kyc');
 
     final response = await _apiClient.post(
       'customer/start-kyc',
@@ -41,6 +49,10 @@ class KycRepository {
         },
       ),
     );
+    
+    print('✅ API Response received: ${response.statusCode}');
+    print('📋 Response data: ${response.data}');
+    
     return KycResponse.fromJson(response.data);
   }
 

@@ -9,6 +9,7 @@ import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
+
 import 'package:las_app/features/new_user/view/succcess_pledge_view.dart';
 import 'package:las_app/features/new_user/view/widgets/four_pledge_funds/pledge_funds_otp_screen.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
@@ -29,6 +30,8 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   late final PledgeStatusRepository _pledgeRepo;
   String? _lastStatus;
   bool _hasStartedKyc = false;
+  int _apiCallCount = 0;
+  int? _loadingStepIndex;
 
   @override
   void initState() {
@@ -50,6 +53,19 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     final token = appState.token;
 
     if (reqId == null || token == null) return;
+
+    _apiCallCount++;
+    print('📞 get-mf-details API call count: $_apiCallCount/10');
+    
+    // Close WebView after 10 API calls
+    if (_apiCallCount >= 10) {
+      print('✅ 10 API calls completed - closing WebView and returning to KYC screen');
+      _statusTimer?.cancel();
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context); // This will close the WebView
+      }
+      return;
+    }
 
     final result = await _pledgeRepo.checkPledgeStatus(
       reqId: reqId,
@@ -157,17 +173,26 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   ) async {
     print('💆 Step $stepIndex clicked');
 
+    // Show loading for this step
+    setState(() {
+      _loadingStepIndex = stepIndex;
+    });
+
     // For 4th step (index 3), directly navigate to next screen
     if (stepIndex == 3) {
       print('🚀 4th step clicked - Navigating to next screen');
+      await Future.delayed(const Duration(milliseconds: 500)); // Show loader briefly
       _navigateToNextScreen();
+      setState(() {
+        _loadingStepIndex = null;
+      });
       return;
     }
 
     // For other steps, open KYC URL
     final appState = GetIt.instance<AppStateProvider>();
     final reqId = appState.reqId;
-    final lenderCode = appState.lenderCode;
+    final lenderCode = "BFL";
 
     print('🏦 Lender code: $lenderCode');
     print('🎯 ReqId: $reqId');
@@ -180,21 +205,32 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
       "loanAgreementSigning".tr,
     ];
 
-    KycService.startKyc(
-      context,
-      lenderCode: 'BFL',
-      reqId: reqId.toString(),
-      stepName: stepNames[stepIndex],
+    if (reqId == null || lenderCode == null) {
+      print('❌ Missing reqId or lenderCode');
+      return;
+    }
 
+    KycRepository.startKyc(
+      context,
+      lenderCode: "BFL",
+      reqId: reqId,
+      stepName: stepNames[stepIndex],
       onSuccess: () {
         print('✅ KYC URL opened successfully - starting status polling');
-        // Only start polling after successful KYC start
+        setState(() {
+          _loadingStepIndex = null;
+        });
         if (!_hasStartedKyc) {
           _hasStartedKyc = true;
           _startStatusPolling();
         }
       },
     );
+    
+    // Clear loading if there's an error
+    setState(() {
+      _loadingStepIndex = null;
+    });
   }
 
   @override
@@ -303,9 +339,10 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                         final isChecked = checks[index];
                         final isClickable = _isStepClickable(index, checks);
                         final isVisible = _isStepVisible(index, checks);
+                        final isLoading = _loadingStepIndex == index;
                         print("${isChecked}");
                         return GestureDetector(
-                          onTap: isClickable
+                          onTap: (isClickable || index == 3)
                               ? () => _handleStepClick(context, state, index)
                               : null,
                           child: AnimatedContainer(
@@ -372,15 +409,26 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                                     ),
                                   ],
                                 ),
-                                Icon(
-                                  Icons.arrow_forward_ios,
-                                  color: isVisible
-                                      ? AppColors.bSecondaryColor
-                                      : AppColors.bSecondaryColor.withOpacity(
-                                          0.3,
+                                isLoading
+                                    ? const SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(
+                                            AppColors.bPrimaryColor,
+                                          ),
                                         ),
-                                  size: 14,
-                                ),
+                                      )
+                                    : Icon(
+                                        Icons.arrow_forward_ios,
+                                        color: isVisible
+                                            ? AppColors.bSecondaryColor
+                                            : AppColors.bSecondaryColor.withOpacity(
+                                                0.3,
+                                              ),
+                                        size: 14,
+                                      ),
                               ],
                             ),
                           ),

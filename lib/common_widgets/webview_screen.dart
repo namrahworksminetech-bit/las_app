@@ -45,17 +45,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
   }
 
   void _startPolling() {
-    _pollTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
-      try {
-        final response = await _apiClient.get('/customer/get-mf-details');
-        if (response.data != null && response.data['kyc done'] == true) {
-          timer.cancel();
-          if (mounted) Navigator.of(context).pop();
-        }
-      } catch (e) {
-        // Continue polling on error
-      }
-    });
+    // Polling disabled - KYC screen handles API calls
   }
 
   @override
