@@ -1,3 +1,4 @@
+// step1_pan_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,6 +11,8 @@ import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
+import 'package:las_app/features/new_user/view/eligibility_form.dart';
+import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/step_fund_type.dart';
 
 class Step1PanPage extends StatefulWidget {
   const Step1PanPage({super.key});
@@ -91,7 +94,32 @@ class _Step1PanPageState extends State<Step1PanPage> {
     // 🔹 Step 2: Verify OTP
     if (state.otpStatus == PanOtpStatus.sent) {
       bloc.add(VerifyPanOtpPressed(otp: _otpController.text.trim()));
+      return;
     }
+
+    if (state.otpStatus == PanOtpStatus.verified) {
+      bloc.add(FetchStep2Data());
+      return;
+    }
+  }
+
+  /// Go back using JumpToPage + ensure EligibilityScreen visible
+  void _onGoBackPressed() {
+    final bloc = context.read<EligibilityBloc>();
+
+    // 1) tell bloc to jump to page 0 (mutual funds)
+    // remove `const` if your JumpToPage constructor isn't const
+    bloc.add(JumpToPage(0));
+
+    // 2) ensure EligibilityScreen is on top (reusing same bloc instance)
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (ctx) => BlocProvider.value(
+          value: bloc,
+          child: const EligibilityScreen(),
+        ),
+      ),
+    );
   }
 
   @override
@@ -102,14 +130,15 @@ class _Step1PanPageState extends State<Step1PanPage> {
           curr.snackbarMessage != prev.snackbarMessage,
       listener: (context, state) {
         // ✅ Show custom snackbar
-        CSnackBar.show(context, state.snackbarMessage!);
+        if (state.snackbarMessage != null) {
+          CSnackBar.show(context, state.snackbarMessage!);
+        }
 
         // ✅ Move to next step automatically after OTP verified
         if (state.otpStatus == PanOtpStatus.verified) {
           context.read<EligibilityBloc>().add(NextStepPressed());
         }
       },
-
       child: BlocBuilder<EligibilityBloc, EligibilityState>(
         builder: (context, state) {
           final showOtpField =
@@ -119,13 +148,38 @@ class _Step1PanPageState extends State<Step1PanPage> {
 
           return Column(
             children: [
+              // ---- compact "Go Back" row (same design as lender screen) ----
+              Padding(
+                padding: const EdgeInsets.fromLTRB(15.0, 9.0, 5.0, 0.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    GestureDetector(
+                      onTap: _onGoBackPressed,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.arrow_back, color: AppColors.white, size: 20),
+                          Gaps.wXs,
+                          CText(
+                            'Go Back',
+                            style: AppTypography.bodyWhite.copyWith(
+                              
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizedBox(height: Gaps.xxl),
+                      SizedBox(height: Gaps.xl),
 
                       // PAN
                       CInput(
@@ -139,10 +193,7 @@ class _Step1PanPageState extends State<Step1PanPage> {
                             .read<EligibilityBloc>()
                             .add(PanNumberUpdated(value)),
                         errorText: state.panNumberError,
-
-                        /// FOR FOCUS NEXT TEXT FILED
                         onSubmitted: (_) {
-                          /// Move to Name field
                           FocusScope.of(context).requestFocus(_nameFocus);
                         },
                       ),
@@ -156,14 +207,12 @@ class _Step1PanPageState extends State<Step1PanPage> {
                         controller: _nameController,
                         focusNode: _nameFocus,
                         enabled: !showOtpField,
-
                         textInputAction: TextInputAction.next,
                         onChanged: (value) => context
                             .read<EligibilityBloc>()
                             .add(PanFullNameUpdated(value)),
                         errorText: state.panFullNameError,
                         onSubmitted: (_) {
-                          // Move to DOB field
                           FocusScope.of(context).requestFocus(_dobFocus);
                         },
                       ),
@@ -178,7 +227,6 @@ class _Step1PanPageState extends State<Step1PanPage> {
                         readOnly: true,
                         focusNode: _dobFocus,
                         enabled: !showOtpField,
-
                         onTap: () => _selectDate(context),
                         errorText: state.panDobError,
                         suffixIcon: const Icon(
@@ -213,7 +261,7 @@ class _Step1PanPageState extends State<Step1PanPage> {
                   onPressed: () => _onButtonPressed(state),
                   isLoading:
                       state.panStatus == PanVerificationStatus.verifying ||
-                      state.otpStatus == PanOtpStatus.sending,
+                          state.otpStatus == PanOtpStatus.sending,
                   type: ButtonType.primaryWhite,
                   suffixIcon: const Icon(
                     Icons.arrow_forward,

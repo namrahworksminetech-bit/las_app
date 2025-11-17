@@ -1,3 +1,4 @@
+// lender_selection_screen.dart  (updated Go Back behavior)
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,6 +15,7 @@ import 'package:las_app/features/new_user/view/widgets/two_lender_selection/fund
 import 'package:las_app/features/new_user/view/widgets/two_lender_selection/lender_list_view.dart';
 import 'package:las_app/features/new_user/view/widgets/two_lender_selection/pledgable_funds_details_view.dart';
 import 'package:las_app/features/new_user/view/widgets/two_lender_selection/portfolio_breakdown.dart';
+import 'package:las_app/features/new_user/view/eligibility_form.dart'; // <-- ensure correct import for EligibilityScreen
 
 class LenderSelectionScreen extends StatefulWidget {
   const LenderSelectionScreen({super.key});
@@ -59,8 +61,7 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
                 state.lenderSelectionView == LenderSelectionView.lenderList ||
                     state.lenderSelectionView ==
                         LenderSelectionView.portfolioBreakdown ||
-                    state.lenderSelectionView ==
-                        LenderSelectionView.pledgeableDetail;
+                    state.lenderSelectionView == LenderSelectionView.pledgeableDetail;
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,14 +122,54 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                // Robust Go Back: if route can pop => pop (normal route),
-                                // otherwise dispatch PreviousStepPressed (for PageView flows).
+                                // Robust Go Back:
                                 GestureDetector(
                                   onTap: () {
+                                    final bloc = context.read<EligibilityBloc>();
+
+                                    // CASE A: If the route can pop (this screen was pushed), do a normal pop
                                     if (Navigator.of(context).canPop()) {
                                       Navigator.of(context).pop();
-                                    } else {
-                                      safeAdd(PreviousStepPressed());
+                                      return;
+                                    }
+
+                                    // CASE B: route cannot pop (we're in the PageView flow).
+                                    // Decide action based on current sub-view:
+                                    switch (state.lenderSelectionView) {
+                                      case LenderSelectionView.lenderList:
+                                        // If we're on the lenders list and user hits Go Back
+                                        // -> jump the PageView back to PAN page (pageIndex = 1)
+                                        try {
+                                          bloc.add(const JumpToPage(1));
+                                        } catch (_) {}
+
+                                        // Replace route with EligibilityScreen while preserving bloc
+                                        Navigator.of(context).pushReplacement(
+                                          MaterialPageRoute(
+                                            builder: (ctx) => BlocProvider.value(
+                                              value: bloc,
+                                              child: const EligibilityScreen(),
+                                            ),
+                                          ),
+                                        );
+                                        break;
+
+                                      case LenderSelectionView.portfolioBreakdown:
+                                        // If on portfolio breakdown, previous should show lender list
+                                        // Your existing PreviousStepPressed already handles this when pageIndex == 2,
+                                        // so reuse it to keep single source of truth.
+                                        safeAdd(PreviousStepPressed());
+                                        break;
+
+                                      case LenderSelectionView.pledgeableDetail:
+                                        // If on pledgeable detail, previous should show portfolio breakdown
+                                        safeAdd(PreviousStepPressed());
+                                        break;
+
+                                      case LenderSelectionView.fundSelection:
+                                        // If in fund selection -> go back to lender list
+                                        safeAdd(PreviousStepPressed());
+                                        break;
                                     }
                                   },
                                   child: Row(
@@ -141,8 +182,7 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
                                       Gaps.wXs,
                                       CText(
                                         'Go Back',
-                                        style: AppTypography.bodyWhite
-                                            .copyWith(
+                                        style: AppTypography.bodyWhite.copyWith(
                                           decoration: TextDecoration.underline,
                                         ),
                                       ),
@@ -162,8 +202,7 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
                                                         .pledgeableDetail)
                                             ? 'viewLenders'.tr
                                             : 'viewYourMfDetails'.tr,
-                                        style: AppTypography.bodyWhite
-                                            .copyWith(
+                                        style: AppTypography.bodyWhite.copyWith(
                                           decoration: TextDecoration.underline,
                                           decorationColor: AppColors.white,
                                         ),
@@ -267,9 +306,8 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
                                       padding: const EdgeInsets.only(
                                           top: 24.0, bottom: 8.0),
                                       child: CText(
-                                        currentView ==
-                                                LenderSelectionView
-                                                    .portfolioBreakdown
+                                        currentView == LenderSelectionView
+                                                .portfolioBreakdown
                                             ? 'portfolioBreakdown'.tr
                                             : 'portfolioBreakdownPledgeableFunds'
                                                 .tr,
@@ -316,47 +354,46 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
 
   Widget _buildCurrentView(BuildContext context, EligibilityState state) {
     Widget _noDataView({required bool isLoading}) {
-  if (isLoading) {
-    return const Center(
-      child: CircularProgressIndicator(
-        valueColor: AlwaysStoppedAnimation<Color>(AppColors.bPrimaryColor),
-      ),
-    );
-  }
-
-  return Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Text(
-          "No details available. Please try again later.",
-          style: TextStyle(fontSize: 16, color: Colors.grey),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 16),
-        ElevatedButton.icon(
-          onPressed: () {
-            try {
-              context.read<EligibilityBloc>().add(RefreshPortfolioPressed());
-            } catch (e) {
-              debugPrint('EligibilityBloc.add() failed: $e');
-            }
-          },
-          icon: const Icon(Icons.refresh, color: Colors.white, size: 18),
-          label: const Text("Retry", style: TextStyle(color: Colors.white)),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.bPrimaryColor,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+      if (isLoading) {
+        return const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.bPrimaryColor),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        );
+      }
 
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              "No details available. Please try again later.",
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () {
+                try {
+                  context.read<EligibilityBloc>().add(RefreshPortfolioPressed());
+                } catch (e) {
+                  debugPrint('EligibilityBloc.add() failed: $e');
+                }
+              },
+              icon: const Icon(Icons.refresh, color: Colors.white, size: 18),
+              label: const Text("Retry", style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.bPrimaryColor,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     switch (state.lenderSelectionView) {
       case LenderSelectionView.lenderList:
@@ -372,15 +409,12 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
           mfDetailsResponse: state.mfDetailsResponse!,
           onCategoryTapped: (categoryId) {
             try {
-              context
-                  .read<EligibilityBloc>()
-                  .add(BreakdownCategoryTapped(categoryId));
+              context.read<EligibilityBloc>().add(BreakdownCategoryTapped(categoryId));
             } catch (e) {
               debugPrint('EligibilityBloc.add() failed: $e');
             }
           },
-          onRefresh: () =>
-              context.read<EligibilityBloc>().add(RefreshPortfolioPressed()),
+          onRefresh: () => context.read<EligibilityBloc>().add(RefreshPortfolioPressed()),
         );
 
       case LenderSelectionView.pledgeableDetail:
@@ -390,8 +424,7 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
         }
         return PledgeableFundsDetailView(
           key: const ValueKey('detail_view'),
-          onRefresh: () =>
-              context.read<EligibilityBloc>().add(RefreshPortfolioPressed()),
+          onRefresh: () => context.read<EligibilityBloc>().add(RefreshPortfolioPressed()),
         );
 
       case LenderSelectionView.fundSelection:

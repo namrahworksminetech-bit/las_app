@@ -1,9 +1,13 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import 'package:las_app/core/app_state_provider.dart';
 import 'package:las_app/core/injection_container.dart';
 import 'package:las_app/features/new_user/repository/pan_veirfy_repo.dart';
 import '../repository/login_repository.dart';
+import '../../new_user/repository/pledge_status_repo.dart';
+import '../../../core/network/api_client.dart';
+import '../../../core/results/result.dart';
 
 part 'login_event.dart';
 part 'login_state.dart';
@@ -20,9 +24,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
   /// 🔹 Send OTP
   Future<void> _onSendOtpPressed(
-      LoginSendOtpPressed event,
-      Emitter<LoginState> emit,
-      ) async {
+    LoginSendOtpPressed event,
+    Emitter<LoginState> emit,
+  ) async {
     String? mobileError;
 
     if (event.mobile.isEmpty || event.mobile.length < 10) {
@@ -58,7 +62,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   /// 🔹 Verify OTP
-/// 🔹 Verify OTP
   Future<void> _onVerifyOtpPressed(
     LoginVerifyOtpPressed event,
     Emitter<LoginState> emit,
@@ -79,20 +82,61 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       appState.setToken(response.token!);
       appState.setMobileNumber(event.mobile);
 
-      // The response also contains reqId in response.data.req_id[]
+      // The response also contains reqId in response.data.req_id[] (your repo extracts it into response.reqId)
       if (response.reqId != null && response.reqId!.isNotEmpty) {
         appState.setReqId(response.reqId!);
       }
 
-      // Optionally store name
       if (response.name != null) {
         appState.setName(response.name!);
       }
- await getIt<PanRepository>().saveToken(response.token!);
+
+      // Save token into PAN repository storage for other flows that expect it
+      await getIt<PanRepository>().saveToken(response.token!);
+
+      // Now check pledge status BEFORE telling UI to navigate.
+      String? pledgeStatus;
+      try {
+        final reqId = appState.reqId;
+        if (reqId != null && reqId.isNotEmpty) {
+          final pledgeRepo = PledgeStatusRepository(GetIt.instance<ApiClient>());
+          final res = await pledgeRepo.checkPledgeStatus(
+            reqId: reqId,
+            authToken: response.token!,
+          );
+
+          res.when(
+            success: (data) {
+              final statusData = data['data']?['status'];
+              if (statusData is String) {
+                pledgeStatus = statusData;
+              } else if (statusData is List && statusData.isNotEmpty) {
+                pledgeStatus = statusData.first as String?;
+              } else {
+                pledgeStatus = null;
+              }
+            },
+            failure: (err) {
+              // on API failure, we'll treat as normal flow (null)
+              print('❌ Pledge status API failed: $err');
+              pledgeStatus = null;
+            },
+          );
+        } else {
+          // no reqId -> normal flow
+          pledgeStatus = null;
+        }
+      } catch (e) {
+        print('❌ Exception while checking pledge status: $e');
+        pledgeStatus = null;
+      }
+
+      // Finally emit token + pledgeStatus so UI can decide.
       emit(
         state.copyWith(
           token: response.token,
-          snackbarMessage: ' OTP Verified Successfully!',
+          snackbarMessage: 'OTP Verified Successfully!',
+          pledgeStatus: pledgeStatus,
         ),
       );
     } else {
@@ -107,9 +151,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
   /// 🔹 Resend OTP (no API call, just UI feedback)
   Future<void> _onResendOtpPressed(
-      LoginResendOtpPressed event,
-      Emitter<LoginState> emit,
-      ) async {
+    LoginResendOtpPressed event,
+    Emitter<LoginState> emit,
+  ) async {
     emit(
       state.copyWith(
         snackbarMessage: 'A new OTP has been sent to your registered number.',
@@ -117,12 +161,11 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     );
   }
 
-
   /// 🔹 Clear Snackbar Message
   void _onSnackbarCleared(
-      LoginSnackbarCleared event,
-      Emitter<LoginState> emit,
-      ) {
+    LoginSnackbarCleared event,
+    Emitter<LoginState> emit,
+  ) {
     emit(state.copyWith(clearSnackbar: true));
   }
 }

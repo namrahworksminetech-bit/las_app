@@ -35,188 +35,164 @@ class FundSelectionView extends StatelessWidget {
       context: blocContext,
       barrierDismissible: false,
       builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            bool isSubmitting = false;
+        return StatefulBuilder(builder: (context, setState) {
+          bool isSubmitting = false;
 
-            Future<void> _onConfirm() async {
-              final enteredAmount = double.tryParse(amountController.text);
-              print(
-                "💰 Entered: $enteredAmount | Eligible Limit: $eligibleLimit",
-              );
+          Future<void> _onConfirm() async {
+            final enteredAmount = double.tryParse(amountController.text);
+            print("💰 Entered: $enteredAmount | Eligible Limit: $eligibleLimit");
 
-              if (enteredAmount == null || enteredAmount <= 0) {
-                CSnackBar.show(
-                  blocContext,
-                  'Invalid amount entered',
-                  isError: true,
-                );
-                return;
-              }
-
-              if (enteredAmount > eligibleLimit) {
-                CSnackBar.show(
-                  blocContext,
-                  'Amount exceeds eligible limit (₹${eligibleLimit.toStringAsFixed(0)})',
-                  isError: true,
-                );
-                return;
-              }
-
-              // show a full-screen blocking loader immediately
-              showDialog<void>(
-                context: blocContext,
-                barrierDismissible: false,
-                useRootNavigator: true,
-                builder: (_) => WillPopScope(
-                  onWillPop: () async => false,
-                  child: Container(
-                    color: Colors.black54,
-                    child: const Center(
-                      child: SizedBox(
-                        width: 56,
-                        height: 56,
-                        child: CircularProgressIndicator(strokeWidth: 3),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-
-              // dispatch the save event AFTER showing loader
-              eligibilityBloc.add(
-                SaveEditedLoanAmount(lender.id, enteredAmount),
-              );
-
-              try {
-                // wait for the bloc to finish for this lender and provide the dedicated save message
-                final finalState = await eligibilityBloc.stream
-                    .firstWhere(
-                      (s) =>
-                          s.isLoading == false &&
-                          s.lastSavedLenderId != null &&
-                          s.lastSavedLenderId == lender.id &&
-                          s.lastSaveMessage != null &&
-                          s.lastSaveMessage!.trim().isNotEmpty,
-                    )
-                    .timeout(const Duration(seconds: 30));
-
-                // close the full-screen loader
-                try {
-                  Navigator.of(blocContext, rootNavigator: true).pop();
-                } catch (_) {}
-
-                // show the save-specific message from bloc
-                CSnackBar.show(blocContext, finalState.lastSaveMessage!);
-
-                // close the edit dialog and return the entered amount
-                if (Navigator.of(dialogContext).canPop()) {
-                  Navigator.of(dialogContext).pop(enteredAmount);
-                }
-              } on TimeoutException {
-                // close loader if still open
-                try {
-                  Navigator.of(blocContext, rootNavigator: true).pop();
-                } catch (_) {}
-
-                CSnackBar.show(
-                  blocContext,
-                  'Request timed out. Please try again.',
-                  isError: true,
-                );
-
-                if (Navigator.of(dialogContext).canPop()) {
-                  Navigator.of(dialogContext).pop();
-                }
-              } catch (e) {
-                // close loader if still open
-                try {
-                  Navigator.of(blocContext, rootNavigator: true).pop();
-                } catch (_) {}
-
-                CSnackBar.show(
-                  blocContext,
-                  'Something went wrong',
-                  isError: true,
-                );
-
-                if (Navigator.of(dialogContext).canPop()) {
-                  Navigator.of(dialogContext).pop();
-                }
-              }
+            if (enteredAmount == null || enteredAmount <= 0) {
+              CSnackBar.show(blocContext, 'Invalid amount entered', isError: true);
+              return;
             }
 
-            return AlertDialog(
-              backgroundColor: const Color(0xFF1F2937),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-              title: CText(
-                'Edit Loan Amount',
-                style: AppTypography.h3.copyWith(color: AppColors.white),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: amountController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: false,
-                    ),
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    style: AppTypography.bodyWhite.copyWith(fontSize: 24),
-                    textAlign: TextAlign.center,
-                    decoration: const InputDecoration(
-                      prefixText: '₹ ',
-                      prefixStyle: TextStyle(
-                        color: AppColors.white,
-                        fontSize: 24,
-                      ),
-                      enabledBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(
-                          color: AppColors.bSecondaryColor,
-                        ),
-                      ),
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: AppColors.bPrimaryColor),
-                      ),
-                    ),
-                    autofocus: true,
-                  ),
-                  const SizedBox(height: 10),
-                  CText(
-                    'Eligible limit: ₹${eligibleLimit.toStringAsFixed(0)}',
-                    style: AppTypography.bodySecondary.copyWith(
-                      color: AppColors.bSecondaryColor,
-                      fontSize: 12,
+            if (enteredAmount > eligibleLimit) {
+              CSnackBar.show(
+                blocContext,
+                'Amount exceeds eligible limit (₹${eligibleLimit.toStringAsFixed(0)})',
+                isError: true,
+              );
+              return;
+            }
+
+            // show a full-screen blocking loader immediately
+            showDialog<void>(
+              context: blocContext,
+              barrierDismissible: false,
+              useRootNavigator: true,
+              builder: (_) => WillPopScope(
+                onWillPop: () async => false,
+                child: Container(
+                  color: Colors.black54,
+                  child: const Center(
+                    child: SizedBox(
+                      width: 56,
+                      height: 56,
+                      child: CircularProgressIndicator(strokeWidth: 3),
                     ),
                   ),
-                ],
-              ),
-              actionsPadding: const EdgeInsets.symmetric(horizontal: 8.0),
-              actions: [
-                TextButton(
-                  child: CText('cancel'.tr, style: AppTypography.bodySecondary),
-                  onPressed: () {
-                    if (Navigator.of(dialogContext).canPop()) {
-                      Navigator.of(dialogContext).pop();
-                    }
-                  },
                 ),
-                TextButton(
-                  child: CText(
-                    'confirm'.tr,
-                    style: AppTypography.bodyWhite.copyWith(
-                      color: AppColors.bPrimaryColor,
+              ),
+            );
+
+            // dispatch the save event AFTER showing loader
+            eligibilityBloc.add(SaveEditedLoanAmount(lender.id, enteredAmount));
+
+            try {
+              // wait for the bloc to finish for this lender and provide the dedicated save message
+              // NOTE: also wait for any portfolio-refresh overlay to be cleared to avoid closing
+              // dialog while a blocking overlay is about to appear.
+              final finalState = await eligibilityBloc.stream
+                  .firstWhere((s) =>
+                      s.lastSavedLenderId != null &&
+                      s.lastSavedLenderId == lender.id &&
+                      s.lastSaveMessage != null &&
+                      s.lastSaveMessage!.trim().isNotEmpty &&
+                      (s.isLoading == false) &&
+                      (s.isPortfolioRefreshing == false || s.isPortfolioRefreshing == null))
+                  .timeout(const Duration(seconds: 30));
+
+              // close the full-screen loader
+              try {
+                Navigator.of(blocContext, rootNavigator: true).pop();
+              } catch (_) {}
+
+              // show the save-specific message from bloc
+              CSnackBar.show(blocContext, finalState.lastSaveMessage!);
+
+              // close the edit dialog and return the entered amount
+              if (Navigator.of(dialogContext).canPop()) {
+                Navigator.of(dialogContext).pop(enteredAmount);
+              }
+            } on TimeoutException {
+              // close loader if still open
+              try {
+                Navigator.of(blocContext, rootNavigator: true).pop();
+              } catch (_) {}
+
+              CSnackBar.show(blocContext, 'Request timed out. Please try again.', isError: true);
+
+              if (Navigator.of(dialogContext).canPop()) {
+                Navigator.of(dialogContext).pop();
+              }
+            } catch (e) {
+              // close loader if still open
+              try {
+                Navigator.of(blocContext, rootNavigator: true).pop();
+              } catch (_) {}
+
+              CSnackBar.show(blocContext, 'Something went wrong', isError: true);
+
+              if (Navigator.of(dialogContext).canPop()) {
+                Navigator.of(dialogContext).pop();
+              }
+            }
+          }
+
+          return AlertDialog(
+            backgroundColor: const Color(0xFF1F2937),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            title: CText(
+              'Edit Loan Amount',
+              style: AppTypography.h3.copyWith(color: AppColors.white),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: amountController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: false),
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  style: AppTypography.bodyWhite.copyWith(fontSize: 24),
+                  textAlign: TextAlign.center,
+                  decoration: const InputDecoration(
+                    prefixText: '₹ ',
+                    prefixStyle: TextStyle(color: AppColors.white, fontSize: 24),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: AppColors.bSecondaryColor),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: AppColors.bPrimaryColor),
                     ),
                   ),
-                  onPressed: _onConfirm,
+                  autofocus: true,
+                ),
+                const SizedBox(height: 10),
+                CText(
+                  'Eligible limit: ₹${eligibleLimit.toStringAsFixed(0)}',
+                  style: AppTypography.bodySecondary.copyWith(
+                    color: AppColors.bSecondaryColor,
+                    fontSize: 12,
+                  ),
                 ),
               ],
-            );
-          },
-        );
+            ),
+            actionsPadding: const EdgeInsets.symmetric(horizontal: 8.0),
+            actions: [
+              TextButton(
+                child: CText('cancel'.tr, style: AppTypography.bodySecondary),
+                onPressed: () {
+                  if (Navigator.of(dialogContext).canPop()) {
+                    Navigator.of(dialogContext).pop();
+                  }
+                },
+              ),
+              TextButton(
+                child: CText(
+                  'confirm'.tr,
+                  style: AppTypography.bodyWhite.copyWith(
+                    color: AppColors.bPrimaryColor,
+                  ),
+                ),
+                onPressed: _onConfirm,
+              ),
+            ],
+          );
+        });
       },
     );
   }
@@ -258,120 +234,147 @@ class FundSelectionView extends StatelessWidget {
       decimalDigits: 0,
     );
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Column(
-          children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // --- Selected Lender Card ---
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(16.0),
-                              decoration: BoxDecoration(
-                                color: AppColors.black,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: AppColors.borderPrimaryColor,
-                                  width: 1.5,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.borderPrimaryColor
-                                        .withOpacity(0.4),
-                                    blurRadius: 8,
-                                    spreadRadius: 1,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                children: [
-                                  Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        width: 40,
-                                        height: 40,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                        ),
-                                        clipBehavior: Clip.antiAlias,
-                                        child:
-                                            displayLender.logoAsset.isNotEmpty
-                                            ? Image.network(
-                                                displayLender.logoAsset,
-                                                errorBuilder: (_, __, ___) =>
-                                                    const Icon(
-                                                      Icons.business,
-                                                      color: Colors.grey,
-                                                    ),
-                                              )
-                                            : const Icon(
-                                                Icons.business,
-                                                color: Colors.grey,
-                                              ),
-                                      ),
-                                      Gaps.wSm,
-                                      Expanded(
-                                        child: CText(
-                                          displayLender.name,
-                                          style: AppTypography.bodyWhite
-                                              .copyWith(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                        ),
-                                      ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.bPrimaryColor,
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                        ),
-                                        child: CText(
-                                          'yourSelection'.tr,
-                                          style: AppTypography.bodyWhite
-                                              .copyWith(
-                                                color: AppColors.black,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  Gaps.hMd,
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      _buildDetailColumn(
-                                        'interestRate'.tr,
-                                        '${displayLender.interestRate}%',
-                                      ),
+    // Wrap the whole UI in a BlocListener so navigation is driven by state
+    return BlocListener<EligibilityBloc, EligibilityState>(
+      listenWhen: (previous, current) =>
+          previous.shouldNavigateToKyc != current.shouldNavigateToKyc ||
+          previous.isLoading != current.isLoading ||
+          previous.isPortfolioRefreshing != current.isPortfolioRefreshing,
+      listener: (context, state) {
+        final canNavigate = state.shouldNavigateToKyc == true &&
+            state.isLoading == false &&
+            (state.isPortfolioRefreshing == false || state.isPortfolioRefreshing == null);
 
-                                      // ⬇ Wrap this column inside Expanded
-                                      Expanded(
-                                        child: Column(
+        if (!canNavigate) return;
+
+        // Close potential root overlays if any (safe attempt)
+        try {
+          Navigator.of(context, rootNavigator: true).pop();
+        } catch (_) {}
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => BlocProvider.value(
+              value: context.read<EligibilityBloc>(),
+              child: const KycVerificationScreen(),
+            ),
+          ),
+        );
+
+        // Acknowledge navigation so bloc doesn't try again
+        context.read<EligibilityBloc>().add(AcknowledgeKycNavigation());
+      },
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return Column(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // --- Selected Lender Card ---
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(16.0),
+                                decoration: BoxDecoration(
+                                  color: AppColors.black,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: AppColors.borderPrimaryColor,
+                                    width: 1.5,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.borderPrimaryColor
+                                          .withOpacity(0.4),
+                                      blurRadius: 8,
+                                      spreadRadius: 1,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Container(
+                                          width: 40,
+                                          height: 40,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                          ),
+                                          clipBehavior: Clip.antiAlias,
+                                          child: displayLender.logoAsset.isNotEmpty
+                                              ? Image.network(
+                                                  displayLender.logoAsset,
+                                                  errorBuilder: (_, __, ___) =>
+                                                      const Icon(
+                                                    Icons.business,
+                                                    color: Colors.grey,
+                                                  ),
+                                                )
+                                              : const Icon(
+                                                  Icons.business,
+                                                  color: Colors.grey,
+                                                ),
+                                        ),
+                                        Gaps.wSm,
+                                        Expanded(
+                                          child: CText(
+                                            displayLender.name,
+                                            style: AppTypography.bodyWhite
+                                                .copyWith(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                          ),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.bPrimaryColor,
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                          ),
+                                          child: CText(
+                                            'yourSelection'.tr,
+                                            style: AppTypography.bodyWhite
+                                                .copyWith(
+                                                  color: AppColors.black,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Gaps.hMd,
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        _buildDetailColumn(
+                                          'interestRate'.tr,
+                                          '${displayLender.interestRate}%',
+                                        ),
+                                        Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
@@ -389,29 +392,22 @@ class FundSelectionView extends StatelessWidget {
                                               ),
                                               child: Row(
                                                 children: [
-                                                  Expanded(
-                                                    child: CText(
-                                                      formatCurrency.format(
-                                                        displayLender
-                                                            .loanAmount,
-                                                      ),
-                                                      maxLines: 1,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                      style: AppTypography
-                                                          .bodyWhite
-                                                          .copyWith(
-                                                            fontSize: 14,
-                                                            fontWeight:
-                                                                FontWeight.w500,
-                                                          ),
+                                                  CText(
+                                                    formatCurrency.format(
+                                                      displayLender.loanAmount,
                                                     ),
+                                                    style: AppTypography.bodyWhite
+                                                        .copyWith(
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                        ),
                                                   ),
                                                   Gaps.wXs,
                                                   const Icon(
                                                     Icons.edit_outlined,
-                                                    color: AppColors
-                                                        .bSecondaryColor,
+                                                    color:
+                                                        AppColors.bSecondaryColor,
                                                     size: 14,
                                                   ),
                                                 ],
@@ -419,134 +415,123 @@ class FundSelectionView extends StatelessWidget {
                                             ),
                                           ],
                                         ),
-                                      ),
-
-                                      _buildDetailColumn(
-                                        'pledgeableMFs'.tr,
-                                        '${displayLender.pledgeableMFs}',
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                        _buildDetailColumn(
+                                          'pledgeableMFs'.tr,
+                                          '${displayLender.pledgeableMFs}',
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            Gaps.hLg,
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: CText(
+                              Gaps.hLg,
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  CText(
                                     'chooseFundsHint'.tr,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: AppTypography.bodySecondary.copyWith(
+                                    style:
+                                        AppTypography.bodySecondary.copyWith(
                                       fontSize: 12,
                                     ),
                                   ),
-                                ),
-                                const Icon(
-                                  Icons.info_outline,
-                                  color: AppColors.bSecondaryColor,
-                                  size: 16,
-                                ),
-                              ],
-                            ),
-                          ],
+                                  const Icon(
+                                    Icons.info_outline,
+                                    color: AppColors.bSecondaryColor,
+                                    size: 16,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
 
-                      // --- List of Funds ---
-                      BlocBuilder<EligibilityBloc, EligibilityState>(
-                        buildWhen: (previous, current) =>
-                            previous.selectedFundIds != current.selectedFundIds,
-                        builder: (context, state) {
-                          return ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            padding: EdgeInsets.zero,
-                            itemCount: state.pledgeableFunds.length,
-                            itemBuilder: (context, index) {
-                              final fund = state.pledgeableFunds[index];
-                              final bool isSelected = state.selectedFundIds
-                                  .contains(fund.fundCode);
-                              return FundListItem(
-                                key: ValueKey('${fund.fundCode}-${isSelected}'),
-                                fund: fund,
-                                isSelected: isSelected,
-                                onToggle: () => context
-                                    .read<EligibilityBloc>()
-                                    .add(ToggleFundSelection(fund.fundCode)),
-                              );
-                            },
-                          );
-                        },
-                      ),
-                    ],
+                        // --- List of Funds ---
+                        BlocBuilder<EligibilityBloc, EligibilityState>(
+                          buildWhen: (previous, current) =>
+                              previous.selectedFundIds != current.selectedFundIds,
+                          builder: (context, state) {
+                            return ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              padding: EdgeInsets.zero,
+                              itemCount: state.pledgeableFunds.length,
+                              itemBuilder: (context, index) {
+                                final fund = state.pledgeableFunds[index];
+                                final bool isSelected = state.selectedFundIds
+                                    .contains(fund.fundCode);
+                                return FundListItem(
+                                  key: ValueKey('${fund.fundCode}-${isSelected}'),
+                                  fund: fund,
+                                  isSelected: isSelected,
+                                  onToggle: () => context
+                                      .read<EligibilityBloc>()
+                                      .add(ToggleFundSelection(fund.fundCode)),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
 
-            // --- Continue Button ---
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 16.0,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Builder(
-                    builder: (blocContext) => CButton(
-                      text: 'continueWith'.trParams({
-                        'lenderName': selectedLender.name,
-                      }),
-                      onPressed: () {
-                        // Navigator.push(
-                        //   context,
-                        //   MaterialPageRoute(
-                        //     builder: (_) => BlocProvider.value(
-                        //       value: context.read<EligibilityBloc>(),
-                        //       child: const KycVerificationScreen(),
-                        //     ),
-                        //   ),
-                        // );
-
-                        blocContext.read<EligibilityBloc>().add(
-                          ConfirmFundSelection(context),
-                        );
-                      },
-                      type: ButtonType.primaryWhite,
-                      suffixIcon: const Icon(
-                        Icons.arrow_forward,
-                        color: AppColors.black,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                  Gaps.hSm,
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CText(
-                        'Powered by',
-                        style: AppTypography.bodySecondary.copyWith(
-                          fontSize: 12,
+              // --- Continue Button ---
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24.0,
+                  vertical: 16.0,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Builder(
+                      builder: (blocContext) => CButton(
+                        text: 'continueWith'.trParams({
+                          'lenderName': selectedLender.name,
+                        }),
+                        onPressed: () {
+                          // NOTE: ConfirmFundSelection event should NOT require BuildContext anymore.
+                          // Update your event signature to ConfirmFundSelection() if needed.
+                          blocContext.read<EligibilityBloc>().add(
+                                ConfirmFundSelection(),
+                              );
+                        },
+                        type: ButtonType.primaryWhite,
+                        suffixIcon: const Icon(
+                          Icons.arrow_forward,
+                          color: AppColors.black,
+                          size: 18,
                         ),
                       ),
-                      Gaps.wSm,
-                      Image.asset(
-                        'assets/images/value_enable_logo.png',
-                        height: 20,
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                    Gaps.hSm,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CText(
+                          'Powered by',
+                          style: AppTypography.bodySecondary.copyWith(
+                            fontSize: 12,
+                          ),
+                        ),
+                        Gaps.wSm,
+                        Image.asset(
+                          'assets/images/value_enable_logo.png',
+                          height: 20,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 
