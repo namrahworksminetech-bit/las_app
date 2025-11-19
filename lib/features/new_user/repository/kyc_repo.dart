@@ -78,27 +78,15 @@ class KycRepo {
     return KycWebhookResponse.fromJson(response.data);
   }
 
-  Future<void> updateKycStatus({
-    required String documentId,
-    required String reqId,
-  }) async {
-    await _apiClient.loadToken();
-
-    await _apiClient.post(
-      'customer/update-kyc-status',
-      data: {'document_id': documentId, 'req_id': reqId},
-    );
-  }
-
-  Future<void> updatePennydropStatus({
-    required String documentId,
-    required String reqId,
-  }) async {
-    await _apiClient.loadToken();
-
-    await _apiClient.post(
-      'customer/update-pennydrop-status',
-      data: {'document_id': documentId, 'req_id': reqId},
-    );
-  }
+  // Future<void> updateKycStatus({
+  //   required String documentId,
+  //   required String reqId,
+  // }) async {
+  //   await _apiClient.loadToken();
+  //
+  //   await _apiClient.post(
+  //     'customer/update-kyc-status',
+  //     data: {'document_id': documentId, 'req_id': reqId},
+  //   );
+  // }
 }
