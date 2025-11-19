@@ -15,7 +15,7 @@ class PanRepository {
   PanRepository(this._apiClient);
 
   // Toggle this flag to switch between mock and live APIs easily
-  static const bool useMock = true;
+  static const bool useMock = false;
 
   // 🔹 Step 1: Verify PAN
   Future<Result<PanVerifyResponseModel>> verifyPan({
@@ -112,11 +112,11 @@ class PanRepository {
 
       // 🧾 Live API call
       
-      // final response = await _apiClient.post(
-      //   'customer/generate-otp',
-      //   data: {'req_id': reqId},
-      // );
-      // return Success(PanGenerateOtpResponseModel.fromJson(response.data));
+      final response = await _apiClient.post(
+        'customer/generate-otp',
+        data: {'req_id': reqId},
+      );
+      return Success(PanGenerateOtpResponseModel.fromJson(response.data));
       
 
     } on DioException catch (e) {
@@ -160,22 +160,22 @@ class PanRepository {
 
       // 🧾 Live API call
       
-      // final response = await _apiClient.post(
-      //   'customer/verify-otp',
-      //   data: {
-      //     'req_id': reqId,
-      //     'otp': otp,
-      //   },
-      //   options: Options(
-      //     headers: {
-      //       'Authorization': 'Bearer $token',
-      //       'Accept': 'application/json',
-      //       'Content-Type': 'application/json',
-      //     },
-      //   ),
-      // );
+      final response = await _apiClient.post(
+        'customer/verify-otp',
+        data: {
+          'req_id': reqId,
+          'otp': otp,
+        },
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
 
-      // return Success(PanVerifyResponseModel.fromJson(response.data));
+      return Success(PanVerifyResponseModel.fromJson(response.data));
       
 
     } on DioException catch (e) {

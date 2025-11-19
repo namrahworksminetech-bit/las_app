@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -38,97 +37,101 @@ class FundSelectionView extends StatelessWidget {
         return StatefulBuilder(builder: (context, setState) {
           bool isSubmitting = false;
 
-          Future<void> _onConfirm() async {
-            final enteredAmount = double.tryParse(amountController.text);
-            print("💰 Entered: $enteredAmount | Eligible Limit: $eligibleLimit");
+        Future<void> _onConfirm() async {
+  final enteredAmount = double.tryParse(amountController.text);
+  print("💰 Entered: $enteredAmount | Eligible Limit: $eligibleLimit");
 
-            if (enteredAmount == null || enteredAmount <= 0) {
-              CSnackBar.show(blocContext, 'Invalid amount entered', isError: true);
-              return;
-            }
+  if (enteredAmount == null || enteredAmount <= 0) {
+    CSnackBar.show(blocContext, 'Invalid amount entered', isError: true);
+    return;
+  }
 
-            if (enteredAmount > eligibleLimit) {
-              CSnackBar.show(
-                blocContext,
-                'Amount exceeds eligible limit (₹${eligibleLimit.toStringAsFixed(0)})',
-                isError: true,
-              );
-              return;
-            }
+  if (enteredAmount > eligibleLimit) {
+    CSnackBar.show(
+      blocContext,
+      'Amount exceeds eligible limit (₹${eligibleLimit.toStringAsFixed(0)})',
+      isError: true,
+    );
+    return;
+  }
 
-            // show a full-screen blocking loader immediately
-            showDialog<void>(
-              context: blocContext,
-              barrierDismissible: false,
-              useRootNavigator: true,
-              builder: (_) => WillPopScope(
-                onWillPop: () async => false,
-                child: Container(
-                  color: Colors.black54,
-                  child: const Center(
-                    child: SizedBox(
-                      width: 56,
-                      height: 56,
-                      child: CircularProgressIndicator(strokeWidth: 3),
-                    ),
-                  ),
-                ),
-              ),
-            );
+  // Show a local loader attached to the dialog's navigator
+  showDialog<void>(
+    context: dialogContext,
+    barrierDismissible: false,
+    useRootNavigator: false,
+    builder: (_) => WillPopScope(
+      onWillPop: () async => false,
+      child: Container(
+        color: Colors.black54,
+        child: const Center(
+          child: SizedBox(
+            width: 56,
+            height: 56,
+            child: CircularProgressIndicator(strokeWidth: 3),
+          ),
+        ),
+      ),
+    ),
+  );
 
-            // dispatch the save event AFTER showing loader
-            eligibilityBloc.add(SaveEditedLoanAmount(lender.id, enteredAmount));
+  // dispatch save event AFTER showing loader
+  eligibilityBloc.add(SaveEditedLoanAmount(lender.id, enteredAmount));
 
-            try {
-              // wait for the bloc to finish for this lender and provide the dedicated save message
-              // NOTE: also wait for any portfolio-refresh overlay to be cleared to avoid closing
-              // dialog while a blocking overlay is about to appear.
-              final finalState = await eligibilityBloc.stream
-                  .firstWhere((s) =>
-                      s.lastSavedLenderId != null &&
-                      s.lastSavedLenderId == lender.id &&
-                      s.lastSaveMessage != null &&
-                      s.lastSaveMessage!.trim().isNotEmpty &&
-                      (s.isLoading == false) &&
-                      (s.isPortfolioRefreshing == false || s.isPortfolioRefreshing == null))
-                  .timeout(const Duration(seconds: 30));
+  try {
+    // Wait for the bloc to emit a save result for this lender AND for the saving flag to clear
+    final finalState = await eligibilityBloc.stream
+        .firstWhere((s) =>
+            s.lastSavedLenderId != null &&
+            s.lastSavedLenderId == lender.id &&
+            s.lastSaveMessage != null &&
+            s.lastSaveMessage!.trim().isNotEmpty &&
+            s.isSavingLoan == false) // <-- use isSavingLoan here
+        .timeout(const Duration(seconds: 30));
 
-              // close the full-screen loader
-              try {
-                Navigator.of(blocContext, rootNavigator: true).pop();
-              } catch (_) {}
+    // Close the local loader (dialog's navigator)
+    try {
+      if (Navigator.of(dialogContext).canPop()) {
+        Navigator.of(dialogContext).pop(); // closes the loader
+      }
+    } catch (_) {}
 
-              // show the save-specific message from bloc
-              CSnackBar.show(blocContext, finalState.lastSaveMessage!);
+    // Show the message returned by bloc
+    CSnackBar.show(blocContext, finalState.lastSaveMessage!);
 
-              // close the edit dialog and return the entered amount
-              if (Navigator.of(dialogContext).canPop()) {
-                Navigator.of(dialogContext).pop(enteredAmount);
-              }
-            } on TimeoutException {
-              // close loader if still open
-              try {
-                Navigator.of(blocContext, rootNavigator: true).pop();
-              } catch (_) {}
+    // Close the edit dialog and return the entered amount
+    if (Navigator.of(dialogContext).canPop()) {
+      Navigator.of(dialogContext).pop(enteredAmount);
+    }
+  } on TimeoutException {
+    // Close local loader if still open
+    try {
+      if (Navigator.of(dialogContext).canPop()) {
+        Navigator.of(dialogContext).pop();
+      }
+    } catch (_) {}
 
-              CSnackBar.show(blocContext, 'Request timed out. Please try again.', isError: true);
+    CSnackBar.show(blocContext, 'Request timed out. Please try again.', isError: true);
 
-              if (Navigator.of(dialogContext).canPop()) {
-                Navigator.of(dialogContext).pop();
-              }
-            } catch (e) {
-              // close loader if still open
-              try {
-                Navigator.of(blocContext, rootNavigator: true).pop();
-              } catch (_) {}
+    if (Navigator.of(dialogContext).canPop()) {
+      Navigator.of(dialogContext).pop();
+    }
+  } catch (e) {
+    // Close local loader if still open
+    try {
+      if (Navigator.of(dialogContext).canPop()) {
+        Navigator.of(dialogContext).pop();
+      }
+    } catch (_) {}
 
-              CSnackBar.show(blocContext, 'Something went wrong', isError: true);
+    CSnackBar.show(blocContext, 'Something went wrong', isError: true);
 
-              if (Navigator.of(dialogContext).canPop()) {
-                Navigator.of(dialogContext).pop();
-              }
-            }
-          }
+    if (Navigator.of(dialogContext).canPop()) {
+      Navigator.of(dialogContext).pop();
+    }
+  }
+}
+
 
           return AlertDialog(
             backgroundColor: const Color(0xFF1F2937),
@@ -201,6 +204,7 @@ class FundSelectionView extends StatelessWidget {
   Widget build(BuildContext context) {
     final bloc = context.read<EligibilityBloc>();
     final state = context.watch<EligibilityBloc>().state;
+    final eligibilityBloc = context.read<EligibilityBloc>();
 
     // 🧩 Auto-select all funds on UI load (once)
     if (state.selectedFundIds.isEmpty && state.pledgeableFunds.isNotEmpty) {
@@ -252,15 +256,14 @@ class FundSelectionView extends StatelessWidget {
           Navigator.of(context, rootNavigator: true).pop();
         } catch (_) {}
 
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => BlocProvider.value(
-              value: context.read<EligibilityBloc>(),
-              child: const KycVerificationScreen(),
-            ),
-          ),
-        );
+     Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (ctx) => BlocProvider.value(
+        value: eligibilityBloc,            // pass the existing instance
+        child: KycVerificationScreen(),     // no `const` — ensures fresh instance/context
+      ),
+    ),
+  );
 
         // Acknowledge navigation so bloc doesn't try again
         context.read<EligibilityBloc>().add(AcknowledgeKycNavigation());

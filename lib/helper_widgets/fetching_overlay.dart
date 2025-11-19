@@ -17,50 +17,64 @@ class PortfolioFetchingOverlay extends StatefulWidget {
 }
 
 class _PortfolioFetchingOverlayState extends State<PortfolioFetchingOverlay> {
+
   @override
-  void initState() {
-    super.initState();
+void initState() {
+  super.initState();
+  debugPrint("🔥 PortfolioFetchingOverlay INIT CALLED");
 
-    print("🔥 PortfolioFetchingOverlay INIT CALLED");
-
-    // Trigger API call immediately
-    context.read<EligibilityBloc>().add(FetchStep2Data());
+  final bloc = context.read<EligibilityBloc>();
+  if (bloc.state.isStep2Loading) {
+    debugPrint('🔁 Fetch already in progress, skipping add(FetchStep2Data)');
+  } else if (bloc.state.mfDetailsResponse != null) {
+    debugPrint('🔁 mfDetailsResponse already present, skipping fetch');
+  } else {
+    bloc.add(FetchStep2Data());
   }
-
+}
   @override
   Widget build(BuildContext context) {
     return BlocListener<EligibilityBloc, EligibilityState>(
-      listenWhen: (prev, curr) =>
-          prev.isLoading == true && curr.isLoading == false,
-      listener: (context, state) {
-        print("🎯 BlocListener triggered — isLoading changed");
+  listenWhen: (prev, curr) =>
+      prev.isStep2Loading == true && curr.isStep2Loading == false,
+  listener: (context, state) {
+    debugPrint("🎯 BlocListener triggered — isStep2Loading changed");
+    debugPrint('   isLoading=${state.isLoading} isStep2Loading=${state.isStep2Loading}');
 
-        // ❌ API ERROR
-        if (state.generalErrorMessage != null) {
-          Get.snackbar("Error", state.generalErrorMessage!);
+    // If API returned an error, show it and close the overlay
+    if (state.generalErrorMessage != null && state.generalErrorMessage!.isNotEmpty) {
+      Get.snackbar("Error", state.generalErrorMessage!);
+      try {
+        if (Navigator.of(context).canPop()) Navigator.of(context).pop();
+      } catch (e) {
+        debugPrint('⚠️ Navigator.pop() failed: $e');
+      }
+      return;
+    }
 
-          if (Navigator.of(context).canPop()) {
-            Navigator.of(context).pop();
-          }
-          return;
-        }
+    // Close fetching overlay if open
+    try {
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      } else {
+        debugPrint('⚠️ No route to pop when closing fetching overlay');
+      }
+    } catch (e) {
+      debugPrint('⚠️ Exception when trying to pop fetching overlay: $e');
+    }
 
-        // ✅ Close fetching overlay
-        if (Navigator.of(context).canPop()) {
-          Navigator.of(context).pop();
-        }
-
-        // 👉 Open Result Overlay correctly (with BlocProvider.value)
-        Get.bottomSheet(
-          BlocProvider.value(
-            value: context.read<EligibilityBloc>(),
-            child: EligibilityResultOverlay(),
-          ),
-          isScrollControlled: true,
-        );
-      },
-      child: _buildUI(),
+    // Open result bottom sheet with the same bloc instance
+    Get.bottomSheet(
+      BlocProvider.value(
+        value: context.read<EligibilityBloc>(),
+        child: EligibilityResultOverlay(),
+      ),
+      isScrollControlled: true,
     );
+  },
+  child: _buildUI(),
+)
+;
   }
 
   Widget _buildUI() {

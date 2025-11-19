@@ -17,7 +17,10 @@ class CInput extends StatefulWidget {
   final VoidCallback? onTap;
   final List<TextInputFormatter>? inputFormatters;
 
-  // NEW: focus / keyboard action props
+  // NEW FIELD 👍
+  final TextStyle? prefixStyle;
+
+  // focus / keyboard action props
   final FocusNode? focusNode;
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onSubmitted;
@@ -40,6 +43,9 @@ class CInput extends StatefulWidget {
     this.inputFormatters,
     this.textInputAction,
     this.onSubmitted,
+
+    // NEW PARAM
+    this.prefixStyle,
   });
 
   @override
@@ -53,14 +59,12 @@ class _CInputState extends State<CInput> {
   @override
   void initState() {
     super.initState();
-    // listen to whichever focus node will be used (passed or internal)
     (widget.focusNode ?? _internalFocusNode).addListener(_onFocusChanged);
   }
 
   @override
   void didUpdateWidget(covariant CInput oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // if focusNode changed, update listeners
     if (oldWidget.focusNode != widget.focusNode) {
       oldWidget.focusNode?.removeListener(_onFocusChanged);
       (widget.focusNode ?? _internalFocusNode).addListener(_onFocusChanged);
@@ -70,7 +74,6 @@ class _CInputState extends State<CInput> {
   @override
   void dispose() {
     (widget.focusNode ?? _internalFocusNode).removeListener(_onFocusChanged);
-    // only dispose internal node; do not dispose external node passed from parent
     _internalFocusNode.dispose();
     super.dispose();
   }
@@ -105,14 +108,14 @@ class _CInputState extends State<CInput> {
             color: hasError
                 ? kErrorBorderColor
                 : (_isFocused ? AppColors.white : kHintTextColor),
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: FontWeight.w500,
           ),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(2),
             boxShadow: (_isFocused && !hasError)
                 ? [
                     BoxShadow(
@@ -126,7 +129,7 @@ class _CInputState extends State<CInput> {
           ),
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(5),
               color: AppColors.black,
               border: Border.all(color: currentBorderColor, width: 1.5),
             ),
@@ -135,7 +138,6 @@ class _CInputState extends State<CInput> {
               focusNode: widget.focusNode ?? _internalFocusNode,
               keyboardType: widget.keyboardType,
               inputFormatters: widget.inputFormatters,
-
               onChanged: widget.onChanged,
               obscureText: widget.obscureText,
               style: const TextStyle(color: kTextColor, fontSize: 16),
@@ -145,15 +147,21 @@ class _CInputState extends State<CInput> {
               textInputAction: widget.textInputAction,
               onSubmitted: widget.onSubmitted,
               enabled: widget.enabled ?? true,
-
               decoration: InputDecoration(
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 14,
                 ),
+
+                // APPLY NEW STYLE 👇
                 prefixText: widget.prefixText,
-                prefixStyle: const TextStyle(color: kTextColor, fontSize: 16),
+                prefixStyle: widget.prefixStyle ??
+                    const TextStyle(
+                      color: kTextColor,
+                      fontSize: 16,
+                    ),
+
                 suffixIcon: widget.suffixIcon != null
                     ? Padding(
                         padding: const EdgeInsets.only(right: 12.0),

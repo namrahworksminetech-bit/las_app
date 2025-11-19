@@ -128,23 +128,41 @@ class EligibilityState extends Equatable {
     this.kycError,
     this.hasSeenEligibilityResult = false,
     this.isRtaOtpVerifying = false,
+    this.pledgeStatus,
+    this.editedFundAmounts = const {},
+    this.isStep2Loading = false,
     this.rtaOtpError,
+      this.redirectToKycAfterFetch = false,
     this.userMobileNumber,
+        this.pledgeMfResponse,
+         this.savingLenderId,
+           this.isSavingLoan = false,
+            this.fundsToAdd = const [],        // <-- ADD THIS
+    this.fundsToRemove = const [],
+        
   });
 
+  final bool isSavingLoan; 
+  final List<PledgeableFund> fundsToAdd;
+  final List<PledgeableFund> fundsToRemove;
   // Core fields
   final int majorStep;
   final int pageIndex;
+  final bool isStep2Loading;
+final bool redirectToKycAfterFetch;
+final Map<String, double> editedFundAmounts;
 
+final String? savingLenderId;
   final bool shouldNavigateToKyc;
   final bool isEditingLoan;
+    final PledgeMfResponse? pledgeMfResponse;
 
   final EligibilityFormData formData;
   final MfDetailsResponse? mfDetailsResponse;
 
   // New: lender-specific edit results: lenderId -> true/false/null
   final Map<String, bool?> editLoanResult;
-
+final String? pledgeStatus; 
 
 final String? lastSavedLenderId;
 final String? lastSaveMessage;
@@ -195,24 +213,33 @@ final String? lastSaveMessage;
     int? majorStep,
     int? pageIndex,
     EligibilityFormData? formData,
+    bool? isSavingLoan,
     MfDetailsResponse? mfDetailsResponse,
     bool? isLoading,
     String? generalErrorMessage,
     String? panNumberError,
     String? panFullNameError,
     String? panDobError,
+     Map<String, double>? editedFundAmounts,
     PanVerificationStatus? panStatus,
+
+     bool? isStep2Loading,
+       String? savingLenderId,
     PanOtpStatus? otpStatus,
     String? snackbarMessage,
       bool? shouldNavigateToKyc,
+         PledgeMfResponse? pledgeMfResponse,
     bool clearSnackbar = false,
     EligibilityOverlayType? currentOverlay,
     LenderSelectionView? lenderSelectionView,
+    String? pledgeStatus,
+
     List<Lender>? lenders,
     String? selectedLenderId,
     bool clearSelectedLender = false,
     bool? isPortfolioRefreshing,
     String? loadingLenderId,
+      bool? redirectToKycAfterFetch,
     
      String? lastSavedLenderId,
   String? lastSaveMessage,
@@ -225,6 +252,8 @@ final String? lastSaveMessage;
     List<bool>? kycStepChecks,
     String? otp,
     isEditingLoan= false,
+        List<PledgeableFund>? fundsToAdd,
+    List<PledgeableFund>? fundsToRemove,
 
     bool? isSubmitting,
     bool? otpError,
@@ -242,6 +271,9 @@ final String? lastSaveMessage;
       majorStep: majorStep ?? this.majorStep,
       pageIndex: pageIndex ?? this.pageIndex,
       formData: formData ?? this.formData,
+         isSavingLoan: isSavingLoan ?? this.isSavingLoan,
+      pledgeStatus: pledgeStatus ?? this.pledgeStatus,
+ savingLenderId: savingLenderId ?? this.savingLenderId,
       mfDetailsResponse: mfDetailsResponse ?? this.mfDetailsResponse,
       generalErrorMessage: clearErrors ? null : (generalErrorMessage ?? this.generalErrorMessage),
       panNumberError: clearErrors ? null : (panNumberError ?? this.panNumberError),
@@ -249,7 +281,12 @@ final String? lastSaveMessage;
       panDobError: clearErrors ? null : (panDobError ?? this.panDobError),
       panStatus: panStatus ?? this.panStatus,
       isEditingLoan: isEditingLoan ?? this.isEditingLoan,
-
+       isStep2Loading: isStep2Loading ?? this.isStep2Loading,
+          editedFundAmounts: editedFundAmounts ?? this.editedFundAmounts,
+             fundsToAdd: fundsToAdd ?? this.fundsToAdd,           // <-- ADD
+      fundsToRemove: fundsToRemove ?? this.fundsToRemove, 
+    redirectToKycAfterFetch: redirectToKycAfterFetch ?? this.redirectToKycAfterFetch,
+ pledgeMfResponse: pledgeMfResponse ?? this.pledgeMfResponse,
       otpStatus: otpStatus ?? this.otpStatus,
       snackbarMessage: clearSnackbar ? null : (snackbarMessage ?? this.snackbarMessage),
       isLoading: isLoading ?? this.isLoading,
@@ -298,20 +335,30 @@ lastSavedLenderId: lastSavedLenderId ?? this.lastSavedLenderId,
   @override
   List<Object?> get props => [
     majorStep,
+    isStep2Loading,
+    editedFundAmounts,
     pageIndex,
     formData,
+    isSavingLoan,
+    pledgeStatus,
+
     isLoading,
     generalErrorMessage,
     panNumberError,
     panFullNameError,
     mfDetailsResponse,
+    redirectToKycAfterFetch,
     panDobError,
+    savingLenderId,
     currentOverlay,
     lenderSelectionView,
     lenders,
     shouldNavigateToKyc,
     selectedLenderId,
+    pledgeMfResponse,
     isPortfolioRefreshing,
+       fundsToAdd,        // <-- ADD
+    fundsToRemove,  
     editedLoanAmounts,
     pledgeableFunds,
     selectedFundIds,

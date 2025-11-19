@@ -1,4 +1,3 @@
-// lender_selection_screen.dart  (updated Go Back behavior)
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,9 +14,10 @@ import 'package:las_app/features/new_user/view/widgets/two_lender_selection/fund
 import 'package:las_app/features/new_user/view/widgets/two_lender_selection/lender_list_view.dart';
 import 'package:las_app/features/new_user/view/widgets/two_lender_selection/pledgable_funds_details_view.dart';
 import 'package:las_app/features/new_user/view/widgets/two_lender_selection/portfolio_breakdown.dart';
-import 'package:las_app/features/new_user/view/eligibility_form.dart'; // <-- ensure correct import for EligibilityScreen
+
 
 class LenderSelectionScreen extends StatefulWidget {
+
   const LenderSelectionScreen({super.key});
 
   @override
@@ -25,6 +25,7 @@ class LenderSelectionScreen extends StatefulWidget {
 }
 
 class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
+  DateTime? lastBackPress;
   @override
   Widget build(BuildContext context) {
     final formatCurrency = NumberFormat.currency(
@@ -33,7 +34,6 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
       decimalDigits: 0,
     );
 
-    // small helper to safely add events (prevents crash if bloc closed)
     void safeAdd(EligibilityEvent event) {
       try {
         context.read<EligibilityBloc>().add(event);
@@ -42,7 +42,28 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
       }
     }
 
-    return Scaffold(
+
+   return WillPopScope(
+  onWillPop: () async {
+    final now = DateTime.now();
+
+    if (lastBackPress == null ||
+        now.difference(lastBackPress!) > const Duration(seconds: 2)) {
+      lastBackPress = now;
+
+      CSnackBar.show(
+        context,
+        "Press again to exit",
+        isError: false,
+      );
+
+      return false; // don't exit yet
+    }
+
+    return true; // exit app
+  },
+  child: Scaffold(
+
       backgroundColor: AppColors.black,
       body: SafeArea(
         child: BlocConsumer<EligibilityBloc, EligibilityState>(
@@ -124,54 +145,19 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
                               children: [
                                 // Robust Go Back:
                                 GestureDetector(
-                                  onTap: () {
-                                    final bloc = context.read<EligibilityBloc>();
+                                 onTap: () {
+  final bloc = context.read<EligibilityBloc>();
 
-                                    // CASE A: If the route can pop (this screen was pushed), do a normal pop
-                                    if (Navigator.of(context).canPop()) {
-                                      Navigator.of(context).pop();
-                                      return;
-                                    }
-
-                                    // CASE B: route cannot pop (we're in the PageView flow).
-                                    // Decide action based on current sub-view:
-                                    switch (state.lenderSelectionView) {
-                                      case LenderSelectionView.lenderList:
-                                        // If we're on the lenders list and user hits Go Back
-                                        // -> jump the PageView back to PAN page (pageIndex = 1)
-                                        try {
-                                          bloc.add(const JumpToPage(1));
-                                        } catch (_) {}
-
-                                        // Replace route with EligibilityScreen while preserving bloc
-                                        Navigator.of(context).pushReplacement(
-                                          MaterialPageRoute(
-                                            builder: (ctx) => BlocProvider.value(
-                                              value: bloc,
-                                              child: const EligibilityScreen(),
-                                            ),
-                                          ),
-                                        );
-                                        break;
-
-                                      case LenderSelectionView.portfolioBreakdown:
-                                        // If on portfolio breakdown, previous should show lender list
-                                        // Your existing PreviousStepPressed already handles this when pageIndex == 2,
-                                        // so reuse it to keep single source of truth.
-                                        safeAdd(PreviousStepPressed());
-                                        break;
-
-                                      case LenderSelectionView.pledgeableDetail:
-                                        // If on pledgeable detail, previous should show portfolio breakdown
-                                        safeAdd(PreviousStepPressed());
-                                        break;
-
-                                      case LenderSelectionView.fundSelection:
-                                        // If in fund selection -> go back to lender list
-                                        safeAdd(PreviousStepPressed());
-                                        break;
-                                    }
-                                  },
+  // Always navigate back *inside* the lender-selection flow to the LENDER LIST view.
+  // This will NOT pop the route. It will ask the bloc to change the internal sub-view.
+  try {
+    bloc.add(const SetLenderSelectionView(LenderSelectionView.lenderList));
+  } catch (e, st) {
+    debugPrint('Failed to add SetLenderSelectionView: $e\n$st');
+    // Fallback: if bloc isn't available for some reason, ensure we at least
+    // keep the user on-screen rather than popping overlays/routing back.
+  }
+},
                                   child: Row(
                                     children: [
                                       const Icon(
@@ -349,7 +335,7 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
           },
         ),
       ),
-    );
+    ) );
   }
 
   Widget _buildCurrentView(BuildContext context, EligibilityState state) {

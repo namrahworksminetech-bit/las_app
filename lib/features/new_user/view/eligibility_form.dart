@@ -19,11 +19,15 @@ import 'package:percent_indicator/percent_indicator.dart';
 import '../bloc/eligibility_bloc.dart';
 
 class EligibilityScreen extends StatefulWidget {
-  const EligibilityScreen({super.key});
+  
+  final bool startWithMfFetch;
+
+  const EligibilityScreen({super.key, this.startWithMfFetch = false});
 
   @override
   State<EligibilityScreen> createState() => _EligibilityScreenState();
 }
+
 
 class _EligibilityScreenState extends State<EligibilityScreen> {
   final PageController _pageController = PageController();
@@ -85,11 +89,27 @@ int _backPressCount = 0;
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => EligibilityBloc(
-        repository: PanRepository(ApiClient()),
-        lenderRepository: LenderRepository(ApiClient()),
-        apiClient: ApiClient(),
-      ),
+      create: (context) {
+  final bloc = EligibilityBloc(
+    repository: PanRepository(ApiClient()),
+    lenderRepository: LenderRepository(ApiClient()),
+    apiClient: ApiClient(),
+  );
+
+  if (widget.startWithMfFetch) {
+    // schedule immediately after creation so the bloc is ready
+    Future.microtask(() {
+      try {
+        bloc.add(const StartFetchingFromLogin());
+      } catch (e) {
+        print('Failed to dispatch StartFetchingFromLogin: $e');
+      }
+    });
+  }
+
+  return bloc;
+},
+
       child: WillPopScope(
        onWillPop: () async {
   final bloc = context.read<EligibilityBloc>();

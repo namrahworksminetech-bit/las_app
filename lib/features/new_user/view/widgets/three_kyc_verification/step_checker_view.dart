@@ -15,6 +15,7 @@ import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
 
 import 'package:las_app/features/new_user/view/succcess_pledge_view.dart';
 import 'package:las_app/features/new_user/view/widgets/four_pledge_funds/pledge_funds_otp_screen.dart';
+import 'package:las_app/features/new_user/view/widgets/two_lender_selection/lender_selection.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import '../../../../../core/app_state_provider.dart';
 import '../../../kyc_service.dart';
@@ -410,7 +411,32 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
               // ===== Back Button =====
               GestureDetector(
-                onTap: () => Navigator.pop(context),
+     
+onTap: () {
+  final bloc = context.read<EligibilityBloc>();
+
+  try {
+    // 1) Set the lender selection subview to fundSelection
+    bloc.add(const SetLenderSelectionView(LenderSelectionView.fundSelection));
+
+    // 2) Jump the main page controller to the lender-selection page (pageIndex = 2)
+    bloc.add(const JumpToPage(2));
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (ctx) => BlocProvider.value(
+          value: bloc,
+          child: const LenderSelectionScreen(),
+        ),
+      ),
+    );
+  } catch (e, st) {
+    debugPrint('Failed to navigate back to fund selection: $e\n$st');
+
+    if (Navigator.of(context).canPop()) Navigator.of(context).pop();
+  }
+},
+
                 child: Row(
                   children: [
                     const Icon(

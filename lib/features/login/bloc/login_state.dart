@@ -10,6 +10,7 @@ class LoginState extends Equatable {
     this.otpError,
     this.snackbarMessage,
        this.pledgeStatus,
+    
     this.token,
     this.otpRef,
   });
@@ -23,6 +24,7 @@ class LoginState extends Equatable {
   final String? token;
   final String? otpRef;
 
+
   LoginState copyWith({
     LoginViewStatus? viewStatus,
     bool? isLoading,
@@ -31,6 +33,7 @@ class LoginState extends Equatable {
     String? snackbarMessage,
        String? pledgeStatus,
     String? token,
+  
     String? otpRef,
     bool clearSnackbar = false,
   }) {
@@ -44,6 +47,7 @@ class LoginState extends Equatable {
       clearSnackbar ? null : snackbarMessage ?? this.snackbarMessage,
       token: token ?? this.token,
       otpRef: otpRef ?? this.otpRef,
+   
     );
   }
 
@@ -53,6 +57,8 @@ class LoginState extends Equatable {
     isLoading,
     mobileError,
     otpError,
+   
+
     snackbarMessage,
             pledgeStatus,
     token,

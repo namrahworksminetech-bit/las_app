@@ -41,6 +41,7 @@ class _SliqAppState extends State<SliqApp> {
     return GetMaterialApp(
       title: 'sLiQ'.tr,
       debugShowCheckedModeBanner: false,
+      
       translations: LocalizationService(),
       locale: const Locale('en', 'US'),
       fallbackLocale: const Locale('en', 'US'),
