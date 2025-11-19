@@ -74,6 +74,19 @@ class EditLoanAmountPressed extends EligibilityEvent {
     required this.lenderId,
   });
 }
+// new event
+class ConfirmFundSelectionWithFunds extends EligibilityEvent {
+  final List<PledgeableFund> fundsToAdd;
+  final List<PledgeableFund> fundsToRemove;
+  final String lenderId;
+
+  ConfirmFundSelectionWithFunds({
+    required this.fundsToAdd,
+    required this.fundsToRemove,
+    required this.lenderId,
+  });
+}
+
 
 class SaveEditedLoanAmount extends EligibilityEvent {
   final String lenderId;
@@ -81,6 +94,12 @@ class SaveEditedLoanAmount extends EligibilityEvent {
   const SaveEditedLoanAmount(this.lenderId, this.amount);
   @override
   List<Object?> get props => [lenderId, amount];
+}
+class UpdateEditedFundAmount extends EligibilityEvent {
+  final String fundCode; // key
+  final double amount;
+
+  UpdateEditedFundAmount(this.fundCode, this.amount);
 }
 
 class LenderContinuePressed extends EligibilityEvent {
@@ -101,6 +120,16 @@ class ToggleFundSelection extends EligibilityEvent {
   const ToggleFundSelection(this.fundId);
   @override
   List<Object?> get props => [fundId];
+}
+
+// eligibility_event.dart (add this)
+class SetLenderSelectionView extends EligibilityEvent {
+  final LenderSelectionView view;
+  const SetLenderSelectionView(this.view);
+}
+
+class StartFetchingFromLogin extends EligibilityEvent {
+  const StartFetchingFromLogin();
 }
 
 class ConfirmFundSelection extends EligibilityEvent {

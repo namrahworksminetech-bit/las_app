@@ -83,7 +83,7 @@ class CButton extends StatelessWidget {
               Text(
                 text,
                 style: const TextStyle(
-                  fontSize: 14,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
               ),
