@@ -391,17 +391,21 @@ class FundSelectionView extends StatelessWidget {
                                                 displayAmount,
                                               ),
                                               child: Row(
+                                                mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  CText(
-                                                    formatCurrency.format(
-                                                      displayLender.loanAmount,
+                                                  Flexible(
+                                                    child: CText(
+                                                      formatCurrency.format(
+                                                        displayLender.loanAmount,
+                                                      ),
+                                                      style: AppTypography.bodyWhite
+                                                          .copyWith(
+                                                            fontSize: 14,
+                                                            fontWeight:
+                                                                FontWeight.w500,
+                                                          ),
+                                                      overflow: TextOverflow.ellipsis,
                                                     ),
-                                                    style: AppTypography.bodyWhite
-                                                        .copyWith(
-                                                          fontSize: 14,
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                        ),
                                                   ),
                                                   Gaps.wXs,
                                                   const Icon(
@@ -511,17 +515,22 @@ class FundSelectionView extends StatelessWidget {
                     Gaps.hSm,
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        CText(
-                          'Powered by',
-                          style: AppTypography.bodySecondary.copyWith(
-                            fontSize: 12,
+                        Flexible(
+                          child: CText(
+                            'Powered by',
+                            style: AppTypography.bodySecondary.copyWith(
+                              fontSize: 12,
+                            ),
                           ),
                         ),
                         Gaps.wSm,
-                        Image.asset(
-                          'assets/images/value_enable_logo.png',
-                          height: 20,
+                        Flexible(
+                          child: Image.asset(
+                            'assets/images/value_enable_logo.png',
+                            height: 20,
+                          ),
                         ),
                       ],
                     ),

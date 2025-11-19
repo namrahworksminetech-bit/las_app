@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
 import 'package:las_app/common_widgets/c_button.dart';
 import 'package:las_app/common_widgets/c_text.dart';
+import 'package:las_app/common_widgets/webview_screen.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
@@ -17,6 +20,8 @@ import '../../../../../core/app_state_provider.dart';
 import '../../../kyc_service.dart';
 import '../../../../../core/network/api_client.dart';
 import '../../../repository/pledge_status_repo.dart';
+import '../../../repository/digio_repo.dart';
+import '../../../digio_service.dart';
 
 class KycVerificationScreen extends StatefulWidget {
   const KycVerificationScreen({super.key});
@@ -28,6 +33,7 @@ class KycVerificationScreen extends StatefulWidget {
 class _KycVerificationScreenState extends State<KycVerificationScreen> {
   Timer? _statusTimer;
   late final PledgeStatusRepository _pledgeRepo;
+  late final DigioRepository _digioRepo;
   String? _lastStatus;
   bool _hasStartedKyc = false;
   int _apiCallCount = 0;
@@ -37,7 +43,9 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   void initState() {
     super.initState();
     _pledgeRepo = PledgeStatusRepository(GetIt.instance<ApiClient>());
-    // Don't start polling immediately - wait for user to click a step
+    _digioRepo = DigioRepository(GetIt.instance<ApiClient>());
+    // Call pledge-mf API once to update status
+    _checkFirstPledgeStatus();
   }
 
   void _startStatusPolling() {
@@ -54,18 +62,61 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
     if (reqId == null || token == null) return;
 
-    _apiCallCount++;
-    print('📞 get-mf-details API call count: $_apiCallCount/10');
-    
-    // Close WebView after 10 API calls
-    if (_apiCallCount >= 10) {
-      print('✅ 10 API calls completed - closing WebView and returning to KYC screen');
-      _statusTimer?.cancel();
-      if (Navigator.canPop(context)) {
-        Navigator.pop(context); // This will close the WebView
-      }
-      return;
-    }
+    final result = await _pledgeRepo.checkPledgeStatus(
+      reqId: reqId,
+      authToken: token,
+    );
+
+    result.when(
+      success: (data) {
+        if (mounted) {
+          // Extract status from nested structure: data.data.status
+          // Handle both String and List cases
+          final statusData = data['data']?['status'];
+          final String? status;
+
+          if (statusData is String) {
+            status = statusData;
+          } else if (statusData is List && statusData.isNotEmpty) {
+            status = statusData.first as String?;
+          } else {
+            status = null;
+          }
+
+          // Only update if status changed
+
+          if (status != null && status != _lastStatus) {
+            print('📊 Status changed: $_lastStatus → $status');
+            _lastStatus = status;
+            _updateStepsBasedOnStatus(status);
+
+            // Call Digio API only when KYC is completed
+            // kyc_done
+            // penny_drop_done
+
+            print("status---------------${status}");
+            if (status == 'penny_drop_done') {
+              _statusTimer?.cancel();
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              }
+              _callDigioAPI();
+            }
+          }
+        }
+      },
+      failure: (error) {
+        print('❌ Error checking pledge status: $error');
+      },
+    );
+  }
+
+  Future<void> _checkFirstPledgeStatus() async {
+    final appState = GetIt.instance<AppStateProvider>();
+    final reqId = appState.reqId;
+    final token = appState.token;
+
+    if (reqId == null || token == null) return;
 
     final result = await _pledgeRepo.checkPledgeStatus(
       reqId: reqId,
@@ -93,11 +144,44 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
             print('📊 Status changed: $_lastStatus → $status');
             _lastStatus = status;
             _updateStepsBasedOnStatus(status);
+
+            // // Call Digio API only when KYC is completed
+            // // kyc_done
+            // // penny_drop_done
+            // if (status == 'kyc_done') {
+            //   _statusTimer?.cancel();
+            //   if (Navigator.canPop(context)) {
+            //     Navigator.pop(context);
+            //   }
+            //   _callDigioAPI();
+            // }
           }
         }
       },
       failure: (error) {
         print('❌ Error checking pledge status: $error');
+      },
+    );
+  }
+
+  Future<void> _callDigioAPI() async {
+    final appState = GetIt.instance<AppStateProvider>();
+    final reqId = appState.reqId;
+
+    if (reqId == null) {
+      print('❌ Missing reqId for Digio API');
+      return;
+    }
+
+    print('🚀 Calling get-digio-config API...');
+    final result = await _digioRepo.getDigioConfig(reqId: reqId);
+
+    result.when(
+      success: (data) {
+        print('✅ Digio API called successfully');
+      },
+      failure: (error) {
+        print('❌ Digio API error: $error');
       },
     );
   }
@@ -181,7 +265,9 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     // For 4th step (index 3), directly navigate to next screen
     if (stepIndex == 3) {
       print('🚀 4th step clicked - Navigating to next screen');
-      await Future.delayed(const Duration(milliseconds: 500)); // Show loader briefly
+      await Future.delayed(
+        const Duration(milliseconds: 500),
+      ); // Show loader briefly
       _navigateToNextScreen();
       setState(() {
         _loadingStepIndex = null;
@@ -226,7 +312,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
         }
       },
     );
-    
+
     // Clear loading if there's an error
     setState(() {
       _loadingStepIndex = null;
@@ -250,6 +336,33 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.black,
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: () async {
+      //     var headers = {
+      //       'accept': 'application/json',
+      //       'Content-Type': 'application/json',
+      //       'Authorization':
+      //           'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiQXNod2luIFBhbmRleSIsIm1vYmlsZSI6Iis5MTkxMDY2MjE5NTkiLCJ1c2VySWQiOjQ3NTMsImlhdCI6MTc2MzQ2NjM3NywiZXhwIjoxNzYzNDY4MTc3fQ.Ayz_EE5dcDjv-C1tDk5S9hOAPT7N2AloO9LgYZ8g584',
+      //     };
+      //     var data = json.encode({
+      //       "req_id": "bb65d512-c463-11f0-a5b0-0afc8596d62f",
+      //       "kyc_id": "KID251118171857981MIIVKF2L7ZTWZP",
+      //       "kyc_status": "success",
+      //     });
+      //     var dio = Dio();
+      //     var response = await dio.request(
+      //       'https://api-dev.valuenable.in/lamf/customer/update-pennydrop-status',
+      //       options: Options(method: 'POST', headers: headers),
+      //       data: data,
+      //     );
+      //
+      //     if (response.statusCode == 200) {
+      //       print(json.encode(response.data));
+      //     } else {
+      //       print(response.statusMessage);
+      //     }
+      //   },
+      // ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -415,18 +528,18 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                                         height: 14,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(
-                                            AppColors.bPrimaryColor,
-                                          ),
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                AppColors.bPrimaryColor,
+                                              ),
                                         ),
                                       )
                                     : Icon(
                                         Icons.arrow_forward_ios,
                                         color: isVisible
                                             ? AppColors.bSecondaryColor
-                                            : AppColors.bSecondaryColor.withOpacity(
-                                                0.3,
-                                              ),
+                                            : AppColors.bSecondaryColor
+                                                  .withOpacity(0.3),
                                         size: 14,
                                       ),
                               ],

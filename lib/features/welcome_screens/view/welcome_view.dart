@@ -7,7 +7,6 @@ import 'package:las_app/features/welcome_screens/view/widgets/on_boarding_widget
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../../../common_widgets/c_button.dart';
 
-
 class WelcomeView extends StatelessWidget {
   final PageController pageController;
   final ValueChanged<int> onPageChanged;
@@ -103,14 +102,15 @@ class WelcomeView extends StatelessWidget {
                             onPressed: onNext,
                             suffixIcon: isLastPage
                                 ? null
-                                : const Icon(
-                                    Icons.arrow_forward,
-                                    size: 18,
-                                  ),
+                                : const Icon(Icons.arrow_forward, size: 18),
                           ),
                         ),
                       ],
                     ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 24.0),
+                    child: Row(children: [const Spacer()]),
                   ),
                 ],
               ),
@@ -154,4 +154,3 @@ class WelcomeView extends StatelessWidget {
     );
   }
 }
-

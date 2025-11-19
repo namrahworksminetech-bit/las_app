@@ -20,14 +20,14 @@ class KycRepo {
     print('📞 KycRepository.startKyc called');
     print('📋 reqId: $reqId');
     print('📋 lenderCode: $lenderCode');
-    
+
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
     if (token == null || token.isEmpty) {
       print('❌ Token missing!');
       throw Exception('Token missing! Please login again.');
     }
-    
+
     print('🔑 Token found: ${token.substring(0, 10)}...');
     print('📞 Making API call to customer/start-kyc');
 
@@ -38,7 +38,7 @@ class KycRepo {
         'lender_code': lenderCode,
         'latitude': latitude,
         'longitude': longitude,
-        'sourceMode': sourceMode,
+        'sourceMode': sourceMode.toLowerCase(),
         'auto_disbursement_consent': autoDisbursementConsent,
       },
       options: Options(
@@ -49,10 +49,10 @@ class KycRepo {
         },
       ),
     );
-    
+
     print('✅ API Response received: ${response.statusCode}');
     print('📋 Response data: ${response.data}');
-    
+
     return KycResponse.fromJson(response.data);
   }
 
@@ -76,5 +76,29 @@ class KycRepo {
       },
     );
     return KycWebhookResponse.fromJson(response.data);
+  }
+
+  Future<void> updateKycStatus({
+    required String documentId,
+    required String reqId,
+  }) async {
+    await _apiClient.loadToken();
+
+    await _apiClient.post(
+      'customer/update-kyc-status',
+      data: {'document_id': documentId, 'req_id': reqId},
+    );
+  }
+
+  Future<void> updatePennydropStatus({
+    required String documentId,
+    required String reqId,
+  }) async {
+    await _apiClient.loadToken();
+
+    await _apiClient.post(
+      'customer/update-pennydrop-status',
+      data: {'document_id': documentId, 'req_id': reqId},
+    );
   }
 }

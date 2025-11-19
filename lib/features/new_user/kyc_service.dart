@@ -15,7 +15,7 @@ class KycRepository {
   }) async {
     try {
       print('🚀 Starting KYC for step: $stepName');
-      
+
       // Get location
       final location = await LocationService.getCurrentLocation();
       if (location == null) {
@@ -25,7 +25,7 @@ class KycRepository {
 
       // Get KYC repository instance
       final kycRepo = KycRepo(GetIt.instance<ApiClient>());
-      
+
       // Start KYC
       final response = await kycRepo.startKyc(
         reqId: reqId,
@@ -42,10 +42,8 @@ class KycRepository {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => WebViewScreen(
-              url: response.data.url,
-              title: stepName,
-            ),
+            builder: (context) =>
+                WebViewScreen(url: response.data.url, title: stepName),
           ),
         );
         onSuccess();

@@ -13,6 +13,10 @@ import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
 import 'package:las_app/features/new_user/view/eligibility_form.dart';
 import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/step_fund_type.dart';
+import 'package:las_app/features/new_user/view/widgets/three_kyc_verification/step_checker_view.dart';
+import 'package:las_app/core/network/api_client.dart';
+import 'package:las_app/features/new_user/repository/pan_veirfy_repo.dart';
+import 'package:las_app/features/new_user/repository/lenders_data_repo.dart';
 
 class Step1PanPage extends StatefulWidget {
   const Step1PanPage({super.key});
@@ -114,10 +118,8 @@ class _Step1PanPageState extends State<Step1PanPage> {
     // 2) ensure EligibilityScreen is on top (reusing same bloc instance)
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (ctx) => BlocProvider.value(
-          value: bloc,
-          child: const EligibilityScreen(),
-        ),
+        builder: (ctx) =>
+            BlocProvider.value(value: bloc, child: const EligibilityScreen()),
       ),
     );
   }
@@ -158,13 +160,15 @@ class _Step1PanPageState extends State<Step1PanPage> {
                       onTap: _onGoBackPressed,
                       child: Row(
                         children: [
-                          const Icon(Icons.arrow_back, color: AppColors.white, size: 20),
+                          const Icon(
+                            Icons.arrow_back,
+                            color: AppColors.white,
+                            size: 20,
+                          ),
                           Gaps.wXs,
                           CText(
                             'Go Back',
-                            style: AppTypography.bodyWhite.copyWith(
-                              
-                            ),
+                            style: AppTypography.bodyWhite.copyWith(),
                           ),
                         ],
                       ),
@@ -261,7 +265,36 @@ class _Step1PanPageState extends State<Step1PanPage> {
                   onPressed: () => _onButtonPressed(state),
                   isLoading:
                       state.panStatus == PanVerificationStatus.verifying ||
-                          state.otpStatus == PanOtpStatus.sending,
+                      state.otpStatus == PanOtpStatus.sending,
+                  type: ButtonType.primaryWhite,
+                  suffixIcon: const Icon(
+                    Icons.arrow_forward,
+                    color: AppColors.black,
+                    size: 18,
+                  ),
+                ),
+              ),
+
+              ///test purpose
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: CButton(
+                  text: 'Test KYC Screen',
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => BlocProvider(
+                          create: (context) => EligibilityBloc(
+                            repository: PanRepository(ApiClient()),
+                            lenderRepository: LenderRepository(ApiClient()),
+                            apiClient: ApiClient(),
+                          ),
+                          child: const KycVerificationScreen(),
+                        ),
+                      ),
+                    );
+                  },
                   type: ButtonType.primaryWhite,
                   suffixIcon: const Icon(
                     Icons.arrow_forward,

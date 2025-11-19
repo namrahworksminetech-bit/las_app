@@ -263,3 +263,32 @@ class SetUserMobileNumber extends EligibilityEvent {
   @override
   List<Object> get props => [mobileNumber];
 }
+
+class StartDigioKyc extends EligibilityEvent {
+  final String reqId;
+  final BuildContext context;
+
+  const StartDigioKyc({
+    required this.reqId,
+    required this.context,
+  });
+
+  @override
+  List<Object> get props => [reqId];
+}
+
+class DigioKycCompleted extends EligibilityEvent {
+  const DigioKycCompleted();
+
+  @override
+  List<Object> get props => [];
+}
+
+class DigioKycFailed extends EligibilityEvent {
+  final String error;
+
+  const DigioKycFailed(this.error);
+
+  @override
+  List<Object> get props => [error];
+}

@@ -99,29 +99,29 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       try {
         final reqId = appState.reqId;
         if (reqId != null && reqId.isNotEmpty) {
-          final pledgeRepo = PledgeStatusRepository(GetIt.instance<ApiClient>());
-          final res = await pledgeRepo.checkPledgeStatus(
-            reqId: reqId,
-            authToken: response.token!,
-          );
-
-          res.when(
-            success: (data) {
-              final statusData = data['data']?['status'];
-              if (statusData is String) {
-                pledgeStatus = statusData;
-              } else if (statusData is List && statusData.isNotEmpty) {
-                pledgeStatus = statusData.first as String?;
-              } else {
-                pledgeStatus = null;
-              }
-            },
-            failure: (err) {
-              // on API failure, we'll treat as normal flow (null)
-              print('❌ Pledge status API failed: $err');
-              pledgeStatus = null;
-            },
-          );
+          // final pledgeRepo = PledgeStatusRepository(GetIt.instance<ApiClient>());
+          // final res = await pledgeRepo.checkPledgeStatus(
+          //   reqId: reqId,
+          //   authToken: response.token!,
+          // );
+          //
+          // res.when(
+          //   success: (data) {
+          //     final statusData = data['data']?['status'];
+          //     if (statusData is String) {
+          //       pledgeStatus = statusData;
+          //     } else if (statusData is List && statusData.isNotEmpty) {
+          //       pledgeStatus = statusData.first as String?;
+          //     } else {
+          //       pledgeStatus = null;
+          //     }
+          //   },
+          //   failure: (err) {
+          //     // on API failure, we'll treat as normal flow (null)
+          //     print('❌ Pledge status API failed: $err');
+          //     pledgeStatus = null;
+          //   },
+          // );
         } else {
           // no reqId -> normal flow
           pledgeStatus = null;

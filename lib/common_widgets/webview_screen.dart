@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../core/injection_container.dart';
 import '../core/network/api_client.dart';
 
@@ -28,16 +31,14 @@ class _WebViewScreenState extends State<WebViewScreen> {
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(
         NavigationDelegate(
-          onPageStarted: (String url) {
-            setState(() {
-              isLoading = true;
-            });
-          },
-          onPageFinished: (String url) {
-            setState(() {
-              isLoading = false;
-            });
-            _startPolling();
+          onNavigationRequest: (NavigationRequest request) {
+            // Prevent opening new tabs, keep it in the same WebView
+            if (request.url.startsWith("https")) {
+              controller.loadRequest(Uri.parse(request.url));
+              return NavigationDecision
+                  .prevent; // Prevent default navigation (new tab)
+            }
+            return NavigationDecision.navigate; // Allow navigation if needed
           },
         ),
       )
@@ -45,7 +46,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
   }
 
   void _startPolling() {
-    // Polling disabled - KYC screen handles API calls
+    // API call handled in digio_repo
   }
 
   @override
@@ -61,13 +62,13 @@ class _WebViewScreenState extends State<WebViewScreen> {
         title: Text(widget.title ?? 'WebView'),
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Get.back(),
         ),
       ),
       body: Stack(
         children: [
           WebViewWidget(controller: controller),
-          if (isLoading) const Center(child: CircularProgressIndicator()),
+          // if (isLoading) const Center(child: CircularProgressIndicator()),
         ],
       ),
     );

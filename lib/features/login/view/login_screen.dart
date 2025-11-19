@@ -62,46 +62,47 @@ class _LoginScreenState extends State<LoginScreen> {
             previous.snackbarMessage != current.snackbarMessage ||
             previous.token != current.token ||
             previous.viewStatus != current.viewStatus,
-       listener: (context, state) {
-  // ✅ Snackbar
-  if (state.snackbarMessage != null &&
-      state.snackbarMessage!.isNotEmpty) {
-    CSnackBar.show(
-      context,
-      state.snackbarMessage!,
-      isError:
-          state.otpError != null ||
-          state.mobileError != null ||
-          state.snackbarMessage!.contains('Failed') ||
-          state.snackbarMessage!.contains('Invalid') ||
-          state.snackbarMessage!.contains('Forbidden'),
-    );
-    context.read<LoginBloc>().add(LoginSnackbarCleared());
-  }
+        listener: (context, state) {
+          // ✅ Snackbar
+          if (state.snackbarMessage != null &&
+              state.snackbarMessage!.isNotEmpty) {
+            CSnackBar.show(
+              context,
+              state.snackbarMessage!,
+              isError:
+                  state.otpError != null ||
+                  state.mobileError != null ||
+                  state.snackbarMessage!.contains('Failed') ||
+                  state.snackbarMessage!.contains('Invalid') ||
+                  state.snackbarMessage!.contains('Forbidden'),
+            );
+            context.read<LoginBloc>().add(LoginSnackbarCleared());
+          }
 
-  // ✅ Navigate after OTP verification success + pledge status check
-  if (state.token != null && state.token!.isNotEmpty) {
-    // Decide target based on state.pledgeStatus
-    final status = state.pledgeStatus;
-    final normalStatuses = {'not_started', 'pan_verified', 'pending'};
+          // ✅ Navigate after OTP verification success + pledge status check
+          if (state.token != null && state.token!.isNotEmpty) {
+            // Decide target based on state.pledgeStatus
+            final status = state.pledgeStatus;
+            final normalStatuses = {'not_started', 'pan_verified', 'pending'};
 
-    // If status is null OR in normalStatuses -> go to EligibilityScreen
-    if (status == null || normalStatuses.contains(status)) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => const EligibilityScreen(),
-        ),
-      );
-    } else {
-      // For 'verified' and advanced statuses, go to kyc screen
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => const KycVerificationScreen(),
-        ),
-      );
-    }
-  }
-},        builder: (context, state) {
+            // If status is null OR in normalStatuses -> go to EligibilityScreen
+            if (status == null || normalStatuses.contains(status)) {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => const EligibilityScreen(),
+                ),
+              );
+            } else {
+              // For 'verified' and advanced statuses, go to kyc screen
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => const KycVerificationScreen(),
+                ),
+              );
+            }
+          }
+        },
+        builder: (context, state) {
           final bloc = context.read<LoginBloc>();
           final bool isOtpView = state.viewStatus == LoginViewStatus.otpSent;
           final bottomInset = MediaQuery.of(context).viewInsets.bottom;
@@ -119,6 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
           return Scaffold(
             backgroundColor: AppColors.black,
+
             resizeToAvoidBottomInset:
                 false, // Prevent buttons from moving with keyboard
             body: SafeArea(
