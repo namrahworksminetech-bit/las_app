@@ -38,7 +38,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // --- loading timeout helpers
   Timer? _loadingTimer;
-  bool _forceStopLoading = false; // when true, UI won't show the loader even if bloc says isLoading
+  bool _forceStopLoading =
+      false; // when true, UI won't show the loader even if bloc says isLoading
 
   @override
   void initState() {
@@ -76,7 +77,8 @@ class _LoginScreenState extends State<LoginScreen> {
             CSnackBar.show(
               context,
               state.snackbarMessage!,
-              isError: state.otpError != null ||
+              isError:
+                  state.otpError != null ||
                   state.mobileError != null ||
                   state.snackbarMessage!.contains('Failed') ||
                   state.snackbarMessage!.contains('Invalid') ||
@@ -295,7 +297,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 keyboardType: TextInputType.phone,
                                 prefixText: '+91 ',
                                 prefixStyle: const TextStyle(
-                                  color: AppColors.white, // same as your input text color
+                                  color: AppColors
+                                      .white, // same as your input text color
                                   fontSize: 16,
                                 ),
                                 enabled: !isOtpView,
@@ -308,7 +311,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   LengthLimitingTextInputFormatter(
                                     10,
                                   ), // ✅ Max 10 digits only
-                                  FilteringTextInputFormatter.digitsOnly, // ✅ Only numbers allowed
+                                  FilteringTextInputFormatter
+                                      .digitsOnly, // ✅ Only numbers allowed
                                 ],
                               ),
                               Gaps.hXl,
@@ -364,7 +368,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             CButton(
                               text: 'Continue'.tr,
                               onPressed: () {
-                                if (state.otpRef == null || state.otpRef!.isEmpty) {
+                                if (state.otpRef == null ||
+                                    state.otpRef!.isEmpty) {
                                   CSnackBar.show(
                                     context,
                                     'Missing OTP reference. Please resend OTP.',

@@ -63,8 +63,8 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     on<VerifyPanOtpPressed>(_onVerifyPanOtpPressed);
     on<EligibilitySnackbarCleared>(_onSnackbarCleared);
     on<AutoSelectAllFunds>(_onAutoSelectAllFunds);
-on<JumpToPage>(_onJumpToPage);
-on<StartFetchingFromLogin>(_onStartFetchingFromLogin);
+    on<JumpToPage>(_onJumpToPage);
+    on<StartFetchingFromLogin>(_onStartFetchingFromLogin);
 
     on<FetchStep2Data>(_onFetchStep2Data);
     on<LenderSelected>(_onLenderSelected);
@@ -75,7 +75,7 @@ on<StartFetchingFromLogin>(_onStartFetchingFromLogin);
     on<SaveEditedLoanAmount>(_onSaveEditedLoanAmount);
     on<LenderContinuePressed>(_onLenderContinuePressed);
     on<ProceedToLenderSelection>(_onProceedToLenderSelection);
-  on<UpdateEditedFundAmount>(_onUpdateEditedFundAmount);
+    on<UpdateEditedFundAmount>(_onUpdateEditedFundAmount);
 
     on<ClearSnackbar>(_onClearSnackbar);
 
@@ -87,7 +87,7 @@ on<StartFetchingFromLogin>(_onStartFetchingFromLogin);
     on<OtpChanged>(_onOtpChanged);
     on<SubmitOtp>(_onSubmitOtp);
     on<ResendOtp>(_onResendOtp);
-on<SetLenderSelectionView>(_onSetLenderSelectionView);
+    on<SetLenderSelectionView>(_onSetLenderSelectionView);
     on<NextStepPressed>(_onNextStepPressed);
     on<PreviousStepPressed>(_onPreviousStepPressed);
     on<ErrorMessageCleared>(_onErrorMessageCleared);
@@ -102,38 +102,29 @@ on<SetLenderSelectionView>(_onSetLenderSelectionView);
     on<DigioKycCompleted>(_onDigioKycCompleted);
     on<DigioKycFailed>(_onDigioKycFailed);
   }
+  void _onSetLenderSelectionView(
+    SetLenderSelectionView event,
+    Emitter<EligibilityState> emit,
+  ) {
+    emit(state.copyWith(lenderSelectionView: event.view));
+  }
+
+  Future<void> _onUpdateEditedFundAmount(
+    UpdateEditedFundAmount event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    final newMap = Map<String, double>.from(state.editedFundAmounts);
+
+    // Insert or overwrite edited amount for this fundCode
+    newMap[event.fundCode] = event.amount;
+
+    emit(state.copyWith(editedFundAmounts: newMap));
+  }
 
   // Replace your existing handler with this in EligibilityBloc
   void _onJumpToPage(JumpToPage event, Emitter<EligibilityState> emit) {
     // Defensive: clamp pageIndex to valid range if you want
     final int target = event.pageIndex.clamp(0, 5);
-void _onSetLenderSelectionView(
-  SetLenderSelectionView event,
-  Emitter<EligibilityState> emit,
-) {
-  emit(state.copyWith(lenderSelectionView: event.view));
-}
-Future<void> _onUpdateEditedFundAmount(
-  UpdateEditedFundAmount event,
-  Emitter<EligibilityState> emit,
-) async {
-  final newMap = Map<String, double>.from(state.editedFundAmounts);
-
-  // Insert or overwrite edited amount for this fundCode
-  newMap[event.fundCode] = event.amount;
-
-  emit(
-    state.copyWith(
-      editedFundAmounts: newMap,
-    ),
-  );
-}
-
-
-// Replace your existing handler with this in EligibilityBloc
-void _onJumpToPage(JumpToPage event, Emitter<EligibilityState> emit) {
-  // Defensive: clamp pageIndex to valid range if you want
-  final int target = event.pageIndex.clamp(0, 5);
 
     // Determine majorStep mapping explicitly
     final int newMajor = switch (target) {
@@ -187,30 +178,23 @@ void _onJumpToPage(JumpToPage event, Emitter<EligibilityState> emit) {
   ) async {
     emit(state.copyWith(shouldNavigateToKyc: false));
   }
-  debugPrint('🔁 JumpToPage -> page:$target major:$newMajor lenderView:${nextState.lenderSelectionView} overlay:${nextState.currentOverlay}');
-}
-Future<void> _onAcknowledgeKycNavigation(
-  AcknowledgeKycNavigation event,
-  Emitter<EligibilityState> emit,
-) async {
-  emit(state.copyWith(shouldNavigateToKyc: false));
-}
-Future<void> _onStartFetchingFromLogin(
-  StartFetchingFromLogin event,
-  Emitter<EligibilityState> emit,
-) async {
-  if (state.isLoading) return;
 
-  emit(
-    state.copyWith(
-      isLoading: true,
-      clearErrors: true,
-      currentOverlay: EligibilityOverlayType.fetchingPortfolio,
-    ),
-  );
+  Future<void> _onStartFetchingFromLogin(
+    StartFetchingFromLogin event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    if (state.isLoading) return;
 
-  add(FetchStep2Data());
-}
+    emit(
+      state.copyWith(
+        isLoading: true,
+        clearErrors: true,
+        currentOverlay: EligibilityOverlayType.fetchingPortfolio,
+      ),
+    );
+
+    add(FetchStep2Data());
+  }
 
   Future<void> _onClearSnackbar(
     ClearSnackbar event,
@@ -617,55 +601,60 @@ Future<void> _onStartFetchingFromLogin(
       );
     }
   }
-Future<void> _onFetchStep2Data(
-  FetchStep2Data event,
-  Emitter<EligibilityState> emit,
-) async {
-  // Guard: if already loading Step2 or already fetched, ignore duplicate request
-  if (state.isStep2Loading) {
-    print('🔁 FetchStep2Data ignored — Step2 already loading.');
-    return;
-  }
-  if (state.mfDetailsResponse != null) {
-    print('🔁 FetchStep2Data ignored — mfDetailsResponse already present.');
-    return;
-  }
 
-  print("🔄 Fetching lenders and portfolio data (Step 2)...");
-  emit(state.copyWith(
-    isStep2Loading: true,
-    generalErrorMessage: null,
-  ));
-
-  try {
-    final reqId = getIt<AppStateProvider>().reqId;
-    if (reqId == null) {
-      print('⚠️ Missing reqId for FetchStep2Data');
-      emit(state.copyWith(
-        isStep2Loading: false,
-        generalErrorMessage: "Missing request ID. Please restart the process.",
-      ));
+  Future<void> _onFetchStep2Data(
+    FetchStep2Data event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    // Guard: if already loading Step2 or already fetched, ignore duplicate request
+    if (state.isStep2Loading) {
+      print('🔁 FetchStep2Data ignored — Step2 already loading.');
+      return;
+    }
+    if (state.mfDetailsResponse != null) {
+      print('🔁 FetchStep2Data ignored — mfDetailsResponse already present.');
       return;
     }
 
-    // Call repository with a timeout so we don't wait forever
-    // Adjust the timeout as suitable for your environment
-    final fetchFuture = lenderRepository.fetchLendersAndPortfolio(reqId: reqId);
+    print("🔄 Fetching lenders and portfolio data (Step 2)...");
+    emit(state.copyWith(isStep2Loading: true, generalErrorMessage: null));
 
-    // Wait for either the fetch or a timeout
-    final result = await fetchFuture.timeout(
-      const Duration(seconds: 30),
-      onTimeout: () {
-        throw TimeoutException('FetchStep2Data timed out after 30s');
-      },
-    );
+    try {
+      final reqId = getIt<AppStateProvider>().reqId;
+      if (reqId == null) {
+        print('⚠️ Missing reqId for FetchStep2Data');
+        emit(
+          state.copyWith(
+            isStep2Loading: false,
+            generalErrorMessage:
+                "Missing request ID. Please restart the process.",
+          ),
+        );
+        return;
+      }
 
-    // If the repository returns a Result-like object with when(), handle it
-    await result.when(
-      success: (mfResponse) async {
-        print("✅ Lenders parsed: ${mfResponse.lenders.length}");
-        print("✅ Pledgeable funds parsed: ${mfResponse.pledgeableFunds.length}");
-        print("✅ Pledgeable Amount: ${mfResponse.pledgeableAmount}");
+      // Call repository with a timeout so we don't wait forever
+      // Adjust the timeout as suitable for your environment
+      final fetchFuture = lenderRepository.fetchLendersAndPortfolio(
+        reqId: reqId,
+      );
+
+      // Wait for either the fetch or a timeout
+      final result = await fetchFuture.timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw TimeoutException('FetchStep2Data timed out after 30s');
+        },
+      );
+
+      // If the repository returns a Result-like object with when(), handle it
+      await result.when(
+        success: (mfResponse) async {
+          print("✅ Lenders parsed: ${mfResponse.lenders.length}");
+          print(
+            "✅ Pledgeable funds parsed: ${mfResponse.pledgeableFunds.length}",
+          );
+          print("✅ Pledgeable Amount: ${mfResponse.pledgeableAmount}");
 
           final lenders = mfResponse.lenders.map((l) {
             return Lender(
@@ -679,48 +668,61 @@ Future<void> _onFetchStep2Data(
             );
           }).toList();
 
-        emit(state.copyWith(
-          isStep2Loading: false,
-          lenders: lenders,
-          pledgeableFunds: mfResponse.pledgeableFunds,
-          mfDetailsResponse: mfResponse,
-          generalErrorMessage: null,
-        ));
+          emit(
+            state.copyWith(
+              isStep2Loading: false,
+              lenders: lenders,
+              pledgeableFunds: mfResponse.pledgeableFunds,
+              mfDetailsResponse: mfResponse,
+              generalErrorMessage: null,
+            ),
+          );
 
-        print("🟢 Stored lender + MF data successfully (Step 2).");
-      },
-      failure: (error) {
-        print("❌ API error while fetching Step2: $error");
-        emit(state.copyWith(
+          print("🟢 Stored lender + MF data successfully (Step 2).");
+        },
+        failure: (error) {
+          print("❌ API error while fetching Step2: $error");
+          emit(
+            state.copyWith(
+              isStep2Loading: false,
+              generalErrorMessage: error?.toString() ?? 'Failed to fetch data',
+            ),
+          );
+        },
+      );
+    } on TimeoutException catch (te) {
+      print("⏱️ FetchStep2Data timeout: $te");
+      emit(
+        state.copyWith(
           isStep2Loading: false,
-          generalErrorMessage: error?.toString() ?? 'Failed to fetch data',
-        ));
-      },
-    );
-  } on TimeoutException catch (te) {
-    print("⏱️ FetchStep2Data timeout: $te");
-    emit(state.copyWith(
-      isStep2Loading: false,
-      generalErrorMessage: 'Request timed out. Please try again.',
-    ));
-  } on DioException catch (dioErr) {
-    print("🌐 DioException during FetchStep2Data: ${dioErr.type} ${dioErr.message}");
-    // If server returned a body, try to extract a message
-    final msg = dioErr.response?.data is Map ? dioErr.response?.data['message'] : dioErr.message;
-    emit(state.copyWith(
-      isStep2Loading: false,
-      generalErrorMessage: msg?.toString() ?? 'Network error occurred',
-    ));
-  } catch (e, st) {
-    print("💥 Unexpected exception in FetchStep2Data: $e");
-    print(st);
-    emit(state.copyWith(
-      isStep2Loading: false,
-      generalErrorMessage: 'Something went wrong. Please try again.',
-    ));
+          generalErrorMessage: 'Request timed out. Please try again.',
+        ),
+      );
+    } on DioException catch (dioErr) {
+      print(
+        "🌐 DioException during FetchStep2Data: ${dioErr.type} ${dioErr.message}",
+      );
+      // If server returned a body, try to extract a message
+      final msg = dioErr.response?.data is Map
+          ? dioErr.response?.data['message']
+          : dioErr.message;
+      emit(
+        state.copyWith(
+          isStep2Loading: false,
+          generalErrorMessage: msg?.toString() ?? 'Network error occurred',
+        ),
+      );
+    } catch (e, st) {
+      print("💥 Unexpected exception in FetchStep2Data: $e");
+      print(st);
+      emit(
+        state.copyWith(
+          isStep2Loading: false,
+          generalErrorMessage: 'Something went wrong. Please try again.',
+        ),
+      );
+    }
   }
-}
-
 
   void _onLenderSelected(LenderSelected event, Emitter<EligibilityState> emit) {
     final newSelectedId = (state.selectedLenderId == event.lenderId)
@@ -788,151 +790,153 @@ Future<void> _onFetchStep2Data(
     );
   }
 
+  Future<void> _onConfirmFundSelection(
+    ConfirmFundSelection event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    print('🧩 ConfirmFundSelection START');
+    emit(state.copyWith(isLoading: true, generalErrorMessage: null));
 
-Future<void> _onConfirmFundSelection(
-  ConfirmFundSelection event,
-  Emitter<EligibilityState> emit,
-) async {
-  print('🧩 ConfirmFundSelection START');
-  emit(state.copyWith(isLoading: true, generalErrorMessage: null));
+    try {
+      final lenderId = state.selectedLenderId ?? '';
+      final reqId = getIt<AppStateProvider>().reqId ?? '';
+      print('📋 reqId: $reqId, selectedLenderId: $lenderId');
 
-  try {
-    final lenderId = state.selectedLenderId ?? '';
-    final reqId = getIt<AppStateProvider>().reqId ?? '';
-    print('📋 reqId: $reqId, selectedLenderId: $lenderId');
-
-    if (reqId.isEmpty) {
-      emit(state.copyWith(
-        isLoading: false,
-        generalErrorMessage: 'Missing reqId. Please restart the process.',
-      ));
-      return;
-    }
-
-    // Base loan amount (if this is purely loan-edit without fund add/remove)
-    final baseLoanAmount = state.editedLoanAmounts[lenderId] ??
-        state.selectedLender?.loanAmount ??
-        0.0;
-
-    // Defensive: drop any empty fund codes from current selection
-    final previousFunds = state.previousSelectedFundIds;
-    final currentFundsRaw = state.selectedFundIds;
-    final currentFunds = currentFundsRaw.where((s) => s.trim().isNotEmpty).toSet();
-    if (currentFundsRaw.length != currentFunds.length) {
-      debugPrint('⚠️ Removed empty/blank fund codes from selection');
-    }
-
-    // helpers & results
-    final List<String> isinAdd = [];
-    final List<String> isinRemove = [];
-    final List<String> isinModify = []; // ALWAYS keep empty per backend rule
-    final List<String> skipped = [];
-
-    PledgeableFund? findFund(String code) =>
-        state.pledgeableFunds.firstWhereOrNull((p) => p.fundCode == code);
-
-    // Build add list: fundCode:folioNo
-    for (final code in currentFunds.difference(previousFunds)) {
-      final f = findFund(code);
-      final folio = f?.folioNo ?? '';
-      if (folio.isEmpty) {
-        debugPrint('⚠️ Skipping add entry for $code - folio missing');
-        skipped.add('add:$code');
-        continue;
+      if (reqId.isEmpty) {
+        emit(
+          state.copyWith(
+            isLoading: false,
+            generalErrorMessage: 'Missing reqId. Please restart the process.',
+          ),
+        );
+        return;
       }
-      isinAdd.add('$code:$folio');
-    }
 
-    // Build remove list: fundCode:folioNo
-    for (final code in previousFunds.difference(currentFunds)) {
-      final f = findFund(code);
-      final folio = f?.folioNo ?? '';
-      if (folio.isEmpty) {
-        debugPrint('⚠️ Skipping remove entry for $code - folio missing');
-        skipped.add('remove:$code');
-        continue;
+      // Base loan amount (if this is purely loan-edit without fund add/remove)
+      final baseLoanAmount =
+          state.editedLoanAmounts[lenderId] ??
+          state.selectedLender?.loanAmount ??
+          0.0;
+
+      // Defensive: drop any empty fund codes from current selection
+      final previousFunds = state.previousSelectedFundIds;
+      final currentFundsRaw = state.selectedFundIds;
+      final currentFunds = currentFundsRaw
+          .where((s) => s.trim().isNotEmpty)
+          .toSet();
+      if (currentFundsRaw.length != currentFunds.length) {
+        debugPrint('⚠️ Removed empty/blank fund codes from selection');
       }
-      isinRemove.add('$code:$folio');
-    }
 
-    debugPrint('📤 ISIN_ADD (${isinAdd.length}): $isinAdd');
-    debugPrint('📤 ISIN_REMOVE (${isinRemove.length}): $isinRemove');
-    debugPrint('📤 ISIN_MODIFY (always empty): $isinModify');
-    if (skipped.isNotEmpty) debugPrint('⚠️ Skipped entries: $skipped');
+      // helpers & results
+      final List<String> isinAdd = [];
+      final List<String> isinRemove = [];
+      final List<String> isinModify = []; // ALWAYS keep empty per backend rule
+      final List<String> skipped = [];
 
-    // Determine loan_amount to send:
-    double loanAmountToSend;
-    if (isinAdd.isNotEmpty || isinRemove.isNotEmpty) {
-      loanAmountToSend = 0.0; // backend rule when add/remove present
-      debugPrint('⚠️ Add/remove detected -> sending loan_amount = 0.0');
-    } else {
-      loanAmountToSend = baseLoanAmount;
-      debugPrint('ℹ️ No add/remove -> sending loan_amount = $loanAmountToSend');
-    }
+      PledgeableFund? findFund(String code) =>
+          state.pledgeableFunds.firstWhereOrNull((p) => p.fundCode == code);
 
-    // Final body preview for debugging
-    final bodyPreview = {
-      'req_id': reqId,
-      'loan_amount': loanAmountToSend,
-      'lender_id': lenderId.toString(),
-      'isin_add': isinAdd,
-      'isin_remove': isinRemove,
-      'isin_modify': isinModify,
-    };
-    debugPrint('📦 Final request body preview: $bodyPreview');
+      // Build add list: fundCode:folioNo
+      for (final code in currentFunds.difference(previousFunds)) {
+        final f = findFund(code);
+        final folio = f?.folioNo ?? '';
+        if (folio.isEmpty) {
+          debugPrint('⚠️ Skipping add entry for $code - folio missing');
+          skipped.add('add:$code');
+          continue;
+        }
+        isinAdd.add('$code:$folio');
+      }
 
-    // Call repository
-    final result = await lenderRepository.editLoanAmount(
-      reqId: reqId,
-      loanAmount: loanAmountToSend,
-      lenderId: lenderId,
-      isinAdd: isinAdd,
-      isinRemove: isinRemove,
-      isinModify: isinModify,
-    );
+      // Build remove list: fundCode:folioNo
+      for (final code in previousFunds.difference(currentFunds)) {
+        final f = findFund(code);
+        final folio = f?.folioNo ?? '';
+        if (folio.isEmpty) {
+          debugPrint('⚠️ Skipping remove entry for $code - folio missing');
+          skipped.add('remove:$code');
+          continue;
+        }
+        isinRemove.add('$code:$folio');
+      }
 
-    await result.when(
-      success: (updatedData) async {
-        debugPrint('✅ editLoanAmount success, updating state');
+      debugPrint('📤 ISIN_ADD (${isinAdd.length}): $isinAdd');
+      debugPrint('📤 ISIN_REMOVE (${isinRemove.length}): $isinRemove');
+      debugPrint('📤 ISIN_MODIFY (always empty): $isinModify');
+      if (skipped.isNotEmpty) debugPrint('⚠️ Skipped entries: $skipped');
 
-        // Map lenders from response into UI model Lender
-        final updatedLenders = updatedData.lenders.map((l) {
-          return Lender(
-            id: l.id.toString(),
-            name: l.name ?? '-',
-            logoAsset: l.logo ?? '',
-            interestRate: l.loanInterest ?? 0.0,
-            loanAmount: l.loanAmount ?? 0.0,
-            pledgeableMFs: l.eligibleFundsCount ?? 0,
-            tag: '',
+      // Determine loan_amount to send:
+      double loanAmountToSend;
+      if (isinAdd.isNotEmpty || isinRemove.isNotEmpty) {
+        loanAmountToSend = 0.0; // backend rule when add/remove present
+        debugPrint('⚠️ Add/remove detected -> sending loan_amount = 0.0');
+      } else {
+        loanAmountToSend = baseLoanAmount;
+        debugPrint(
+          'ℹ️ No add/remove -> sending loan_amount = $loanAmountToSend',
+        );
+      }
+
+      // Final body preview for debugging
+      final bodyPreview = {
+        'req_id': reqId,
+        'loan_amount': loanAmountToSend,
+        'lender_id': lenderId.toString(),
+        'isin_add': isinAdd,
+        'isin_remove': isinRemove,
+        'isin_modify': isinModify,
+      };
+      debugPrint('📦 Final request body preview: $bodyPreview');
+
+      // Call repository
+      final result = await lenderRepository.editLoanAmount(
+        reqId: reqId,
+        loanAmount: loanAmountToSend,
+        lenderId: lenderId,
+        isinAdd: isinAdd,
+        isinRemove: isinRemove,
+        isinModify: isinModify,
+      );
+
+      await result.when(
+        success: (updatedData) async {
+          debugPrint('✅ editLoanAmount success, updating state');
+
+          // Map lenders from response into UI model Lender
+          final updatedLenders = updatedData.lenders.map((l) {
+            return Lender(
+              id: l.id.toString(),
+              name: l.name ?? '-',
+              logoAsset: l.logo ?? '',
+              interestRate: l.loanInterest ?? 0.0,
+              loanAmount: l.loanAmount ?? 0.0,
+              pledgeableMFs: l.eligibleFundsCount ?? 0,
+              tag: '',
+            );
+          }).toList();
+
+          emit(
+            state.copyWith(
+              mfDetailsResponse: updatedData,
+              pledgeableFunds: updatedData.pledgeableFunds,
+              lenders: updatedLenders,
+              isLoading: false,
+              shouldNavigateToKyc: true,
+              generalErrorMessage: null,
+            ),
           );
-        }).toList();
-
-        emit(state.copyWith(
-          mfDetailsResponse: updatedData,
-          pledgeableFunds: updatedData.pledgeableFunds,
-          lenders: updatedLenders,
-          isLoading: false,
-          shouldNavigateToKyc: true,
-          generalErrorMessage: null,
-        ));
-      },
-      failure: (error) {
-        debugPrint('❌ editLoanAmount failed: $error');
-        emit(state.copyWith(
-          isLoading: false,
-          generalErrorMessage: error,
-        ));
-      },
-    );
-  } catch (e, st) {
-    debugPrint('💥 Unexpected exception in _onConfirmFundSelection: $e\n$st');
-    emit(state.copyWith(
-      isLoading: false,
-      generalErrorMessage: e.toString(),
-    ));
+        },
+        failure: (error) {
+          debugPrint('❌ editLoanAmount failed: $error');
+          emit(state.copyWith(isLoading: false, generalErrorMessage: error));
+        },
+      );
+    } catch (e, st) {
+      debugPrint('💥 Unexpected exception in _onConfirmFundSelection: $e\n$st');
+      emit(state.copyWith(isLoading: false, generalErrorMessage: e.toString()));
+    }
   }
-}
 
   void _onViewDetailsToggled(
     ViewDetailsToggled event,
@@ -1149,464 +1153,507 @@ Future<void> _onConfirmFundSelection(
     }
   }
 
-// Future<void> _onSaveEditedLoanAmount(
-//   SaveEditedLoanAmount event,
-//   Emitter<EligibilityState> emit,
-// ) async {
-//   print('🔔 SaveEditedLoanAmount START for lender ${event.lenderId} amount=${event.amount}');
+  // Future<void> _onSaveEditedLoanAmount(
+  //   SaveEditedLoanAmount event,
+  //   Emitter<EligibilityState> emit,
+  // ) async {
+  //   print('🔔 SaveEditedLoanAmount START for lender ${event.lenderId} amount=${event.amount}');
 
-//   try {
-//     // Start a single global loader
-//     emit(state.copyWith(
-//       isEditingLoan: true,
-//       isLoading: true,
-//       lastSavedLenderId: null,
-//       lastSaveMessage: null,
-//       snackbarMessage: null,
-//     ));
-//     print('→ EMIT: global loading started for save of ${event.lenderId}');
+  //   try {
+  //     // Start a single global loader
+  //     emit(state.copyWith(
+  //       isEditingLoan: true,
+  //       isLoading: true,
+  //       lastSavedLenderId: null,
+  //       lastSaveMessage: null,
+  //       snackbarMessage: null,
+  //     ));
+  //     print('→ EMIT: global loading started for save of ${event.lenderId}');
 
-//     final reqId = getIt<AppStateProvider>().reqId ?? '';
+  //     final reqId = getIt<AppStateProvider>().reqId ?? '';
 
-//     final List<String> isinAdd = <String>[];
-//     final List<String> isinRemove = <String>[];
-//     final List<String> isinModify = <String>[];
+  //     final List<String> isinAdd = <String>[];
+  //     final List<String> isinRemove = <String>[];
+  //     final List<String> isinModify = <String>[];
 
-//     final bool hasFundEdits =
-//         state.editedFundAmounts != null && state.editedFundAmounts.isNotEmpty;
+  //     final bool hasFundEdits =
+  //         state.editedFundAmounts != null && state.editedFundAmounts.isNotEmpty;
 
-//     if (hasFundEdits) {
-//       final selectedFunds = state.pledgeableFunds.where((fund) {
-//         return state.selectedFundIds.contains(fund.fundCode);
-//       }).toList();
+  //     if (hasFundEdits) {
+  //       final selectedFunds = state.pledgeableFunds.where((fund) {
+  //         return state.selectedFundIds.contains(fund.fundCode);
+  //       }).toList();
 
-//       final builtModify = selectedFunds.map((f) {
-//         final double editedValue = state.editedFundAmounts[f.fundCode] ?? 0.0;
-//         final units = editedValue;
-//         final unitsStr = units == units.roundToDouble()
-//             ? units.toStringAsFixed(0)
-//             : units.toStringAsFixed(3).replaceFirst(RegExp(r'\.?0+$'), '');
-//         return '${f.fundCode}:${f.folioNo}:$unitsStr';
-//       }).toList();
+  //       final builtModify = selectedFunds.map((f) {
+  //         final double editedValue = state.editedFundAmounts[f.fundCode] ?? 0.0;
+  //         final units = editedValue;
+  //         final unitsStr = units == units.roundToDouble()
+  //             ? units.toStringAsFixed(0)
+  //             : units.toStringAsFixed(3).replaceFirst(RegExp(r'\.?0+$'), '');
+  //         return '${f.fundCode}:${f.folioNo}:$unitsStr';
+  //       }).toList();
 
-//       isinModify.addAll(builtModify);
-//     }
+  //       isinModify.addAll(builtModify);
+  //     }
 
-//     final double loanAmountToSend = event.amount;
+  //     final double loanAmountToSend = event.amount;
 
-//     print("📤 Calling editLoanAmount API...");
-//     print("🧩 reqId: $reqId | lenderId: ${event.lenderId} | loanAmount: $loanAmountToSend");
-//     print("🔄 ISIN Modify → $isinModify");
+  //     print("📤 Calling editLoanAmount API...");
+  //     print("🧩 reqId: $reqId | lenderId: ${event.lenderId} | loanAmount: $loanAmountToSend");
+  //     print("🔄 ISIN Modify → $isinModify");
 
-//     final result = await lenderRepository.editLoanAmount(
-//       reqId: reqId,
-//       loanAmount: loanAmountToSend,
-//       lenderId: event.lenderId,
-//       isinAdd: isinAdd,
-//       isinRemove: isinRemove,
-//       isinModify: isinModify,
-//     );
+  //     final result = await lenderRepository.editLoanAmount(
+  //       reqId: reqId,
+  //       loanAmount: loanAmountToSend,
+  //       lenderId: event.lenderId,
+  //       isinAdd: isinAdd,
+  //       isinRemove: isinRemove,
+  //       isinModify: isinModify,
+  //     );
 
-//     // SUCCESS
-//     if (result is Success<MfDetailsResponse>) {
-//       final updatedResponse = result.value;
+  //     // SUCCESS
+  //     if (result is Success<MfDetailsResponse>) {
+  //       final updatedResponse = result.value;
 
-//       final updatedLenders = state.lenders.map((l) {
-//         if (l.id == event.lenderId) {
-//           return l.copyWith(loanAmount: event.amount);
-//         }
-//         return l;
-//       }).toList();
+  //       final updatedLenders = state.lenders.map((l) {
+  //         if (l.id == event.lenderId) {
+  //           return l.copyWith(loanAmount: event.amount);
+  //         }
+  //         return l;
+  //       }).toList();
 
-//       print('✅ Save success for lender ${event.lenderId} — updating state');
+  //       print('✅ Save success for lender ${event.lenderId} — updating state');
 
-//       emit(state.copyWith(
-//         mfDetailsResponse: updatedResponse,
-//         lenders: updatedLenders,
-//         pledgeableFunds: updatedResponse.pledgeableFunds,
-//         isEditingLoan: false,
-//         isLoading: false, // stop the global loader
-//         lastSavedLenderId: event.lenderId,
-//         lastSaveMessage: "Loan amount updated successfully!",
-//         snackbarMessage: "Loan amount updated successfully!",
-//       ));
-//       print('→ EMIT: save success and global loading stopped for ${event.lenderId}');
-//     } else if (result is Failure) {
-//       final msg = "Failed to update loan amount";
-//       print('⚠️ Save failed for lender ${event.lenderId}: $msg');
+  //       emit(state.copyWith(
+  //         mfDetailsResponse: updatedResponse,
+  //         lenders: updatedLenders,
+  //         pledgeableFunds: updatedResponse.pledgeableFunds,
+  //         isEditingLoan: false,
+  //         isLoading: false, // stop the global loader
+  //         lastSavedLenderId: event.lenderId,
+  //         lastSaveMessage: "Loan amount updated successfully!",
+  //         snackbarMessage: "Loan amount updated successfully!",
+  //       ));
+  //       print('→ EMIT: save success and global loading stopped for ${event.lenderId}');
+  //     } else if (result is Failure) {
+  //       final msg = "Failed to update loan amount";
+  //       print('⚠️ Save failed for lender ${event.lenderId}: $msg');
 
-//       emit(state.copyWith(
-//         isLoading: false,
-//         isEditingLoan: false,
-//         lastSavedLenderId: event.lenderId,
-//         lastSaveMessage: msg,
-//         snackbarMessage: msg,
-//       ));
-//       print('→ EMIT: save failure and global loading stopped for ${event.lenderId}');
-//     } else {
-//       print('⚠️ Save returned unexpected result type for lender ${event.lenderId}');
+  //       emit(state.copyWith(
+  //         isLoading: false,
+  //         isEditingLoan: false,
+  //         lastSavedLenderId: event.lenderId,
+  //         lastSaveMessage: msg,
+  //         snackbarMessage: msg,
+  //       ));
+  //       print('→ EMIT: save failure and global loading stopped for ${event.lenderId}');
+  //     } else {
+  //       print('⚠️ Save returned unexpected result type for lender ${event.lenderId}');
 
-//       emit(state.copyWith(
-//         isLoading: false,
-//         isEditingLoan: false,
-//         lastSavedLenderId: event.lenderId,
-//         lastSaveMessage: "Unexpected server response",
-//         snackbarMessage: "Unexpected server response",
-//       ));
-//       print('→ EMIT: unexpected result and global loading stopped for ${event.lenderId}');
-//     }
-//   } catch (e, stack) {
-//     print('💥 Exception during SaveEditedLoanAmount for lender ${event.lenderId}: $e');
-//     print(stack);
-//     emit(state.copyWith(
-//       isLoading: false,
-//       isEditingLoan: false,
-//       lastSavedLenderId: event.lenderId,
-//       lastSaveMessage: "Something went wrong",
-//       snackbarMessage: "Something went wrong",
-//     ));
-//     print('→ EMIT: exception and global loading stopped for ${event.lenderId}');
-//   }
-// }
-Future<void> _onSaveEditedLoanAmount(
-  SaveEditedLoanAmount event,
-  Emitter<EligibilityState> emit,
-) async {
-  print('🔔 SaveEditedLoanAmount START for lender ${event.lenderId} amount=${event.amount}');
+  //       emit(state.copyWith(
+  //         isLoading: false,
+  //         isEditingLoan: false,
+  //         lastSavedLenderId: event.lenderId,
+  //         lastSaveMessage: "Unexpected server response",
+  //         snackbarMessage: "Unexpected server response",
+  //       ));
+  //       print('→ EMIT: unexpected result and global loading stopped for ${event.lenderId}');
+  //     }
+  //   } catch (e, stack) {
+  //     print('💥 Exception during SaveEditedLoanAmount for lender ${event.lenderId}: $e');
+  //     print(stack);
+  //     emit(state.copyWith(
+  //       isLoading: false,
+  //       isEditingLoan: false,
+  //       lastSavedLenderId: event.lenderId,
+  //       lastSaveMessage: "Something went wrong",
+  //       snackbarMessage: "Something went wrong",
+  //     ));
+  //     print('→ EMIT: exception and global loading stopped for ${event.lenderId}');
+  //   }
+  // }
+  Future<void> _onSaveEditedLoanAmount(
+    SaveEditedLoanAmount event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    print(
+      '🔔 SaveEditedLoanAmount START for lender ${event.lenderId} amount=${event.amount}',
+    );
 
-  // mark saving flag (only for Save)
-  emit(state.copyWith(
-    isSavingLoan: true,
-    isEditingLoan: true,
-    lastSavedLenderId: null,
-    lastSaveMessage: null,
-    snackbarMessage: null,
-  ));
-  print('→ EMIT: isSavingLoan = true');
-
-  try {
-    final reqId = getIt<AppStateProvider>().reqId ?? '';
-
-    // -------------------------------
-    // Build isinAdd / isinRemove safely
-    // -------------------------------
-    List<String> isinAdd = <String>[];
-    List<String> isinRemove = <String>[];
+    // mark saving flag (only for Save)
+    emit(
+      state.copyWith(
+        isSavingLoan: true,
+        isEditingLoan: true,
+        lastSavedLenderId: null,
+        lastSaveMessage: null,
+        snackbarMessage: null,
+      ),
+    );
+    print('→ EMIT: isSavingLoan = true');
 
     try {
-      // Try a list of likely field names on state that might hold fund lists (List<FundDetail>).
-      // If you have a specific field name, replace or add it here for direct mapping.
-      final stateCandidates = <String>[
-        'fundsToAdd',
-        'funds_to_add',
-        'selectedFundsForAdd',
-        'selected_funds_for_add',
-        'selectedForAdd',
-        'addedFunds',
-        'toBeAddedFunds',
-        'fundsToRemove',
-        'funds_to_remove',
-        'selectedFundsForRemove',
-        'selected_funds_for_remove',
-        'selectedForRemove',
-        'removedFunds',
-        'toBeRemovedFunds',
-      ];
+      final reqId = getIt<AppStateProvider>().reqId ?? '';
 
-      // helper to check & build using helper functions if available
-      List<String> tryBuild(String fieldName, bool buildAdd) {
-        try {
-          final dynamic val = (state as dynamic).toJson != null
-              ? (state as dynamic).toJson()[fieldName] // some states provide toJson
-              : null;
-          // but usually state.<fieldName> exists directly; try that first
-        } catch (_) {}
-        try {
-          final dynamic maybe = (state as dynamic)?.__getField != null
-              ? null
-              : null; // noop to satisfy analyzer; actual access below
-        } catch (_) {}
+      // -------------------------------
+      // Build isinAdd / isinRemove safely
+      // -------------------------------
+      List<String> isinAdd = <String>[];
+      List<String> isinRemove = <String>[];
 
-        try {
-          final dynamic candidate = (state as dynamic).noSuchMethod != null
-              ? null
-              : null; // noop
-        } catch (_) {}
-
-        // Direct property access attempts (multiple tries)
-        try {
-          final dynamic listCandidate = (state as dynamic).runtimeType != Null
-              ? (state as dynamic).fundsToAdd
-              : null;
-          // If this succeeds and matches the expected property, we've populated one path. But rather than hardcoding
-          // many direct accesses here (which would throw if property missing), we'll attempt multiple named getters via mirrors-like approach isn't available.
-        } catch (_) {
-          // ignore
-        }
-
-        // Final safe attempt: check commonly-used properties explicitly with try/catch
-        try {
-          if (fieldName == 'fundsToAdd' && (state as dynamic).fundsToAdd != null) {
-            final list = (state as dynamic).fundsToAdd as List<dynamic>;
-            return buildAdd ? buildIsinAddFromFunds(list.cast()) : buildIsinRemoveFromFunds(list.cast());
-          }
-        } catch (_) {}
-        try {
-          if (fieldName == 'funds_to_add' && (state as dynamic).funds_to_add != null) {
-            final list = (state as dynamic).funds_to_add as List<dynamic>;
-            return buildAdd ? buildIsinAddFromFunds(list.cast()) : buildIsinRemoveFromFunds(list.cast());
-          }
-        } catch (_) {}
-        try {
-          if (fieldName == 'selectedFundsForAdd' && (state as dynamic).selectedFundsForAdd != null) {
-            final list = (state as dynamic).selectedFundsForAdd as List<dynamic>;
-            return buildAdd ? buildIsinAddFromFunds(list.cast()) : buildIsinRemoveFromFunds(list.cast());
-          }
-        } catch (_) {}
-        try {
-          if (fieldName == 'selectedForAdd' && (state as dynamic).selectedForAdd != null) {
-            final list = (state as dynamic).selectedForAdd as List<dynamic>;
-            return buildAdd ? buildIsinAddFromFunds(list.cast()) : buildIsinRemoveFromFunds(list.cast());
-          }
-        } catch (_) {}
-        try {
-          if (fieldName == 'addedFunds' && (state as dynamic).addedFunds != null) {
-            final list = (state as dynamic).addedFunds as List<dynamic>;
-            return buildAdd ? buildIsinAddFromFunds(list.cast()) : buildIsinRemoveFromFunds(list.cast());
-          }
-        } catch (_) {}
-        try {
-          if (fieldName == 'fundsToRemove' && (state as dynamic).fundsToRemove != null) {
-            final list = (state as dynamic).fundsToRemove as List<dynamic>;
-            return buildAdd ? buildIsinAddFromFunds(list.cast()) : buildIsinRemoveFromFunds(list.cast());
-          }
-        } catch (_) {}
-        try {
-          if (fieldName == 'removedFunds' && (state as dynamic).removedFunds != null) {
-            final list = (state as dynamic).removedFunds as List<dynamic>;
-            return buildAdd ? buildIsinAddFromFunds(list.cast()) : buildIsinRemoveFromFunds(list.cast());
-          }
-        } catch (_) {}
-
-        // If none matched, return empty
-        return <String>[];
-      }
-
-      // Try to build isinAdd by scanning likely fields
-      for (final name in stateCandidates) {
-        // build only for add-related names
-        if ([
+      try {
+        // Try a list of likely field names on state that might hold fund lists (List<FundDetail>).
+        // If you have a specific field name, replace or add it here for direct mapping.
+        final stateCandidates = <String>[
           'fundsToAdd',
           'funds_to_add',
           'selectedFundsForAdd',
           'selected_funds_for_add',
           'selectedForAdd',
           'addedFunds',
-          'toBeAddedFunds'
-        ].contains(name)) {
-          final out = tryBuild(name, true);
-          if (out.isNotEmpty) {
-            isinAdd = out;
-            break;
-          }
-        }
-      }
-
-      // Try to build isinRemove similarly
-      for (final name in stateCandidates) {
-        if ([
+          'toBeAddedFunds',
           'fundsToRemove',
           'funds_to_remove',
           'selectedFundsForRemove',
           'selected_funds_for_remove',
           'selectedForRemove',
           'removedFunds',
-          'toBeRemovedFunds'
-        ].contains(name)) {
-          final out = tryBuild(name, false);
-          if (out.isNotEmpty) {
-            isinRemove = out;
-            break;
+          'toBeRemovedFunds',
+        ];
+
+        // helper to check & build using helper functions if available
+        List<String> tryBuild(String fieldName, bool buildAdd) {
+          try {
+            final dynamic val = (state as dynamic).toJson != null
+                ? (state as dynamic)
+                      .toJson()[fieldName] // some states provide toJson
+                : null;
+            // but usually state.<fieldName> exists directly; try that first
+          } catch (_) {}
+          try {
+            final dynamic maybe = (state as dynamic)?.__getField != null
+                ? null
+                : null; // noop to satisfy analyzer; actual access below
+          } catch (_) {}
+
+          try {
+            final dynamic candidate = (state as dynamic).noSuchMethod != null
+                ? null
+                : null; // noop
+          } catch (_) {}
+
+          // Direct property access attempts (multiple tries)
+          try {
+            final dynamic listCandidate = (state as dynamic).runtimeType != Null
+                ? (state as dynamic).fundsToAdd
+                : null;
+            // If this succeeds and matches the expected property, we've populated one path. But rather than hardcoding
+            // many direct accesses here (which would throw if property missing), we'll attempt multiple named getters via mirrors-like approach isn't available.
+          } catch (_) {
+            // ignore
+          }
+
+          // Final safe attempt: check commonly-used properties explicitly with try/catch
+          try {
+            if (fieldName == 'fundsToAdd' &&
+                (state as dynamic).fundsToAdd != null) {
+              final list = (state as dynamic).fundsToAdd as List<dynamic>;
+              return buildAdd
+                  ? buildIsinAddFromFunds(list.cast())
+                  : buildIsinRemoveFromFunds(list.cast());
+            }
+          } catch (_) {}
+          try {
+            if (fieldName == 'funds_to_add' &&
+                (state as dynamic).funds_to_add != null) {
+              final list = (state as dynamic).funds_to_add as List<dynamic>;
+              return buildAdd
+                  ? buildIsinAddFromFunds(list.cast())
+                  : buildIsinRemoveFromFunds(list.cast());
+            }
+          } catch (_) {}
+          try {
+            if (fieldName == 'selectedFundsForAdd' &&
+                (state as dynamic).selectedFundsForAdd != null) {
+              final list =
+                  (state as dynamic).selectedFundsForAdd as List<dynamic>;
+              return buildAdd
+                  ? buildIsinAddFromFunds(list.cast())
+                  : buildIsinRemoveFromFunds(list.cast());
+            }
+          } catch (_) {}
+          try {
+            if (fieldName == 'selectedForAdd' &&
+                (state as dynamic).selectedForAdd != null) {
+              final list = (state as dynamic).selectedForAdd as List<dynamic>;
+              return buildAdd
+                  ? buildIsinAddFromFunds(list.cast())
+                  : buildIsinRemoveFromFunds(list.cast());
+            }
+          } catch (_) {}
+          try {
+            if (fieldName == 'addedFunds' &&
+                (state as dynamic).addedFunds != null) {
+              final list = (state as dynamic).addedFunds as List<dynamic>;
+              return buildAdd
+                  ? buildIsinAddFromFunds(list.cast())
+                  : buildIsinRemoveFromFunds(list.cast());
+            }
+          } catch (_) {}
+          try {
+            if (fieldName == 'fundsToRemove' &&
+                (state as dynamic).fundsToRemove != null) {
+              final list = (state as dynamic).fundsToRemove as List<dynamic>;
+              return buildAdd
+                  ? buildIsinAddFromFunds(list.cast())
+                  : buildIsinRemoveFromFunds(list.cast());
+            }
+          } catch (_) {}
+          try {
+            if (fieldName == 'removedFunds' &&
+                (state as dynamic).removedFunds != null) {
+              final list = (state as dynamic).removedFunds as List<dynamic>;
+              return buildAdd
+                  ? buildIsinAddFromFunds(list.cast())
+                  : buildIsinRemoveFromFunds(list.cast());
+            }
+          } catch (_) {}
+
+          // If none matched, return empty
+          return <String>[];
+        }
+
+        // Try to build isinAdd by scanning likely fields
+        for (final name in stateCandidates) {
+          // build only for add-related names
+          if ([
+            'fundsToAdd',
+            'funds_to_add',
+            'selectedFundsForAdd',
+            'selected_funds_for_add',
+            'selectedForAdd',
+            'addedFunds',
+            'toBeAddedFunds',
+          ].contains(name)) {
+            final out = tryBuild(name, true);
+            if (out.isNotEmpty) {
+              isinAdd = out;
+              break;
+            }
           }
         }
-      }
-    } catch (e) {
-      print('⚠️ Warning: error while attempting to build isinAdd/isinRemove from state: $e');
-      isinAdd = <String>[];
-      isinRemove = <String>[];
-    }
 
-    // Final safety: if there are explicit sets on state like only fundCodes (strings), try to use them to create "<code>:<folio>" pairs
-    try {
-      // If state has something like addedFundTuples as List<Map> with code/folio, handle it
-      if (isinAdd.isEmpty) {
-        try {
-          final dynamic cand = (state as dynamic).addedFundTuples;
-          if (cand != null && cand is List) {
-            final built = <String>[];
-            for (final e in cand) {
-              try {
-                final code = (e['fundCode'] ?? e['fund_code'] ?? e['code']).toString();
-                final folio = (e['folioNo'] ?? e['folio'] ?? e['folio_no']).toString();
-                if (code.trim().isNotEmpty && folio.trim().isNotEmpty) {
-                  built.add('$code:$folio');
-                }
-              } catch (_) {}
+        // Try to build isinRemove similarly
+        for (final name in stateCandidates) {
+          if ([
+            'fundsToRemove',
+            'funds_to_remove',
+            'selectedFundsForRemove',
+            'selected_funds_for_remove',
+            'selectedForRemove',
+            'removedFunds',
+            'toBeRemovedFunds',
+          ].contains(name)) {
+            final out = tryBuild(name, false);
+            if (out.isNotEmpty) {
+              isinRemove = out;
+              break;
             }
-            if (built.isNotEmpty) isinAdd = built;
           }
-        } catch (_) {}
-      }
-
-      if (isinRemove.isEmpty) {
-        try {
-          final dynamic cand = (state as dynamic).removedFundTuples;
-          if (cand != null && cand is List) {
-            final built = <String>[];
-            for (final e in cand) {
-              try {
-                final code = (e['fundCode'] ?? e['fund_code'] ?? e['code']).toString();
-                final folio = (e['folioNo'] ?? e['folio'] ?? e['folio_no']).toString();
-                if (code.trim().isNotEmpty && folio.trim().isNotEmpty) {
-                  built.add('$code:$folio');
-                }
-              } catch (_) {}
-            }
-            if (built.isNotEmpty) isinRemove = built;
-          }
-        } catch (_) {}
-      }
-    } catch (_) {}
-
-    // -------------------------------
-    // Keep your existing modify logic unchanged
-    // -------------------------------
-    final bool hasFundEdits =
-        state.editedFundAmounts != null && state.editedFundAmounts.isNotEmpty;
-
-    if (hasFundEdits) {
-      final selectedFunds = state.pledgeableFunds.where((fund) {
-        return state.selectedFundIds.contains(fund.fundCode);
-      }).toList();
-
-      final builtModify = selectedFunds.map((f) {
-        final double editedValue = state.editedFundAmounts[f.fundCode] ?? 0.0;
-        final units = editedValue;
-        final unitsStr = units == units.roundToDouble()
-            ? units.toStringAsFixed(0)
-            : units.toStringAsFixed(3).replaceFirst(RegExp(r'\.?0+$'), '');
-        return '${f.fundCode}:${f.folioNo}:$unitsStr';
-      }).toList();
-
-      // add the built modify entries
-      // NOTE: this is exactly your existing logic
-      // (we're appending to the local isinModify defined below)
-      // ensure we have a local list to add to:
-      // (declare here)
-    }
-
-    // build a fresh modify list (keeping original logic)
-    final List<String> isinModify = <String>[];
-    final bool hasModify = state.editedFundAmounts != null && state.editedFundAmounts.isNotEmpty;
-    if (hasModify) {
-      final selectedFunds = state.pledgeableFunds.where((fund) {
-        return state.selectedFundIds.contains(fund.fundCode);
-      }).toList();
-
-      final builtModify = selectedFunds.map((f) {
-        final double editedValue = state.editedFundAmounts[f.fundCode] ?? 0.0;
-        final units = editedValue;
-        final unitsStr = units == units.roundToDouble()
-            ? units.toStringAsFixed(0)
-            : units.toStringAsFixed(3).replaceFirst(RegExp(r'\.?0+$'), '');
-        return '${f.fundCode}:${f.folioNo}:$unitsStr';
-      }).toList();
-
-      isinModify.addAll(builtModify);
-    }
-
-    // -------------------------------
-    // Final logging before API call
-    // -------------------------------
-    print('📤 FINAL PAYLOAD:');
-    print('   → req_id: $reqId');
-    print('   → loan_amount: ${event.amount}');
-    print('   → lender_id: ${event.lenderId}');
-    print('   → isin_add (${isinAdd.length}): $isinAdd');
-    print('   → isin_remove (${isinRemove.length}): $isinRemove');
-    print('   → isin_modify (${isinModify.length}): ${isinModify.length > 0 ? (isinModify.length <= 20 ? isinModify : '${isinModify.length} entries (truncated)') : isinModify}');
-
-    // -------------------------------
-    // API CALL (unchanged)
-    // -------------------------------
-    final double loanAmountToSend = event.amount;
-
-    final result = await lenderRepository.editLoanAmount(
-      reqId: reqId,
-      loanAmount: loanAmountToSend,
-      lenderId: event.lenderId,
-      isinAdd: isinAdd,
-      isinRemove: isinRemove,
-      isinModify: isinModify,
-    );
-
-    // -------------------------------
-    // Result handling (unchanged)
-    // -------------------------------
-    if (result is Success<MfDetailsResponse>) {
-      final updatedResponse = result.value;
-
-      final updatedLenders = state.lenders.map((l) {
-        if (l.id == event.lenderId) {
-          return l.copyWith(loanAmount: event.amount);
         }
-        return l;
-      }).toList();
+      } catch (e) {
+        print(
+          '⚠️ Warning: error while attempting to build isinAdd/isinRemove from state: $e',
+        );
+        isinAdd = <String>[];
+        isinRemove = <String>[];
+      }
 
-      emit(state.copyWith(
-        mfDetailsResponse: updatedResponse,
-        lenders: updatedLenders,
-        pledgeableFunds: updatedResponse.pledgeableFunds,
-        isEditingLoan: false,
-        isSavingLoan: false,
-        lastSavedLenderId: event.lenderId,
-        lastSaveMessage: "Loan amount updated successfully!",
-        snackbarMessage: "Loan amount updated successfully!",
-      ));
-      print('→ EMIT: success, isSavingLoan = false');
-    } else if (result is Failure) {
-      final msg = "Failed to update loan amount";
-      emit(state.copyWith(
-        isEditingLoan: false,
-        isSavingLoan: false,
-        lastSavedLenderId: event.lenderId,
-        lastSaveMessage: msg,
-        snackbarMessage: msg,
-      ));
-      print('→ EMIT: failure, isSavingLoan = false');
-    } else {
-      emit(state.copyWith(
-        isEditingLoan: false,
-        isSavingLoan: false,
-        lastSavedLenderId: event.lenderId,
-        lastSaveMessage: "Unexpected server response",
-        snackbarMessage: "Unexpected server response",
-      ));
-      print('→ EMIT: unexpected, isSavingLoan = false');
+      // Final safety: if there are explicit sets on state like only fundCodes (strings), try to use them to create "<code>:<folio>" pairs
+      try {
+        // If state has something like addedFundTuples as List<Map> with code/folio, handle it
+        if (isinAdd.isEmpty) {
+          try {
+            final dynamic cand = (state as dynamic).addedFundTuples;
+            if (cand != null && cand is List) {
+              final built = <String>[];
+              for (final e in cand) {
+                try {
+                  final code = (e['fundCode'] ?? e['fund_code'] ?? e['code'])
+                      .toString();
+                  final folio = (e['folioNo'] ?? e['folio'] ?? e['folio_no'])
+                      .toString();
+                  if (code.trim().isNotEmpty && folio.trim().isNotEmpty) {
+                    built.add('$code:$folio');
+                  }
+                } catch (_) {}
+              }
+              if (built.isNotEmpty) isinAdd = built;
+            }
+          } catch (_) {}
+        }
+
+        if (isinRemove.isEmpty) {
+          try {
+            final dynamic cand = (state as dynamic).removedFundTuples;
+            if (cand != null && cand is List) {
+              final built = <String>[];
+              for (final e in cand) {
+                try {
+                  final code = (e['fundCode'] ?? e['fund_code'] ?? e['code'])
+                      .toString();
+                  final folio = (e['folioNo'] ?? e['folio'] ?? e['folio_no'])
+                      .toString();
+                  if (code.trim().isNotEmpty && folio.trim().isNotEmpty) {
+                    built.add('$code:$folio');
+                  }
+                } catch (_) {}
+              }
+              if (built.isNotEmpty) isinRemove = built;
+            }
+          } catch (_) {}
+        }
+      } catch (_) {}
+
+      // -------------------------------
+      // Keep your existing modify logic unchanged
+      // -------------------------------
+      final bool hasFundEdits =
+          state.editedFundAmounts != null && state.editedFundAmounts.isNotEmpty;
+
+      if (hasFundEdits) {
+        final selectedFunds = state.pledgeableFunds.where((fund) {
+          return state.selectedFundIds.contains(fund.fundCode);
+        }).toList();
+
+        final builtModify = selectedFunds.map((f) {
+          final double editedValue = state.editedFundAmounts[f.fundCode] ?? 0.0;
+          final units = editedValue;
+          final unitsStr = units == units.roundToDouble()
+              ? units.toStringAsFixed(0)
+              : units.toStringAsFixed(3).replaceFirst(RegExp(r'\.?0+$'), '');
+          return '${f.fundCode}:${f.folioNo}:$unitsStr';
+        }).toList();
+
+        // add the built modify entries
+        // NOTE: this is exactly your existing logic
+        // (we're appending to the local isinModify defined below)
+        // ensure we have a local list to add to:
+        // (declare here)
+      }
+
+      // build a fresh modify list (keeping original logic)
+      final List<String> isinModify = <String>[];
+      final bool hasModify =
+          state.editedFundAmounts != null && state.editedFundAmounts.isNotEmpty;
+      if (hasModify) {
+        final selectedFunds = state.pledgeableFunds.where((fund) {
+          return state.selectedFundIds.contains(fund.fundCode);
+        }).toList();
+
+        final builtModify = selectedFunds.map((f) {
+          final double editedValue = state.editedFundAmounts[f.fundCode] ?? 0.0;
+          final units = editedValue;
+          final unitsStr = units == units.roundToDouble()
+              ? units.toStringAsFixed(0)
+              : units.toStringAsFixed(3).replaceFirst(RegExp(r'\.?0+$'), '');
+          return '${f.fundCode}:${f.folioNo}:$unitsStr';
+        }).toList();
+
+        isinModify.addAll(builtModify);
+      }
+
+      // -------------------------------
+      // Final logging before API call
+      // -------------------------------
+      print('📤 FINAL PAYLOAD:');
+      print('   → req_id: $reqId');
+      print('   → loan_amount: ${event.amount}');
+      print('   → lender_id: ${event.lenderId}');
+      print('   → isin_add (${isinAdd.length}): $isinAdd');
+      print('   → isin_remove (${isinRemove.length}): $isinRemove');
+      print(
+        '   → isin_modify (${isinModify.length}): ${isinModify.length > 0 ? (isinModify.length <= 20 ? isinModify : '${isinModify.length} entries (truncated)') : isinModify}',
+      );
+
+      // -------------------------------
+      // API CALL (unchanged)
+      // -------------------------------
+      final double loanAmountToSend = event.amount;
+
+      final result = await lenderRepository.editLoanAmount(
+        reqId: reqId,
+        loanAmount: loanAmountToSend,
+        lenderId: event.lenderId,
+        isinAdd: isinAdd,
+        isinRemove: isinRemove,
+        isinModify: isinModify,
+      );
+
+      // -------------------------------
+      // Result handling (unchanged)
+      // -------------------------------
+      if (result is Success<MfDetailsResponse>) {
+        final updatedResponse = result.value;
+
+        final updatedLenders = state.lenders.map((l) {
+          if (l.id == event.lenderId) {
+            return l.copyWith(loanAmount: event.amount);
+          }
+          return l;
+        }).toList();
+
+        emit(
+          state.copyWith(
+            mfDetailsResponse: updatedResponse,
+            lenders: updatedLenders,
+            pledgeableFunds: updatedResponse.pledgeableFunds,
+            isEditingLoan: false,
+            isSavingLoan: false,
+            lastSavedLenderId: event.lenderId,
+            lastSaveMessage: "Loan amount updated successfully!",
+            snackbarMessage: "Loan amount updated successfully!",
+          ),
+        );
+        print('→ EMIT: success, isSavingLoan = false');
+      } else if (result is Failure) {
+        final msg = "Failed to update loan amount";
+        emit(
+          state.copyWith(
+            isEditingLoan: false,
+            isSavingLoan: false,
+            lastSavedLenderId: event.lenderId,
+            lastSaveMessage: msg,
+            snackbarMessage: msg,
+          ),
+        );
+        print('→ EMIT: failure, isSavingLoan = false');
+      } else {
+        emit(
+          state.copyWith(
+            isEditingLoan: false,
+            isSavingLoan: false,
+            lastSavedLenderId: event.lenderId,
+            lastSaveMessage: "Unexpected server response",
+            snackbarMessage: "Unexpected server response",
+          ),
+        );
+        print('→ EMIT: unexpected, isSavingLoan = false');
+      }
+    } catch (e, stack) {
+      print('💥 Exception during SaveEditedLoanAmount: $e\n$stack');
+      emit(
+        state.copyWith(
+          isEditingLoan: false,
+          isSavingLoan: false,
+          lastSavedLenderId: event.lenderId,
+          lastSaveMessage: "Something went wrong",
+          snackbarMessage: "Something went wrong",
+        ),
+      );
+      print('→ EMIT: exception, isSavingLoan = false');
     }
-  } catch (e, stack) {
-    print('💥 Exception during SaveEditedLoanAmount: $e\n$stack');
-    emit(state.copyWith(
-      isEditingLoan: false,
-      isSavingLoan: false,
-      lastSavedLenderId: event.lenderId,
-      lastSaveMessage: "Something went wrong",
-      snackbarMessage: "Something went wrong",
-    ));
-    print('→ EMIT: exception, isSavingLoan = false');
   }
-}
-
 
   void _onProceedToLenderSelection(
     ProceedToLenderSelection event,

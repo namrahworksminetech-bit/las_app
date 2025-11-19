@@ -11,32 +11,30 @@ class LenderRepository {
   final ApiClient _apiClient;
 
   LenderRepository(this._apiClient);
-Future<Result<MfDetailsResponse>> fetchLendersAndPortfolio({
-  required String reqId,
-  bool useMock = false, // 🔥 mock toggle added
-}) async {
-  try {
-    final appState = GetIt.instance<AppStateProvider>();
-    final authToken = appState.token;
+  Future<Result<MfDetailsResponse>> fetchLendersAndPortfolio({
+    required String reqId,
+    bool useMock = false, // 🔥 mock toggle added
+  }) async {
+    try {
+      final appState = GetIt.instance<AppStateProvider>();
+      final authToken = appState.token;
 
-    if (authToken == null || authToken.isEmpty) {
-      return Failure("Missing auth token. Please login again.");
-    }
+      if (authToken == null || authToken.isEmpty) {
+        return Failure("Missing auth token. Please login again.");
+      }
 
-
-
-    // 🧾 LIVE API CALL
-    final response = await _apiClient.post(
-      'customer/get-mf-details',
-      data: {'req_id': reqId},
-      options: Options(
-        headers: {
-          'Authorization': 'Bearer $authToken',
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-      ),
-    );
+      // 🧾 LIVE API CALL
+      final response = await _apiClient.post(
+        'customer/get-mf-details',
+        data: {'req_id': reqId},
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $authToken',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
 
       final decoded = response.data;
 
@@ -63,18 +61,17 @@ Future<Result<MfDetailsResponse>> fetchLendersAndPortfolio({
     }
   }
 
-
   Future<Result<MfDetailsResponse>> editLoanAmount({
-  required String reqId,
-  required double loanAmount,
-  required String lenderId,
-  required List<String> isinAdd,
-  required List<String> isinRemove,
-  required List<String> isinModify,
-}) async {
-  try {
-    final appState = GetIt.instance<AppStateProvider>();
-    final authToken = appState.token;
+    required String reqId,
+    required double loanAmount,
+    required String lenderId,
+    required List<String> isinAdd,
+    required List<String> isinRemove,
+    required List<String> isinModify,
+  }) async {
+    try {
+      final appState = GetIt.instance<AppStateProvider>();
+      final authToken = appState.token;
 
       if (authToken == null || authToken.isEmpty) {
         return Failure("Missing auth token. Please login again.");
@@ -89,59 +86,65 @@ Future<Result<MfDetailsResponse>> fetchLendersAndPortfolio({
         "isin_modify": isinModify,
       };
 
-    final bodyJson = jsonEncode(body);
-    print("📤 Edit Loan Amount Request JSON: $bodyJson");
-    print("📤 Headers: Authorization Bearer present: ${authToken.length > 8}");
+      final bodyJson = jsonEncode(body);
+      print("📤 Edit Loan Amount Request JSON: $bodyJson");
+      print(
+        "📤 Headers: Authorization Bearer present: ${authToken.length > 8}",
+      );
 
-    final response = await _apiClient.post(
-      "https://api-dev.valuenable.in/lamf/customer/edit-loan-amount",
-      data: bodyJson,
-      options: Options(
-        headers: {
-          'Authorization': 'Bearer $authToken',
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        validateStatus: (status) => status != null && status < 500,
-      ),
-    );
+      final response = await _apiClient.post(
+        "https://api-dev.valuenable.in/lamf/customer/edit-loan-amount",
+        data: bodyJson,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $authToken',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          validateStatus: (status) => status != null && status < 500,
+        ),
+      );
 
-    print("📥 HTTP code: ${response.statusCode}");
-    print("📥 Raw response data: ${response.data}");
+      print("📥 HTTP code: ${response.statusCode}");
+      print("📥 Raw response data: ${response.data}");
 
-    // response.data might already be a Map or a JSON string
-    Map<String, dynamic> decoded;
-    if (response.data is String) {
-      decoded = jsonDecode(response.data);
-    } else if (response.data is Map<String, dynamic>) {
-      decoded = response.data as Map<String, dynamic>;
-    } else {
-      // fallback
-      decoded = {};
-    }
+      // response.data might already be a Map or a JSON string
+      Map<String, dynamic> decoded;
+      if (response.data is String) {
+        decoded = jsonDecode(response.data);
+      } else if (response.data is Map<String, dynamic>) {
+        decoded = response.data as Map<String, dynamic>;
+      } else {
+        // fallback
+        decoded = {};
+      }
 
-    // Treat any 2xx as success
-    if (response.statusCode == null || response.statusCode! < 200 || response.statusCode! >= 300) {
-      final msg = decoded['message'] ?? 'Invalid request (status ${response.statusCode})';
-      print("⚠️ Server responded with ${response.statusCode}: $msg");
+      // Treat any 2xx as success
+      if (response.statusCode == null ||
+          response.statusCode! < 200 ||
+          response.statusCode! >= 300) {
+        final msg =
+            decoded['message'] ??
+            'Invalid request (status ${response.statusCode})';
+        print("⚠️ Server responded with ${response.statusCode}: $msg");
+        return Failure(msg);
+      }
+
+      if ((decoded['status']?.toString().toLowerCase() ?? '') == 'success') {
+        final mfDetails = MfDetailsResponse.fromJson(decoded);
+        return Success(mfDetails);
+      } else {
+        final msg = decoded['message'] ?? 'Unknown API error';
+        print("⚠️ API returned failure: $msg");
+        return Failure(msg);
+      }
+    } on DioException catch (e) {
+      print("⏰ Dio timeout or error: ${e.type} - ${e.message}");
+      final msg = e.response?.data?['message'] ?? e.message ?? 'Network error';
       return Failure(msg);
+    } catch (e, st) {
+      print("💥 Unexpected error: $e\n$st");
+      return Failure('Unexpected error: $e');
     }
-
-    if ((decoded['status']?.toString().toLowerCase() ?? '') == 'success') {
-      final mfDetails = MfDetailsResponse.fromJson(decoded);
-      return Success(mfDetails);
-    } else {
-      final msg = decoded['message'] ?? 'Unknown API error';
-      print("⚠️ API returned failure: $msg");
-      return Failure(msg);
-    }
-  } on DioException catch (e) {
-    print("⏰ Dio timeout or error: ${e.type} - ${e.message}");
-    final msg = e.response?.data?['message'] ?? e.message ?? 'Network error';
-    return Failure(msg);
-  } catch (e, st) {
-    print("💥 Unexpected error: $e\n$st");
-    return Failure('Unexpected error: $e');
   }
-}
 }
