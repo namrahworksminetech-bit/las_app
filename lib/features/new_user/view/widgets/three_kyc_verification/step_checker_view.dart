@@ -204,19 +204,20 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
       case 'not_started' || 'pan_verified' || 'pending':
         // All steps remain false
         break;
-      case 'verified':
+      case 'kyc_done':
         steps[0] = true;
         break;
       case 'kyc_done':
         steps[0] = true;
         steps[1] = true;
         break;
-      case ('mandate_done' || 'kfs_agreement_done'):
+      case 'mandate_done':
+        // case 'penny_drop_done':
         steps[0] = true;
         steps[1] = true;
         steps[2] = true;
         break;
-      case 'penny_drop_done':
+      case 'kfs_agreement_done':
         steps[0] = true;
         steps[1] = true;
         steps[2] = true;
@@ -282,7 +283,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     // For steps 2 and 3, if kyc_done status, skip start-kyc API
 
     final allowedStatuses = [
-      'penny_drop_done',
+      // 'penny_drop_done',
       'mandate_done',
       'kfs_agreement_done',
     ];
