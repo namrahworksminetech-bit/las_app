@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import 'package:las_app/core/app_state_provider.dart';
@@ -14,10 +15,12 @@ import 'package:flutter/material.dart';
 import '../view/webview_screen.dart';
 import 'package:get/get.dart';
 import '../../../common_widgets/webview_screen.dart' as CommonWebView;
+import '../../../common_widgets/c_snackbar.dart';
 import '../kyc_helper.dart';
 
 class DigioRepository {
   final ApiClient _apiClient;
+  Timer? _delayedUpdateTimer;
 
   DigioRepository(this._apiClient);
 
@@ -59,8 +62,27 @@ class DigioRepository {
       } else {
         return Failure('Failed to get Digio config');
       }
+    } on DioException catch (e) {
+      print("⏰ Dio timeout or error: ${e.type}");
+      final msg =
+          e.response?.data?['message'] ??
+          e.message ??
+          'Network error occurred.';
+
+      // Show snackbar for connection errors
+      if (context != null && context.mounted) {
+        CSnackBar.show(context, msg, isError: true);
+      }
+
+      return Failure(msg);
     } catch (e) {
       print('❌ Exception: $e');
+
+      // Show snackbar for general errors
+      if (context != null && context.mounted) {
+        CSnackBar.show(context, 'Error: $e', isError: true);
+      }
+
       return Failure('Error: $e');
     }
   }
@@ -119,13 +141,12 @@ class DigioRepository {
             final cleanDocumentId = KycHelper.extractDocumentId(
               workflowResult.toString(),
             );
-            Future.delayed(Duration(seconds: 80)).then((value) async {
-              final result = await updateKycStatus(cleanDocumentId);
+            _delayedUpdateTimer = Timer(Duration(seconds: 110), () async {
+              final result = await updateKycStatus(context, cleanDocumentId);
               print('✅ _updateKycStatus result: $result');
               if (result is Success<String?> && result.value != null) {
                 // Don't open WebView, let native SDK handle KYC
                 print('✅ KYC status updated, native SDK will handle the flow');
-                return result.value;
               }
             });
           } else {
@@ -146,7 +167,10 @@ class DigioRepository {
     return null;
   }
 
-  Future<Result<String?>> updateKycStatus(String documentId) async {
+  Future<Result<String?>> updateKycStatus(
+    BuildContext? context,
+    String documentId,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
     final appState = GetIt.instance<AppStateProvider>();
@@ -186,10 +210,39 @@ class DigioRepository {
         print('❌ Failed to update KYC status');
         return const Failure('Failed to update KYC status');
       }
+    } on DioException catch (e) {
+      print("⏰ Dio timeout or error: ${e.type}");
+      final msg =
+          e.response?.data?['message'] ??
+          e.message ??
+          'Network error occurred.';
+
+      // Show snackbar for connection errors
+      if (context != null && context.mounted) {
+        CSnackBar.show(context, msg, isError: true);
+      }
+
+      return Failure(msg);
     } catch (e) {
-      print('❌ Error updating KYC status: $e');
+      print('❌ Exception: $e');
+
+      // Show snackbar for general errors
+      if (context != null && context.mounted) {
+        CSnackBar.show(context, 'Error: $e', isError: true);
+      }
+
       return Failure('Error: $e');
     }
+
+    // on DioException catch (e) {
+    //   print("❌ Dio error: ${e.response?.data}");
+    //   return Failure(
+    //     e.response?.data['message'] ?? e.message ?? 'Network error',
+    //   );
+    // } catch (e) {
+    //   print('❌ Error updating KYC status: $e');
+    //   return Failure('Error: $e');
+    // }
 
     // try {
     //   const staticUrl =
@@ -208,6 +261,12 @@ class DigioRepository {
     //   print('❌ Error updating KYC status: $e');
     //   return Failure('Error: $e');
     // }
+  }
+
+  void cancelDelayedUpdate() {
+    _delayedUpdateTimer?.cancel();
+    _delayedUpdateTimer = null;
+    print('🚫 Delayed update timer cancelled');
   }
 
   static void openWebView(BuildContext context, String url) {

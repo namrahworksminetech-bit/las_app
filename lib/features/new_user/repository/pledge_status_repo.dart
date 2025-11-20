@@ -29,6 +29,13 @@ class PledgeStatusRepository {
       } else {
         return Failure('Failed to check pledge status');
       }
+    } on DioException catch (e) {
+      print("⏰ Dio timeout or error: ${e.type}");
+      final msg =
+          e.response?.data?['message'] ??
+          e.message ??
+          'Network error occurred.';
+      return Failure(msg);
     } catch (e) {
       return Failure('Error: $e');
     }

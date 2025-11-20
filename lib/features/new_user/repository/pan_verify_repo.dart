@@ -29,6 +29,11 @@ class PanVerifyRepository {
       } else {
         return Failure('Failed to get lender code');
       }
+    } on DioException catch (e) {
+      print("❌ Dio error: ${e.response?.data}");
+      return Failure(
+        e.response?.data['message'] ?? e.message ?? 'Network error',
+      );
     } catch (e) {
       return Failure('Error: $e');
     }
