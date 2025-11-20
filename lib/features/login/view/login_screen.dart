@@ -189,7 +189,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   );
                 });
               });
-            } else if (status == 'mandate_done' || status == 'completed') {
+            } else if (status == 'mandate_done' || status == 'completed' || status == 'penny_drop_done') {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (ModalRoute.of(context)?.isCurrent ?? true) {
                   Navigator.pushReplacement(

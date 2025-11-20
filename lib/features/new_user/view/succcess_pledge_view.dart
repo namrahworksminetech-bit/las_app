@@ -8,9 +8,9 @@ import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/common_widgets/c_text.dart';
-import 'package:las_app/common_widgets/webview_screen.dart'; // adjust if path differs
+import 'package:las_app/common_widgets/webview_screen.dart'; 
 
-// app state + repo
+
 import 'package:las_app/core/app_state_provider.dart';
 import 'package:las_app/features/new_user/repository/video_kyc_repo.dart';
 
@@ -91,7 +91,7 @@ class _LoanSuccessScreenState extends State<LoanSuccessScreen>
               url: urlString,
               title: "Video KYC",
               onKycComplete: () {
-                // Optional callback after KYC completes in webview
+                
                 Get.snackbar('KYC', 'KYC flow completed');
               },
             ),
@@ -108,8 +108,8 @@ class _LoanSuccessScreenState extends State<LoanSuccessScreen>
   }
 
   void _goToDashboard() {
-    // Dashboard navigation remains available always
-    // TODO: Replace with your app's navigation to dashboard
+
+    // TODO: Replace with Azhar's Dashboard page name.
     Get.snackbar('Navigation', 'Go to dashboard tapped');
   }
 
@@ -158,11 +158,8 @@ class _LoanSuccessScreenState extends State<LoanSuccessScreen>
 
               const Spacer(),
 
-              /// =========================
-              /// Buttons (stacked vertically)
-              /// =========================
+            
 
-              // Go to Dashboard button (always enabled)
               SizedBox(
                 width: double.infinity,
                 height: 52,

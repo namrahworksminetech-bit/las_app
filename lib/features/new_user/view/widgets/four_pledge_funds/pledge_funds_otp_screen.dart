@@ -106,6 +106,13 @@ class _PledgeFundsOtpScreenState extends State<PledgeFundsOtpScreen> {
       if (mounted) setState(() => _isSubmitting = false);
     }
   }
+@override
+void initState() {
+  super.initState();
+  _otpController.addListener(() {
+    if (mounted) setState(() {}); // rebuild to update the button enabled state
+  });
+}
 
   @override
   Widget build(BuildContext context) {
