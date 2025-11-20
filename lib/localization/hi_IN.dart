@@ -23,21 +23,22 @@ final Map<String, String> hiIN = {
   'GetStarted': 'शुरू करें',
   'Next': 'अगला',
 
-//welcome screens
+  //welcome screens
   'welcome1_subtitle': 'तुरंत फंड अनलॉक करें',
-  'welcome1_title': 'अपने निवेश को बेचे बिना आसान, तेज़ और सुरक्षित ऋण प्राप्त करें।',
+  'welcome1_title':
+      'अपने निवेश को बेचे बिना आसान, तेज़ और सुरक्षित ऋण प्राप्त करें।',
   'welcome2_subtitle': 'स्मार्ट और पारदर्शी उधार',
   'welcome2_title': 'प्रतिस्पर्धी दरें। लचीला। पारदर्शी।',
   'welcome3_subtitle': 'अपनी संपत्ति रखें, मूल्य अनलॉक करें',
   'welcome3_title': 'निवेश बढ़ने के दौरान फंड को लिक्विडेट करें।',
-  
 
   //successs pledge
   'congratulations': 'बधाई हो!',
-  'loanSuccessMessage': 'आपका ऋण आवेदन सफलतापूर्वक सबमिट हो गया है और संसाधित किया जा रहा है।',
+  'loanSuccessMessage':
+      'आपका ऋण आवेदन सफलतापूर्वक सबमिट हो गया है और संसाधित किया जा रहा है।',
   'goToDashboard': 'डैशबोर्ड पर जाएं',
 
-//form
+  //form
   'CheckEligibility': 'पात्रता जांचें',
   'NextLenderSelection': 'अगला: ऋणदाता चयन',
   'Submitting': 'सबमिट हो रहा है...',
@@ -47,9 +48,11 @@ final Map<String, String> hiIN = {
   'selectInvestmentTitlePart1': 'वह निवेश चुनें जिससे आप ',
   'selectInvestmentTitlePart2': 'फंड अनलॉक करना चाहते हैं',
   'insurancePolicyTitle': 'बीमा पॉलिसी',
-  'insurancePolicySubtitle': 'अपनी जीवन बीमा पॉलिसियों के बदले ऋण प्राप्त करें।',
+  'insurancePolicySubtitle':
+      'अपनी जीवन बीमा पॉलिसियों के बदले ऋण प्राप्त करें।',
   'mutualFundTitle': 'म्यूचुअल फंड',
-  'mutualFundSubtitle': 'अपने म्यूचुअल फंड को निवेशित रखते हुए तुरंत फंड प्राप्त करें।',
+  'mutualFundSubtitle':
+      'अपने म्यूचुअल फंड को निवेशित रखते हुए तुरंत फंड प्राप्त करें।',
   'sharesTitle': 'शेयर',
   'sharesSubtitle': 'अपने शेयरों को बेचे बिना उनका लाभ उठाएं।',
 
@@ -71,7 +74,8 @@ final Map<String, String> hiIN = {
   'interestRate': 'ब्याज दर',
   'loanAmount': 'ऋण राशि',
   'pledgeableMFs': 'गिरवी रखने योग्य एमएफ',
-  'chooseFundsHint': 'गिरवी रखने के लिए फंड चुनें, संपादित करने के लिए क्लिक करें',
+  'chooseFundsHint':
+      'गिरवी रखने के लिए फंड चुनें, संपादित करने के लिए क्लिक करें',
   'cancel': 'रद्द करें',
   'confirm': 'पुष्टि करें',
   'amountExceedLimit': 'राशि पात्र सीमा से अधिक नहीं हो सकती।',
@@ -88,7 +92,8 @@ final Map<String, String> hiIN = {
 
   'selectLenderInfo': 'अपने ऋण आवेदन के साथ आगे बढ़ने के लिए एक ऋणदाता चुनें।',
   'portfolioBreakdown': 'पोर्टफोलियो ब्रेकडाउन',
-  'portfolioBreakdownPledgeableFunds': 'पोर्टफोलियो ब्रेकडाउन > गिरवी रखने योग्य फंड',
+  'portfolioBreakdownPledgeableFunds':
+      'पोर्टफोलियो ब्रेकडाउन > गिरवी रखने योग्य फंड',
   'refreshPortfolio': 'पोर्टफोलियो रिफ्रेश करें',
 
   "pledgeableFunds": "गिरवी रखने योग्य फंड",
@@ -109,7 +114,8 @@ final Map<String, String> hiIN = {
 
   "pledgeFunds": "फंड गिरवी रखें",
   "nextApplicationSubmission": "अगला: आवेदन जमा करना",
-  "otpSentMessage": "MFCentral से आपके XX45 पर समाप्त होने वाले पंजीकृत मोबाइल नंबर पर ओटीपी भेजा गया है",
+  "otpSentMessage":
+      "MFCentral से आपके XX45 पर समाप्त होने वाले पंजीकृत मोबाइल नंबर पर ओटीपी भेजा गया है",
 
   "invalidOtp": "अमान्य ओटीपी। पुनः प्रयास करें।",
   "submitComplete": "सबमिट करें और आवेदन पूरा करें",
@@ -121,4 +127,9 @@ final Map<String, String> hiIN = {
   'almostThere': 'बस लगभग हो गया!',
   'fetchingMutualFunds': 'आपके म्यूचुअल फंड लाए जा रहे हैं...',
   'cibilNote': "चिंता न करें, इससे आपका सिबिल स्कोर प्रभावित नहीं होगा।",
+  'enterMobileNumber': "मोबाइल नंबर दर्ज करें",
+  'enterEmail': "अपना ईमेल दर्ज करें",
+  'startKycProcess': "केवाईसी प्रक्रिया शुरू हो रही है...",
+  'pleaseWaitWhileWePrepare':
+      "कृपया प्रतीक्षा करें, हम आपकी सत्यापन प्रक्रिया तैयार कर रहे हैं",
 };

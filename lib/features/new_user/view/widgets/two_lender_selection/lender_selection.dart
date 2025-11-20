@@ -4,18 +4,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:percent_indicator/percent_indicator.dart';
-
+import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/common_widgets/c_text.dart';
-import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
+import 'package:las_app/common_widgets/c_snackbar.dart';
 import 'package:las_app/features/new_user/view/widgets/two_lender_selection/fund_selection_view.dart';
 import 'package:las_app/features/new_user/view/widgets/two_lender_selection/lender_list_view.dart';
 import 'package:las_app/features/new_user/view/widgets/two_lender_selection/pledgable_funds_details_view.dart';
 import 'package:las_app/features/new_user/view/widgets/two_lender_selection/portfolio_breakdown.dart';
 
+
 class LenderSelectionScreen extends StatefulWidget {
+
   const LenderSelectionScreen({super.key});
 
   @override
@@ -23,6 +25,7 @@ class LenderSelectionScreen extends StatefulWidget {
 }
 
 class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
+  DateTime? lastBackPress;
   @override
   Widget build(BuildContext context) {
     final formatCurrency = NumberFormat.currency(
@@ -31,14 +34,54 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
       decimalDigits: 0,
     );
 
-    return Scaffold(
+    void safeAdd(EligibilityEvent event) {
+      try {
+        context.read<EligibilityBloc>().add(event);
+      } catch (e, st) {
+        debugPrint('EligibilityBloc.add() failed: $e\n$st');
+      }
+    }
+
+
+   return WillPopScope(
+  onWillPop: () async {
+    final now = DateTime.now();
+
+    if (lastBackPress == null ||
+        now.difference(lastBackPress!) > const Duration(seconds: 2)) {
+      lastBackPress = now;
+
+      CSnackBar.show(
+        context,
+        "Press again to exit",
+        isError: false,
+      );
+
+      return false; // don't exit yet
+    }
+
+    return true; // exit app
+  },
+  child: Scaffold(
+
       backgroundColor: AppColors.black,
       body: SafeArea(
-        child: BlocBuilder<EligibilityBloc, EligibilityState>(
+        child: BlocConsumer<EligibilityBloc, EligibilityState>(
+          listener: (context, state) {
+            if (state.generalErrorMessage != null) {
+              CSnackBar.show(
+                context,
+                state.generalErrorMessage!,
+                isError: true,
+              );
+              context.read<EligibilityBloc>().add(ErrorMessageCleared());
+            }
+          },
           builder: (context, state) {
             final bool showFullHeader =
                 state.lenderSelectionView == LenderSelectionView.lenderList ||
-                    state.lenderSelectionView == LenderSelectionView.portfolioBreakdown ||
+                    state.lenderSelectionView ==
+                        LenderSelectionView.portfolioBreakdown ||
                     state.lenderSelectionView == LenderSelectionView.pledgeableDetail;
 
             return Column(
@@ -88,44 +131,61 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
                         ),
                       ),
                       Gaps.hXl,
-                      const Divider(thickness: 1.5, color: AppColors.bSecondaryColor),
+                      const Divider(
+                          thickness: 1.5, color: AppColors.bSecondaryColor),
                       Gaps.hMd,
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24.0, vertical: 16.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Row(
-  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  children: [
-    GestureDetector(
-      onTap: () => Navigator.pop(context), 
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.arrow_back, color: AppColors.white, size: 20),
-          Gaps.wXs,
-          CText(
-            'Go Back',
-            style: AppTypography.bodyWhite.copyWith(
-              decoration: TextDecoration.underline,
-            ),
-  onTap: () => Navigator.pop(context), 
-),
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                // Robust Go Back:
+                                GestureDetector(
+                                 onTap: () {
+  final bloc = context.read<EligibilityBloc>();
 
-                                        ],
-                                      
-                                    
+  // Always navigate back *inside* the lender-selection flow to the LENDER LIST view.
+  // This will NOT pop the route. It will ask the bloc to change the internal sub-view.
+  try {
+    bloc.add(const SetLenderSelectionView(LenderSelectionView.lenderList));
+  } catch (e, st) {
+    debugPrint('Failed to add SetLenderSelectionView: $e\n$st');
+    // Fallback: if bloc isn't available for some reason, ensure we at least
+    // keep the user on-screen rather than popping overlays/routing back.
+  }
+},
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.arrow_back,
+                                        color: AppColors.white,
+                                        size: 20,
+                                      ),
+                                      Gaps.wXs,
+                                      CText(
+                                        'Go Back',
+                                        style: AppTypography.bodyWhite.copyWith(
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
+
                                 RichText(
                                   text: TextSpan(
                                     children: [
                                       TextSpan(
                                         text: (state.lenderSelectionView ==
-                                                    LenderSelectionView.portfolioBreakdown ||
+                                                    LenderSelectionView
+                                                        .portfolioBreakdown ||
                                                 state.lenderSelectionView ==
-                                                    LenderSelectionView.pledgeableDetail)
+                                                    LenderSelectionView
+                                                        .pledgeableDetail)
                                             ? 'viewLenders'.tr
                                             : 'viewYourMfDetails'.tr,
                                         style: AppTypography.bodyWhite.copyWith(
@@ -133,9 +193,10 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
                                           decorationColor: AppColors.white,
                                         ),
                                         recognizer: TapGestureRecognizer()
-                                          ..onTap = () => context
-                                              .read<EligibilityBloc>()
-                                              .add(ViewDetailsToggled()),
+                                          ..onTap = () {
+                                            // safe add of toggle event
+                                            safeAdd(ViewDetailsToggled());
+                                          },
                                       ),
                                       const WidgetSpan(child: Gaps.wXs),
                                       const WidgetSpan(
@@ -153,16 +214,32 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
                             ),
                             if (showFullHeader) ...[
                               Gaps.hXl,
-                              CText('eligibleCreditLimit'.tr, style: AppTypography.bodyWhite),
+                              CText('eligibleCreditLimit'.tr,
+                                  style: AppTypography.bodyWhite),
                               Gaps.hSm,
-                              CText(
-                                formatCurrency.format(state.portfolioData.eligibleCreditLimit),
-                                style: AppTypography.h1.copyWith(color: AppColors.bPrimaryColor),
+                              Builder(
+                                builder: (_) {
+                                  final totalPledgeable = state.mfDetailsResponse
+                                          ?.pledgeableFunds
+                                          .fold<double>(
+                                              0,
+                                              (sum, fund) =>
+                                                  sum + (fund.availableAmount ?? 0)) ??
+                                      0.0;
+
+                                  return CText(
+                                    formatCurrency.format(totalPledgeable),
+                                    style: AppTypography.h1
+                                        .copyWith(color: AppColors.bPrimaryColor),
+                                  );
+                                },
                               ),
                               Gaps.hXxs,
                               CText(
                                 'totalPortfolioValue'.trParams({
-                                  'value': formatCurrency.format(state.portfolioData.totalValue),
+                                  'value': formatCurrency.format(
+                                      state.mfDetailsResponse?.eligiblePortfolio ??
+                                          0),
                                 }),
                                 style: AppTypography.caption,
                               ),
@@ -179,15 +256,19 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
                                     key: const ValueKey('info_box'),
                                     margin: const EdgeInsets.only(top: 24.0),
                                     width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 18.0),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16.0, vertical: 18.0),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFF1F2937),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Row(
                                       children: [
-                                        const Icon(Icons.badge_outlined,
-                                            color: AppColors.bPrimaryColor, size: 24),
+                                        const Icon(
+                                          Icons.badge_outlined,
+                                          color: AppColors.bPrimaryColor,
+                                          size: 24,
+                                        ),
                                         Gaps.wSm,
                                         Expanded(
                                           child: CText(
@@ -200,17 +281,22 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
                                   );
                                 }
 
-                                if (currentView == LenderSelectionView.portfolioBreakdown ||
-                                    currentView == LenderSelectionView.pledgeableDetail) {
+                                if (currentView ==
+                                        LenderSelectionView.portfolioBreakdown ||
+                                    currentView ==
+                                        LenderSelectionView.pledgeableDetail) {
                                   return Align(
                                     key: const ValueKey('breakdown_title'),
                                     alignment: Alignment.centerLeft,
                                     child: Padding(
-                                      padding: const EdgeInsets.only(top: 24.0, bottom: 8.0),
+                                      padding: const EdgeInsets.only(
+                                          top: 24.0, bottom: 8.0),
                                       child: CText(
-                                        currentView == LenderSelectionView.portfolioBreakdown
+                                        currentView == LenderSelectionView
+                                                .portfolioBreakdown
                                             ? 'portfolioBreakdown'.tr
-                                            : 'portfolioBreakdownPledgeableFunds'.tr,
+                                            : 'portfolioBreakdownPledgeableFunds'
+                                                .tr,
                                         style: AppTypography.caption,
                                       ),
                                     ),
@@ -249,29 +335,87 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
           },
         ),
       ),
-    );
+    ) );
   }
 
   Widget _buildCurrentView(BuildContext context, EligibilityState state) {
+    Widget _noDataView({required bool isLoading}) {
+      if (isLoading) {
+        return const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.bPrimaryColor),
+          ),
+        );
+      }
+
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              "No details available. Please try again later.",
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () {
+                try {
+                  context.read<EligibilityBloc>().add(RefreshPortfolioPressed());
+                } catch (e) {
+                  debugPrint('EligibilityBloc.add() failed: $e');
+                }
+              },
+              icon: const Icon(Icons.refresh, color: Colors.white, size: 18),
+              label: const Text("Retry", style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.bPrimaryColor,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     switch (state.lenderSelectionView) {
       case LenderSelectionView.lenderList:
         return const LenderListView(key: ValueKey('lender_list'));
+
       case LenderSelectionView.portfolioBreakdown:
+        if (state.mfDetailsResponse == null ||
+            state.mfDetailsResponse?.pledgeableFunds.isEmpty == true) {
+          return _noDataView(isLoading: state.isLoading);
+        }
         return PortfolioBreakdownView(
           key: const ValueKey('breakdown_view'),
-          portfolioData: state.portfolioData,
+          mfDetailsResponse: state.mfDetailsResponse!,
           onCategoryTapped: (categoryId) {
-            context.read<EligibilityBloc>().add(BreakdownCategoryTapped(categoryId));
+            try {
+              context.read<EligibilityBloc>().add(BreakdownCategoryTapped(categoryId));
+            } catch (e) {
+              debugPrint('EligibilityBloc.add() failed: $e');
+            }
           },
           onRefresh: () => context.read<EligibilityBloc>().add(RefreshPortfolioPressed()),
         );
+
       case LenderSelectionView.pledgeableDetail:
+        if (state.mfDetailsResponse == null ||
+            state.mfDetailsResponse?.pledgeableFunds.isEmpty == true) {
+          return _noDataView(isLoading: state.isLoading);
+        }
         return PledgeableFundsDetailView(
           key: const ValueKey('detail_view'),
           onRefresh: () => context.read<EligibilityBloc>().add(RefreshPortfolioPressed()),
         );
+
       case LenderSelectionView.fundSelection:
         return const FundSelectionView(key: ValueKey('fund_selection_view'));
+
       default:
         return const LenderListView(key: ValueKey('lender_list'));
     }

@@ -3,6 +3,7 @@ import 'package:las_app/core/network/api_client.dart';
 import 'package:las_app/core/app_state_provider.dart';
 import 'package:las_app/features/login/repository/login_repository.dart';
 import 'package:las_app/features/new_user/repository/pan_veirfy_repo.dart';
+import 'package:las_app/features/new_user/digio_service.dart';
 
 final getIt = GetIt.instance;
 
@@ -16,4 +17,7 @@ Future<void> initDependencies() async {
       () => LoginRepository(getIt<ApiClient>()));
   getIt.registerLazySingleton<PanRepository>(
       () => PanRepository(getIt<ApiClient>()));
+  
+  // ✅ Services
+  getIt.registerLazySingleton<DigioService>(() => DigioService());
 }

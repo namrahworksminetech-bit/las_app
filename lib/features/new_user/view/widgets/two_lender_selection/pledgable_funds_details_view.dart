@@ -18,22 +18,17 @@ class PledgeableFundsDetailView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final funds = {
-      'HDFC Midcap Opportunities Fund': 556000.0,
-      'ICICI Prudential Balanced Advantage Fund': 556000.0,
-      'Axis Bluechip Fund - Direct Growth': 556000.0,
-      'Axis Long Term Equity Fund - Direct Plan - Growth': 556000.0,
-      'ICICI Prudential Balanced Advantage Fund - Direct - Growth': 556000.0,
-      'Franklin India Equity Advantage Fund - Direct - Growth': 556000.0,
-    };
+    final eligibilityState = context.watch<EligibilityBloc>().state;
+    final isRefreshing = eligibilityState.isPortfolioRefreshing;
+
+    
+    final funds = eligibilityState.mfDetailsResponse?.pledgeableFunds ?? [];
 
     final formatCurrencyInt = NumberFormat.currency(
       locale: 'en_IN',
       symbol: '₹ ',
       decimalDigits: 0,
     );
-
-    final isRefreshing = context.watch<EligibilityBloc>().state.isPortfolioRefreshing;
 
     return Column(
       children: [
@@ -71,44 +66,54 @@ class PledgeableFundsDetailView extends StatelessWidget {
             ),
           ),
         ),
-        Expanded(
-          child: ListView.separated(
-            key: const ValueKey('detail_view'),
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            itemCount: funds.length,
-            separatorBuilder: (_, __) => const Divider(
-              color: AppColors.bSecondaryColor,
-              thickness: 0.5,
-              height: 0.5,
-            ),
-            itemBuilder: (context, index) {
-              final title = funds.keys.elementAt(index);
-              final value = funds.values.elementAt(index);
 
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: CText(
-                        title,
-                        style: AppTypography.bodyWhite,
+        // ✅ Handle empty or data state
+        if (funds.isEmpty)
+          Expanded(
+            child: Center(
+              child: CText(
+                "No pledgeable funds found",
+                style: AppTypography.bodyWhite,
+              ),
+            ),
+          )
+        else
+          Expanded(
+            child: ListView.separated(
+              key: const ValueKey('detail_view'),
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              itemCount: funds.length,
+              separatorBuilder: (_, __) => const Divider(
+                color: AppColors.bSecondaryColor,
+                thickness: 0.5,
+                height: 0.5,
+              ),
+              itemBuilder: (context, index) {
+                final fund = funds[index];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: CText(
+                          fund.fundName ?? '-',
+                          style: AppTypography.bodyWhite,
+                        ),
                       ),
-                    ),
-                    Gaps.wMd,
-                    CText(
-                      formatCurrencyInt.format(value),
-                      style: AppTypography.bodyWhite.copyWith(
-                        fontWeight: FontWeight.w500,
+                      Gaps.wMd,
+                      CText(
+                        formatCurrencyInt.format(fund.fundValue ?? 0.0),
+                        style: AppTypography.bodyWhite.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            },
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
-        ),
       ],
     );
   }

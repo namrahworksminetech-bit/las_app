@@ -1,0 +1,110 @@
+import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:get/get.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:permission_handler/permission_handler.dart';
+import '../core/injection_container.dart';
+import '../core/network/api_client.dart';
+
+class WebViewScreen extends StatefulWidget {
+  final String url;
+  final String? title;
+  final VoidCallback? onKycComplete;
+
+  const WebViewScreen({Key? key, required this.url, this.title, this.onKycComplete})
+    : super(key: key);
+
+  @override
+  State<WebViewScreen> createState() => _WebViewScreenState();
+}
+
+class _WebViewScreenState extends State<WebViewScreen> {
+  late final WebViewController controller;
+  bool isLoading = true;
+  Timer? _pollTimer;
+  final ApiClient _apiClient = getIt<ApiClient>();
+  static const platform = MethodChannel('webview_permissions');
+
+  @override
+  void initState() {
+    super.initState();
+    _requestPermissions();
+    controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onNavigationRequest: (NavigationRequest request) {
+            print('🌐 WebView URL: ${request.url}');
+            
+            // Check if KYC is completed based on redirect URL
+            if (request.url.contains('account-verification-complete')) {
+              print('✅ KYC completed detected from URL: ${request.url}');
+              widget.onKycComplete?.call();
+            }
+            
+            // Prevent opening new tabs, keep it in the same WebView
+            if (request.url.startsWith("https")) {
+              controller.loadRequest(Uri.parse(request.url));
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
+          },
+        ),
+      );
+    
+    // Enable camera permissions for Android WebView
+    if (controller.platform is AndroidWebViewController) {
+      (controller.platform as AndroidWebViewController)
+          .setMediaPlaybackRequiresUserGesture(false);
+    }
+    
+    controller.loadRequest(Uri.parse(widget.url));
+  }
+
+  Future<void> _requestPermissions() async {
+    await [
+      Permission.camera,
+      Permission.microphone,
+    ].request();
+    
+    // Enable WebView permissions via platform channel
+    try {
+      await platform.invokeMethod('enableWebViewPermissions');
+    } catch (e) {
+      print('Failed to enable WebView permissions: $e');
+    }
+  }
+
+  void _startPolling() {
+    // API call handled in digio_repo
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title ?? 'WebView'),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Get.back(),
+        ),
+      ),
+      body: Stack(
+        children: [
+          WebViewWidget(controller: controller),
+          // if (isLoading) const Center(child: CircularProgressIndicator()),
+        ],
+      ),
+    );
+  }
+}

@@ -4,7 +4,6 @@ import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
 
-
 class OnboardingPageContent extends StatelessWidget {
   final String imagePath;
   final String iconAssetPath;
@@ -27,21 +26,16 @@ class OnboardingPageContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-
         Expanded(
           flex: 4,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 3.0),
-            child: Image.asset(
-              imagePath,
-              fit: BoxFit.contain,
-            ),
+            child: Image.asset(imagePath, fit: BoxFit.contain),
           ),
         ),
 
-        Gaps.hMd, 
+        Gaps.hMd,
 
-  
         Expanded(
           flex: 2,
           child: Column(
@@ -55,7 +49,7 @@ class OnboardingPageContent extends StatelessWidget {
                     width: 20,
                     height: 20,
                   ),
-                  Gaps.wXs, 
+                  Gaps.wXs,
                   CText(
                     subtitle,
                     style: AppTypography.body.copyWith(
@@ -66,13 +60,13 @@ class OnboardingPageContent extends StatelessWidget {
                 ],
               ),
 
-              Gaps.hMd, 
+              Gaps.hMd,
 
               CText(
                 title,
                 style: AppTypography.h1.copyWith(
                   color: AppColors.white,
-                  fontSize: 30, // same as before
+                  fontSize: 26, // same as before
                   fontWeight: FontWeight.bold,
                   height: 1.3,
                 ),

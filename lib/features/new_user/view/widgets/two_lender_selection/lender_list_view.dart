@@ -5,7 +5,6 @@ import 'package:las_app/helper_widgets/lender_card.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
-
 class LenderListView extends StatelessWidget {
   const LenderListView({super.key});
 
@@ -13,46 +12,53 @@ class LenderListView extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<EligibilityBloc>().state;
 
-    if (state.lenders.isEmpty && state.isLoading) {
+    if (state.lenders.isEmpty) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.bPrimaryColor),
       );
     }
-    if (state.lenders.isEmpty && !state.isLoading) {
-      return Center(
-        child: CText(
-          'Nolendersavailable'.tr,
-          style: TextStyle(color: AppColors.bSecondaryColor),
-        ),
-      );
-    }
 
-    return ListView.builder(
+    final Map<String, double> editedLoanAmounts = state.editedLoanAmounts ?? {};
+
+    return Stack(
+  children: [
+    ListView.builder(
       key: const ValueKey('lender_list'),
       padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 24.0),
       itemCount: state.lenders.length,
       itemBuilder: (context, index) {
         final lender = state.lenders[index];
-        final displayAmount =
-            state.editedLoanAmounts[lender.id] ?? lender.loanAmount;
-        final displayLender = lender.copyWith(loanAmount: displayAmount);
+        final displayAmount = (state.editedLoanAmounts ?? {}).containsKey(lender.id)
+            ? state.editedLoanAmounts![lender.id]!
+            : (lender.loanAmount ?? 0.0);
 
         return LenderCard(
-          lender: displayLender,
+          lender: lender.copyWith(loanAmount: displayAmount),
+          snackbarMessage: state.snackbarMessage,
           isSelected: state.selectedLenderId == lender.id,
-          onTap: () =>
-              context.read<EligibilityBloc>().add(LenderSelected(lender.id)),
+          isSavingLoan: state.isSavingLoan, // new prop
+          lastSavedLenderId: state.lastSavedLenderId,
+          lastSaveMessage: state.lastSaveMessage,
+          onTap: () => context.read<EligibilityBloc>().add(LenderSelected(lender.id)),
           onAmountSaved: (newAmount) {
-            context.read<EligibilityBloc>().add(
-              SaveEditedLoanAmount(lender.id, newAmount),
-            );
+            context.read<EligibilityBloc>().add(SaveEditedLoanAmount(lender.id, newAmount));
           },
-
-          onContinue: () => context.read<EligibilityBloc>().add(
-            LenderContinuePressed(lender.id),
-          ),
+          onContinue: () => context.read<EligibilityBloc>().add(LenderContinuePressed(lender.id)),
         );
       },
-    );
-  }
+    ),
+
+    // Overlay only when save is in progress
+    if (state.isSavingLoan)
+      const Positioned.fill(
+        child: ColoredBox(
+          color: Color.fromRGBO(0, 0, 0, 0.45),
+          child: Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      ),
+  ],
+);
+}
 }
