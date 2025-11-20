@@ -5,7 +5,7 @@ import 'package:las_app/common_widgets/c_text.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
-import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
+import 'package:las_app/models/funds/pledgeable_model.dart';
 
 class FundListItem extends StatefulWidget {
   final PledgeableFund fund;
@@ -35,60 +35,79 @@ class _FundListItemState extends State<FundListItem> {
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
         children: [
-          InkWell(
-            onTap: () => setState(() => _isExpanded = !_isExpanded),
-            child: Row(
-              children: [
-                Checkbox(
-                  value: widget.isSelected,
-                  onChanged: (val) => widget.onToggle(),
-                  activeColor: AppColors.borderPrimaryColor,
-                  checkColor: AppColors.white,
-                  side: const BorderSide(
-                      color: AppColors.bSecondaryColor, width: 1.5),
-                ),
-                Expanded(
-                  child: CText(
-                    widget.fund.name,
-                    style: AppTypography.bodyWhite,
-                  ),
-                ),
-                const SizedBox(width: Gaps.md),
-                CText(
-                  formatCurrencyInt.format(widget.fund.value),
-                  style: AppTypography.bodyWhite.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
+         InkWell(
+  // Only expand/collapse when tapping *outside* the checkbox
+  onTap: () => setState(() => _isExpanded = !_isExpanded),
+  child: Row(
+    children: [
+      // ✅ Checkbox separated, so tapping it won't expand/collapse
+      GestureDetector(
+        onTap: widget.onToggle, // manually trigger the toggle event
+        child: Checkbox(
+          value: widget.isSelected,
+          onChanged: (_) => widget.onToggle(),
+          activeColor: AppColors.borderPrimaryColor,
+          checkColor: AppColors.white,
+          side: const BorderSide(
+            color: AppColors.bSecondaryColor,
+            width: 1.5,
           ),
+        ),
+      ),
+      Expanded(
+        child: CText(
+          widget.fund.fundName ?? '-',
+          style: AppTypography.bodyWhite,
+        ),
+      ),
+      const SizedBox(width: Gaps.md),
+      CText(
+        formatCurrencyInt.format(widget.fund.fundValue ?? 0.0),
+        style: AppTypography.bodyWhite.copyWith(
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    ],
+  ),
+),
+
           AnimatedSize(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
             child: _isExpanded
                 ? Padding(
                     padding: const EdgeInsets.only(
-                        left: 40.0, right: 1.0, top: 8.0, bottom: 8.0),
+                      left: 40.0,
+                      right: 8.0,
+                      top: 8.0,
+                      bottom: 8.0,
+                    ),
                     child: Column(
                       children: [
+                        SizedBox(height: 3,),
                         _buildDetailRow(
                           'totalUnits'.tr,
-                          '${widget.fund.units}',
+                          '${widget.fund.lienEligibleUnits ?? 0.0}',
                         ),
                         const SizedBox(height: Gaps.md),
                         _buildDetailRow(
-                          'totalFundValue'.trParams(
-                              {'perUnit': '${widget.fund.perUnitValue}'}),
-                          formatCurrencyInt.format(widget.fund.value),
+                          'totalFundValue'.trParams({
+                            'available': (widget.fund.availableAmount ?? 0.0).toStringAsFixed(2),
+                          }),
+                          formatCurrencyInt
+                              .format(widget.fund.availableAmount ?? 0.0),
                         ),
+                       
                       ],
                     ),
                   )
                 : const SizedBox.shrink(),
           ),
           const Divider(
-              color: AppColors.bSecondaryColor, height: 1, thickness: 0.5),
+            color: AppColors.bSecondaryColor,
+            height: 1,
+            thickness: 0.5,
+          ),
         ],
       ),
     );
@@ -98,7 +117,9 @@ class _FundListItemState extends State<FundListItem> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Expanded(child: CText(title, style: AppTypography.bodySecondary)),
+        Expanded(
+          child: CText(title, style: AppTypography.bodySecondary),
+        ),
         Row(
           children: [
             CText(
@@ -108,8 +129,11 @@ class _FundListItemState extends State<FundListItem> {
               ),
             ),
             const SizedBox(width: Gaps.xxs),
-            const Icon(Icons.edit_outlined,
-                color: AppColors.bSecondaryColor, size: 14),
+            const Icon(
+              Icons.edit_outlined,
+              color: AppColors.bSecondaryColor,
+              size: 14,
+            ),
           ],
         ),
       ],
