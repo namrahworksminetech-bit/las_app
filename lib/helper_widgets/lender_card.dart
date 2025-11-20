@@ -306,94 +306,101 @@ class _LenderCardState extends State<LenderCard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildDetailColumn(
-                  'Interest Rate',
-                  '${widget.lender.interestRate}%',
+                Flexible(
+                  child: _buildDetailColumn(
+                    'Interest Rate',
+                    '${widget.lender.interestRate}%',
+                  ),
                 ),
 
                 // -------------------- LOAN AMOUNT --------------------
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Loan Amount',
-                      style: TextStyle(
-                        color: AppColors.bSecondaryColor,
-                        fontSize: 12,
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Loan Amount',
+                        style: TextStyle(
+                          color: AppColors.bSecondaryColor,
+                          fontSize: 12,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
+                      const SizedBox(height: 4),
 
-                    AnimatedSwitcher(
-                      duration: animDuration,
-                      transitionBuilder: (child, animation) =>
-                          FadeTransition(opacity: animation, child: child),
-                      child: _isEditing
-                          ? SizedBox(
-                              key: const ValueKey('amount_textfield'),
-                              width: 100,
-                              child: IntrinsicWidth(
-                                child: TextField(
-                                  controller: _amountController,
-                                  focusNode: _focusNode,
-                                  keyboardType:
-                                      const TextInputType.numberWithOptions(
-                                        decimal: false,
-                                      ),
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly,
-                                  ],
-                                  style: const TextStyle(
-                                    color: AppColors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  textAlign: TextAlign.start,
-                                  cursorColor: AppColors.bPrimaryColor,
-                                  decoration: const InputDecoration(
-                                    prefixText: '₹ ',
-                                    prefixStyle: TextStyle(
+                      AnimatedSwitcher(
+                        duration: animDuration,
+                        transitionBuilder: (child, animation) =>
+                            FadeTransition(opacity: animation, child: child),
+                        child: _isEditing
+                            ? SizedBox(
+                                key: const ValueKey('amount_textfield'),
+                                width: 100,
+                                child: IntrinsicWidth(
+                                  child: TextField(
+                                    controller: _amountController,
+                                    focusNode: _focusNode,
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                          decimal: false,
+                                        ),
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.digitsOnly,
+                                    ],
+                                    style: const TextStyle(
                                       color: AppColors.white,
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
                                     ),
-                                    isDense: true,
-                                    contentPadding: EdgeInsets.symmetric(
-                                      vertical: 2,
-                                    ),
-                                    enabledBorder: UnderlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: AppColors.bSecondaryColor,
+                                    textAlign: TextAlign.start,
+                                    cursorColor: AppColors.bPrimaryColor,
+                                    decoration: const InputDecoration(
+                                      prefixText: '₹ ',
+                                      prefixStyle: TextStyle(
+                                        color: AppColors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.symmetric(
+                                        vertical: 2,
+                                      ),
+                                      enabledBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(
+                                          color: AppColors.bSecondaryColor,
+                                        ),
+                                      ),
+                                      focusedBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(
+                                          color: AppColors.bPrimaryColor,
+                                        ),
                                       ),
                                     ),
-                                    focusedBorder: UnderlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: AppColors.bPrimaryColor,
-                                      ),
-                                    ),
+                                    onSubmitted: (_) => _stopEditing(save: true),
                                   ),
-                                  onSubmitted: (_) => _stopEditing(save: true),
                                 ),
+                              )
+                            : Text(
+                                key: const ValueKey('amount_text'),
+                                formatCurrency.format(
+                                  widget.lender.loanAmount ?? 0,
+                                ),
+                                style: const TextStyle(
+                                  color: AppColors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            )
-                          : Text(
-                              key: const ValueKey('amount_text'),
-                              formatCurrency.format(
-                                widget.lender.loanAmount ?? 0,
-                              ),
-                              style: const TextStyle(
-                                color: AppColors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
 
-                _buildDetailColumn(
-                  'Pledgeable MFs',
-                  '${widget.lender.pledgeableMFs ?? ''}',
+                Flexible(
+                  child: _buildDetailColumn(
+                    'Pledgeable MFs',
+                    '${widget.lender.pledgeableMFs ?? ''}',
+                  ),
                 ),
               ],
             ),

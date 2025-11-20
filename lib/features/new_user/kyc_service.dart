@@ -12,6 +12,7 @@ class KycRepository {
     required String reqId,
     required String stepName,
     required VoidCallback onSuccess,
+    VoidCallback? onKycComplete,
   }) async {
     try {
       print('🚀 Starting KYC for step: $stepName');
@@ -42,8 +43,11 @@ class KycRepository {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                WebViewScreen(url: response.data.url, title: stepName),
+            builder: (context) => WebViewScreen(
+              url: response.data.url, 
+              title: stepName,
+              onKycComplete: onKycComplete,
+            ),
           ),
         );
         onSuccess();

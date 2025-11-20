@@ -39,6 +39,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   bool _hasStartedKyc = false;
   int _apiCallCount = 0;
   int? _loadingStepIndex;
+  bool _isPolling = false;
 
   @override
   void initState() {
@@ -50,13 +51,20 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   }
 
   void _startStatusPolling() {
+    setState(() {
+      _isPolling = true;
+    });
     _checkPledgeStatus();
     _statusTimer = Timer.periodic(const Duration(seconds: 2), (_) {
-      _checkPledgeStatus();
+      if (mounted && _isPolling) {
+        _checkPledgeStatus();
+      }
     });
   }
 
   Future<void> _checkPledgeStatus() async {
+    if (!mounted || !_isPolling) return;
+
     final appState = GetIt.instance<AppStateProvider>();
     final reqId = appState.reqId;
     final token = appState.token;
@@ -84,20 +92,18 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
             status = null;
           }
 
-          // Only update if status changed
-
           if (status != null && status != _lastStatus) {
-            print('📊 Status changed: $_lastStatus → $status');
+            print('📊 Status changed==============: $_lastStatus → $status');
             _lastStatus = status;
             _updateStepsBasedOnStatus(status);
 
-            // Call Digio API only when KYC is completed
-            // kyc_done
-            // penny_drop_done
-
             print("status---------------${status}");
-            if (status == 'penny_drop_done') {
+            // Only call Digio API when KYC is actually completed
+            if (status == 'kyc_done') {
               _statusTimer?.cancel();
+              setState(() {
+                _isPolling = false;
+              });
               if (Navigator.canPop(context)) {
                 Navigator.pop(context);
               }
@@ -166,8 +172,10 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   }
 
   Future<void> _callDigioAPI() async {
+    print('🔴 _callDigioAPI method called');
     final appState = GetIt.instance<AppStateProvider>();
     final reqId = appState.reqId;
+    print('📝 ReqId from AppState: $reqId');
 
     if (reqId == null) {
       print('❌ Missing reqId for Digio API');
@@ -175,11 +183,14 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     }
 
     print('🚀 Calling get-digio-config API...');
-    final result = await _digioRepo.getDigioConfig(reqId: reqId);
+    final result = await _digioRepo.getDigioConfig(
+      reqId: reqId,
+      context: context,
+    );
 
     result.when(
       success: (data) {
-        print('✅ Digio API called successfully');
+        print('✅ Digio API called successfully: $data');
       },
       failure: (error) {
         print('❌ Digio API error: $error');
@@ -212,9 +223,16 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
         steps[1] = true;
         break;
       case ('mandate_done' || 'kfs_agreement_done'):
+        // case 'penny_drop_done':
         steps[0] = true;
         steps[1] = true;
         steps[2] = true;
+        break;
+      case 'penny_drop_done':
+        steps[0] = true;
+        steps[1] = true;
+        steps[2] = true;
+        steps[3] = true;
         break;
     }
 
@@ -263,13 +281,28 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
       _loadingStepIndex = stepIndex;
     });
 
-    // For 4th step (index 3), directly navigate to next screen
-    if (stepIndex == 3) {
-      print('🚀 4th step clicked - Navigating to next screen');
-      await Future.delayed(
-        const Duration(milliseconds: 500),
-      ); // Show loader briefly
-      _navigateToNextScreen();
+    // For 4th step (index 3), just mark as completed
+    // if (stepIndex == 3) {
+    //   print('🚀 4th step clicked - marking as completed');
+    //   context.read<EligibilityBloc>().add(UpdateKycStep(stepIndex, true));
+    //   setState(() {
+    //     _loadingStepIndex = null;
+    //   });
+    //   return;
+    // }
+
+    // For steps 2 and 3, if kyc_done status, skip start-kyc API
+    if ((stepIndex == 2) ||
+        (stepIndex == 3) && _lastStatus == 'penny_drop_done') {
+      print(
+        '🎯 Step $stepIndex clicked with kyc_done status - calling Digio API',
+      );
+      await Future.delayed(const Duration(milliseconds: 500));
+      _callDigioAPI();
+      if (!_hasStartedKyc) {
+        _hasStartedKyc = true;
+        _startStatusPolling();
+      }
       setState(() {
         _loadingStepIndex = null;
       });
@@ -312,6 +345,10 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
           _startStatusPolling();
         }
       },
+      onKycComplete: () {
+        print('🎯 KYC completed from WebView - calling Digio API');
+        _callDigioAPI();
+      },
     );
 
     // Clear loading if there's an error
@@ -335,311 +372,405 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
       "loanAgreementSigning".tr,
     ];
 
-    return Scaffold(
-      backgroundColor: AppColors.black,
-      // floatingActionButton: FloatingActionButton(
-      //   onPressed: () async {
-      //     var headers = {
-      //       'accept': 'application/json',
-      //       'Content-Type': 'application/json',
-      //       'Authorization':
-      //           'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiQXNod2luIFBhbmRleSIsIm1vYmlsZSI6Iis5MTkxMDY2MjE5NTkiLCJ1c2VySWQiOjQ3NTMsImlhdCI6MTc2MzQ2NjM3NywiZXhwIjoxNzYzNDY4MTc3fQ.Ayz_EE5dcDjv-C1tDk5S9hOAPT7N2AloO9LgYZ8g584',
-      //     };
-      //     var data = json.encode({
-      //       "req_id": "bb65d512-c463-11f0-a5b0-0afc8596d62f",
-      //       "kyc_id": "KID251118171857981MIIVKF2L7ZTWZP",
-      //       "kyc_status": "success",
-      //     });
-      //     var dio = Dio();
-      //     var response = await dio.request(
-      //       'https://api-dev.valuenable.in/lamf/customer/update-pennydrop-status',
-      //       options: Options(method: 'POST', headers: headers),
-      //       data: data,
-      //     );
-      //
-      //     if (response.statusCode == 200) {
-      //       print(json.encode(response.data));
-      //     } else {
-      //       print(response.statusMessage);
-      //     }
-      //   },
-      // ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Gaps.hXl,
-
-              // ===== Progress Indicator =====
-              Row(
-                children: [
-                  CircularPercentIndicator(
-                    radius: 35.0,
-                    lineWidth: 8.0,
-                    percent: 3 / 4.0,
-                    center: CText(
-                      "3/4",
-                      style: AppTypography.bodyWhite.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    progressColor: AppColors.bPrimaryColor,
-                    backgroundColor: AppColors.bSecondaryColor,
-                    circularStrokeCap: CircularStrokeCap.round,
-                  ),
-                  Gaps.wMd,
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CText('kycVerification'.tr, style: AppTypography.h2),
-                      Gaps.hXxs,
-                      CText(
-                        'nextPledgeFunds'.tr,
-                        style: AppTypography.bodySecondary,
-                      ),
-                    ],
-                  ),
-                ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        _statusTimer?.cancel();
+        setState(() {
+          _isPolling = false;
+        });
+        final bloc = context.read<EligibilityBloc>();
+        try {
+          bloc.add(
+            const SetLenderSelectionView(LenderSelectionView.fundSelection),
+          );
+          bloc.add(const JumpToPage(2));
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (ctx) => BlocProvider.value(
+                value: bloc,
+                child: const LenderSelectionScreen(),
               ),
-
-              Gaps.hXl,
-              const Divider(thickness: 1.5, color: AppColors.bSecondaryColor),
-              Gaps.hMd,
-
-              // ===== Back Button =====
-              GestureDetector(
-     
-onTap: () {
-  final bloc = context.read<EligibilityBloc>();
-
-  try {
-    // 1) Set the lender selection subview to fundSelection
-    bloc.add(const SetLenderSelectionView(LenderSelectionView.fundSelection));
-
-    // 2) Jump the main page controller to the lender-selection page (pageIndex = 2)
-    bloc.add(const JumpToPage(2));
-
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (ctx) => BlocProvider.value(
-          value: bloc,
-          child: const LenderSelectionScreen(),
-        ),
-      ),
-    );
-  } catch (e, st) {
-    debugPrint('Failed to navigate back to fund selection: $e\n$st');
-
-    if (Navigator.of(context).canPop()) Navigator.of(context).pop();
-  }
-},
-
-                child: Row(
+            ),
+          );
+        } catch (e, st) {
+          debugPrint('Failed to navigate back to fund selection: $e\n$st');
+          if (Navigator.of(context).canPop()) Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.black,
+        // floatingActionButton: FloatingActionButton(
+        //   onPressed: () async {
+        //     var headers = {
+        //       'accept': 'application/json',
+        //       'Content-Type': 'application/json',
+        //       'Authorization':
+        //           'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiQXNod2luIFBhbmRleSIsIm1vYmlsZSI6Iis5MTkxMDY2MjE5NTkiLCJ1c2VySWQiOjQ3NTMsImlhdCI6MTc2MzQ2NjM3NywiZXhwIjoxNzYzNDY4MTc3fQ.Ayz_EE5dcDjv-C1tDk5S9hOAPT7N2AloO9LgYZ8g584',
+        //     };
+        //     var data = json.encode({
+        //       "req_id": "bb65d512-c463-11f0-a5b0-0afc8596d62f",
+        //       "kyc_id": "KID251118171857981MIIVKF2L7ZTWZP",
+        //       "kyc_status": "success",
+        //     });
+        //     var dio = Dio();
+        //     var response = await dio.request(
+        //       'https://api-dev.valuenable.in/lamf/customer/update-pennydrop-status',
+        //       options: Options(method: 'POST', headers: headers),
+        //       data: data,
+        //     );
+        //
+        //     if (response.statusCode == 200) {
+        //       print(json.encode(response.data));
+        //     } else {
+        //       print(response.statusMessage);
+        //     }
+        //   },
+        // ),
+        body: Stack(
+          children: [
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(
-                      Icons.arrow_back,
-                      color: AppColors.white,
-                      size: 20,
-                    ),
-                    Gaps.wSm,
-                    CText('goBack'.tr, style: AppTypography.bodyWhite),
-                  ],
-                ),
-              ),
+                    Gaps.hXl,
 
-              Gaps.hXl,
-
-              // ===== Header Text =====
-              CText(
-                'verifyDetails'.tr,
-                style: AppTypography.bodyWhite.copyWith(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                ),
-              ),
-              Gaps.hXxs,
-              CText('safeSecure'.tr, style: AppTypography.caption),
-
-              Gaps.hXl,
-
-              Expanded(
-                child: BlocBuilder<EligibilityBloc, EligibilityState>(
-                  builder: (context, state) {
-                    final checks = state.kycStepChecks;
-                    print('📝 Current KYC step checks: $checks');
-
-                    return ListView.separated(
-                      itemCount: steps.length,
-                      separatorBuilder: (_, __) => Gaps.hSm,
-                      itemBuilder: (context, index) {
-                        final isChecked = checks[index];
-                        final isClickable = _isStepClickable(index, checks);
-                        final isVisible = _isStepVisible(index, checks);
-                        final isLoading = _loadingStepIndex == index;
-                        print("${isChecked}");
-                        return GestureDetector(
-                          onTap: (isClickable || index == 3)
-                              ? () => _handleStepClick(context, state, index)
-                              : null,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isVisible
-                                  ? const Color(0xFF1C1C1C)
-                                  : const Color(0xFF0F0F0F),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: isVisible
-                                    ? AppColors.bSecondaryColor.withOpacity(0.3)
-                                    : AppColors.bSecondaryColor.withOpacity(
-                                        0.1,
-                                      ),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    AnimatedContainer(
-                                      duration: const Duration(
-                                        milliseconds: 200,
-                                      ),
-                                      height: 22,
-                                      width: 22,
-                                      decoration: BoxDecoration(
-                                        color: isChecked
-                                            ? AppColors.bPrimaryColor
-                                            : Colors.transparent,
-                                        borderRadius: BorderRadius.circular(2),
-                                        border: Border.all(
-                                          color: isVisible
-                                              ? AppColors.bPrimaryColor
-                                              : AppColors.bSecondaryColor
-                                                    .withOpacity(0.3),
-                                          width: 1.8,
-                                        ),
-                                      ),
-                                      child: isChecked
-                                          ? const Icon(
-                                              Icons.check,
-                                              size: 16,
-                                              color: Colors.black,
-                                            )
-                                          : null,
-                                    ),
-                                    Gaps.wMd,
-                                    CText(
-                                      steps[index],
-                                      style: AppTypography.bodyWhite.copyWith(
-                                        fontWeight: FontWeight.w500,
-                                        color: isVisible
-                                            ? AppColors.white
-                                            : AppColors.bSecondaryColor
-                                                  .withOpacity(0.5),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                isLoading
-                                    ? const SizedBox(
-                                        width: 14,
-                                        height: 14,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                AppColors.bPrimaryColor,
-                                              ),
-                                        ),
-                                      )
-                                    : Icon(
-                                        Icons.arrow_forward_ios,
-                                        color: isVisible
-                                            ? AppColors.bSecondaryColor
-                                            : AppColors.bSecondaryColor
-                                                  .withOpacity(0.3),
-                                        size: 14,
-                                      ),
-                              ],
+                    // ===== Progress Indicator =====
+                    Row(
+                      children: [
+                        CircularPercentIndicator(
+                          radius: 35.0,
+                          lineWidth: 8.0,
+                          percent: 3 / 4.0,
+                          center: CText(
+                            "3/4",
+                            style: AppTypography.bodyWhite.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
                             ),
                           ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-
-              // ===== Bottom Section =====
-              Padding(
-                padding: const EdgeInsets.only(top: 8, bottom: 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    BlocBuilder<EligibilityBloc, EligibilityState>(
-                      builder: (context, state) {
-                        final allStepsCompleted = state.kycStepChecks.every(
-                          (step) => step,
-                        );
-
-                        return CButton(
-                          text: 'proceedToFinalStep'.tr,
-                          onPressed: allStepsCompleted
-                              ? () {
-                                  Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const LoanSuccessScreen(),
-                                    ),
-                                  );
-                                }
-                              : null,
-                          type: allStepsCompleted
-                              ? ButtonType.primaryWhite
-                              : ButtonType.secondaryGrey,
-                          suffixIcon: allStepsCompleted
-                              ? const Icon(
-                                  Icons.arrow_forward,
-                                  color: AppColors.black,
-                                  size: 18,
-                                )
-                              : null,
-                        );
-                      },
-                    ),
-                    Gaps.hSm,
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CText('Powered by', style: AppTypography.caption),
-                        Gaps.wSm,
-                        Image.asset(
-                          'assets/images/value_enable_logo.png',
-                          height: 20,
+                          progressColor: AppColors.bPrimaryColor,
+                          backgroundColor: AppColors.bSecondaryColor,
+                          circularStrokeCap: CircularStrokeCap.round,
+                        ),
+                        Gaps.wMd,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CText(
+                              'kycVerification'.tr,
+                              style: AppTypography.h2,
+                            ),
+                            Gaps.hXxs,
+                            CText(
+                              'nextPledgeFunds'.tr,
+                              style: AppTypography.bodySecondary,
+                            ),
+                          ],
                         ),
                       ],
                     ),
+
+                    Gaps.hXl,
+                    const Divider(
+                      thickness: 1.5,
+                      color: AppColors.bSecondaryColor,
+                    ),
+                    Gaps.hMd,
+
+                    // ===== Back Button =====
+                    GestureDetector(
+                      onTap: () {
+                        _statusTimer?.cancel();
+                        setState(() {
+                          _isPolling = false;
+                        });
+                        final bloc = context.read<EligibilityBloc>();
+
+                        try {
+                          // 1) Set the lender selection subview to fundSelection
+                          bloc.add(
+                            const SetLenderSelectionView(
+                              LenderSelectionView.fundSelection,
+                            ),
+                          );
+
+                          // 2) Jump the main page controller to the lender-selection page (pageIndex = 2)
+                          bloc.add(const JumpToPage(2));
+
+                          // Navigator.of(context).pushReplacement(
+                          //   MaterialPageRoute(
+                          //     builder: (ctx) => BlocProvider.value(
+                          //       value: bloc,
+                          //       child: const LenderSelectionScreen(),
+                          //     ),
+                          //   ),
+                          // );
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (ctx) => BlocProvider.value(
+                                value: bloc,
+                                child: const LenderSelectionScreen(),
+                              ),
+                            ),
+                          );
+                        } catch (e, st) {
+                          debugPrint(
+                            'Failed to navigate back to fund selection: $e\n$st',
+                          );
+
+                          if (Navigator.of(context).canPop())
+                            Navigator.of(context).pop();
+                        }
+                      },
+
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.arrow_back,
+                            color: AppColors.white,
+                            size: 20,
+                          ),
+                          Gaps.wSm,
+                          CText('goBack'.tr, style: AppTypography.bodyWhite),
+                        ],
+                      ),
+                    ),
+
+                    Gaps.hXl,
+
+                    // ===== Header Text =====
+                    CText(
+                      'verifyDetails'.tr,
+                      style: AppTypography.bodyWhite.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Gaps.hXxs,
+                    CText('safeSecure'.tr, style: AppTypography.caption),
+
+                    Gaps.hXl,
+
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          BlocBuilder<EligibilityBloc, EligibilityState>(
+                            builder: (context, state) {
+                              final checks = state.kycStepChecks;
+                              print('📝 Current KYC step checks: $checks');
+
+                              return ListView.separated(
+                                itemCount: steps.length,
+                                separatorBuilder: (_, __) => Gaps.hSm,
+                                itemBuilder: (context, index) {
+                                  final isChecked = checks[index];
+                                  final isClickable = _isStepClickable(
+                                    index,
+                                    checks,
+                                  );
+                                  final isVisible = _isStepVisible(
+                                    index,
+                                    checks,
+                                  );
+                                  final isLoading = _loadingStepIndex == index;
+                                  final allStepsCompleted = checks.every(
+                                    (step) => step,
+                                  );
+                                  return GestureDetector(
+                                    onTap:
+                                        (!allStepsCompleted &&
+                                            (isClickable || index == 3))
+                                        ? () => _handleStepClick(
+                                            context,
+                                            state,
+                                            index,
+                                          )
+                                        : null,
+                                    child: AnimatedContainer(
+                                      duration: const Duration(
+                                        milliseconds: 200,
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 14,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isVisible
+                                            ? const Color(0xFF1C1C1C)
+                                            : const Color(0xFF0F0F0F),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(
+                                          color: isVisible
+                                              ? AppColors.bSecondaryColor
+                                                    .withOpacity(0.3)
+                                              : AppColors.bSecondaryColor
+                                                    .withOpacity(0.1),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              AnimatedContainer(
+                                                duration: const Duration(
+                                                  milliseconds: 200,
+                                                ),
+                                                height: 22,
+                                                width: 22,
+                                                decoration: BoxDecoration(
+                                                  color: isChecked
+                                                      ? AppColors.bPrimaryColor
+                                                      : Colors.transparent,
+                                                  borderRadius:
+                                                      BorderRadius.circular(2),
+                                                  border: Border.all(
+                                                    color: isVisible
+                                                        ? AppColors
+                                                              .bPrimaryColor
+                                                        : AppColors
+                                                              .bSecondaryColor
+                                                              .withOpacity(0.3),
+                                                    width: 1.8,
+                                                  ),
+                                                ),
+                                                child: isChecked
+                                                    ? const Icon(
+                                                        Icons.check,
+                                                        size: 16,
+                                                        color: Colors.black,
+                                                      )
+                                                    : null,
+                                              ),
+                                              Gaps.wMd,
+                                              CText(
+                                                steps[index],
+                                                style: AppTypography.bodyWhite
+                                                    .copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      color: isVisible
+                                                          ? AppColors.white
+                                                          : AppColors
+                                                                .bSecondaryColor
+                                                                .withOpacity(
+                                                                  0.5,
+                                                                ),
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                          isLoading
+                                              ? const SizedBox(
+                                                  width: 14,
+                                                  height: 14,
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    valueColor:
+                                                        AlwaysStoppedAnimation<
+                                                          Color
+                                                        >(
+                                                          AppColors
+                                                              .bPrimaryColor,
+                                                        ),
+                                                  ),
+                                                )
+                                              : Icon(
+                                                  Icons.arrow_forward_ios,
+                                                  color: isVisible
+                                                      ? AppColors
+                                                            .bSecondaryColor
+                                                      : AppColors
+                                                            .bSecondaryColor
+                                                            .withOpacity(0.3),
+                                                  size: 14,
+                                                ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                          if (_isPolling)
+                            Container(
+                              color: Colors.black.withOpacity(0.5),
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.bPrimaryColor,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+
+                    // ===== Bottom Section =====
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8, bottom: 16),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          BlocBuilder<EligibilityBloc, EligibilityState>(
+                            builder: (context, state) {
+                              final allStepsCompleted = state.kycStepChecks
+                                  .every((step) => step);
+
+                              return CButton(
+                                text: 'proceedToFinalStep'.tr,
+                                onPressed: allStepsCompleted
+                                    ? () async {
+                                        await Future.delayed(
+                                          const Duration(milliseconds: 500),
+                                        );
+                                        _navigateToNextScreen();
+                                        // Navigator.pushReplacement(
+                                        //   context,
+                                        //   MaterialPageRoute(
+                                        //     builder: (context) =>
+                                        //         const LoanSuccessScreen(),
+                                        //   ),
+                                        // );
+                                      }
+                                    : null,
+                                type: allStepsCompleted
+                                    ? ButtonType.primaryWhite
+                                    : ButtonType.secondaryGrey,
+                                suffixIcon: allStepsCompleted
+                                    ? const Icon(
+                                        Icons.arrow_forward,
+                                        color: AppColors.black,
+                                        size: 18,
+                                      )
+                                    : null,
+                              );
+                            },
+                          ),
+                          Gaps.hSm,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CText('Powered by', style: AppTypography.caption),
+                              Gaps.wSm,
+                              Image.asset(
+                                'assets/images/value_enable_logo.png',
+                                height: 20,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
-              // CButton(
-              //   text: 'proceedToFinalStep'.tr,
-              //   onPressed: () {
-              //     _navigateToNextScreen();
-              //   },
-              //   type: ButtonType.secondaryGrey,
-              // ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

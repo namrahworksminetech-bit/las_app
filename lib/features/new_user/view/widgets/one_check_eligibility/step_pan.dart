@@ -274,36 +274,6 @@ class _Step1PanPageState extends State<Step1PanPage> {
                   ),
                 ),
               ),
-
-              ///test purpose
-              Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: CButton(
-                  text: 'Test KYC Screen',
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => BlocProvider(
-                          create: (context) => EligibilityBloc(
-                            repository: PanRepository(ApiClient()),
-                            lenderRepository: LenderRepository(ApiClient()),
-                            apiClient: ApiClient(),
-                          ),
-                          child: const KycVerificationScreen(),
-                        ),
-                      ),
-                    );
-                  },
-                  type: ButtonType.primaryWhite,
-                  suffixIcon: const Icon(
-                    Icons.arrow_forward,
-                    color: AppColors.black,
-                    size: 18,
-                  ),
-                ),
-              ),
-
               Padding(
                 padding: const EdgeInsets.only(bottom: 24.0),
                 child: Center(

@@ -12,6 +12,8 @@ import '../../../core/network/api_client.dart';
 import '../../../core/results/result.dart';
 import 'package:flutter/material.dart';
 import '../view/webview_screen.dart';
+import 'package:get/get.dart';
+import '../../../common_widgets/webview_screen.dart' as CommonWebView;
 import '../kyc_helper.dart';
 
 class DigioRepository {
@@ -117,15 +119,15 @@ class DigioRepository {
             final cleanDocumentId = KycHelper.extractDocumentId(
               workflowResult.toString(),
             );
-            final result = await _updateKycStatus(cleanDocumentId);
-            print('✅ _updateKycStatus result: $result');
-            if (result is Success<String?> && result.value != null) {
-              // Open WebView with the URL from API response
-              if (context != null && context.mounted) {
-                openWebView(context, result.value!);
+            Future.delayed(Duration(seconds: 80)).then((value) async {
+              final result = await updateKycStatus(cleanDocumentId);
+              print('✅ _updateKycStatus result: $result');
+              if (result is Success<String?> && result.value != null) {
+                // Don't open WebView, let native SDK handle KYC
+                print('✅ KYC status updated, native SDK will handle the flow');
+                return result.value;
               }
-              return result.value;
-            }
+            });
           } else {
             print('❌ ReqId is null in digioDetails');
           }
@@ -144,7 +146,7 @@ class DigioRepository {
     return null;
   }
 
-  Future<Result<String?>> _updateKycStatus(String documentId) async {
+  Future<Result<String?>> updateKycStatus(String documentId) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
     final appState = GetIt.instance<AppStateProvider>();
@@ -170,7 +172,14 @@ class DigioRepository {
         print('✅ KYC status updated successfully');
         final data = response.data['data'];
         if (data != null && data['link'] != null) {
-          return Success(data['link']);
+          final link = data['link'] as String;
+          Get.to(
+            () => CommonWebView.WebViewScreen(
+              url: link,
+              title: 'Penny Drop Verification',
+            ),
+          );
+          return Success(link);
         }
         return const Success(null);
       } else {
@@ -181,6 +190,24 @@ class DigioRepository {
       print('❌ Error updating KYC status: $e');
       return Failure('Error: $e');
     }
+
+    // try {
+    //   const staticUrl =
+    //       "https://uat-loan.valuenable.in/location-request/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImJiNjVkNTEyLWM0NjMtMTFmMC1hNWIwLTBhZmM4NTk2ZDYyZiIsImN1c3RvbWVySWQiOjEwNjM1LCJ1c2VyIjp7Im5hbWUiOiJBc2h3aW4gUGFuZGV5IiwiZW1haWwiOiJtYW5pc2hAdmFsdWVuYWJsZS5pbiIsInJvbGVzIjpbIlVTRVIiXX0sInNvdXJjZSI6ImxhbWYiLCJsZW5kZXIiOiIiLCJpYXQiOjE3NjM2MTA3MzksImV4cCI6MTc2MzYxNzkzOX0.j5j-Mg7ADK6qAHZpN8GfZreTxB9OUCaQV1BT8eJGXaI";
+    //
+    //   // Open in WebView
+    //   Get.to(
+    //     () => CommonWebView.WebViewScreen(
+    //       url: staticUrl,
+    //       title: 'Penny Drop Verification',
+    //     ),
+    //   );
+    //
+    //   return const Success(staticUrl);
+    // } catch (e) {
+    //   print('❌ Error updating KYC status: $e');
+    //   return Failure('Error: $e');
+    // }
   }
 
   static void openWebView(BuildContext context, String url) {

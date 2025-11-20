@@ -102,7 +102,7 @@ class EligibilityState extends Equatable {
     this.otpStatus = PanOtpStatus.initial,
     this.snackbarMessage,
     this.isLoading = false,
-    this.isEditingLoan=false,
+    this.isEditingLoan = false,
     this.currentOverlay = EligibilityOverlayType.none,
     this.lenderSelectionView = LenderSelectionView.lenderList,
     this.lenders = const [],
@@ -119,8 +119,8 @@ class EligibilityState extends Equatable {
     this.kycStepChecks = const [false, false, false, false],
     this.otp = '',
     this.isSubmitting = false,
-     this.shouldNavigateToKyc = false,
-      this.loadingLenderId,
+    this.shouldNavigateToKyc = false,
+    this.loadingLenderId,
     this.otpError = false,
     this.otpResent = false,
     this.kycUrl,
@@ -132,40 +132,39 @@ class EligibilityState extends Equatable {
     this.editedFundAmounts = const {},
     this.isStep2Loading = false,
     this.rtaOtpError,
-      this.redirectToKycAfterFetch = false,
+    this.redirectToKycAfterFetch = false,
     this.userMobileNumber,
-        this.pledgeMfResponse,
-         this.savingLenderId,
-           this.isSavingLoan = false,
-            this.fundsToAdd = const [],        // <-- ADD THIS
+    this.pledgeMfResponse,
+    this.savingLenderId,
+    this.isSavingLoan = false,
+    this.fundsToAdd = const [], // <-- ADD THIS
     this.fundsToRemove = const [],
-        
   });
 
-  final bool isSavingLoan; 
+  final bool isSavingLoan;
   final List<PledgeableFund> fundsToAdd;
   final List<PledgeableFund> fundsToRemove;
   // Core fields
   final int majorStep;
   final int pageIndex;
   final bool isStep2Loading;
-final bool redirectToKycAfterFetch;
-final Map<String, double> editedFundAmounts;
+  final bool redirectToKycAfterFetch;
+  final Map<String, double> editedFundAmounts;
 
-final String? savingLenderId;
+  final String? savingLenderId;
   final bool shouldNavigateToKyc;
   final bool isEditingLoan;
-    final PledgeMfResponse? pledgeMfResponse;
+  final PledgeMfResponse? pledgeMfResponse;
 
   final EligibilityFormData formData;
   final MfDetailsResponse? mfDetailsResponse;
 
   // New: lender-specific edit results: lenderId -> true/false/null
   final Map<String, bool?> editLoanResult;
-final String? pledgeStatus; 
+  final String? pledgeStatus;
 
-final String? lastSavedLenderId;
-final String? lastSaveMessage;
+  final String? lastSavedLenderId;
+  final String? lastSaveMessage;
   // Verification / UI state
   final PanVerificationStatus panStatus;
   final PanOtpStatus otpStatus;
@@ -220,15 +219,15 @@ final String? lastSaveMessage;
     String? panNumberError,
     String? panFullNameError,
     String? panDobError,
-     Map<String, double>? editedFundAmounts,
+    Map<String, double>? editedFundAmounts,
     PanVerificationStatus? panStatus,
 
-     bool? isStep2Loading,
-       String? savingLenderId,
+    bool? isStep2Loading,
+    String? savingLenderId,
     PanOtpStatus? otpStatus,
     String? snackbarMessage,
-      bool? shouldNavigateToKyc,
-         PledgeMfResponse? pledgeMfResponse,
+    bool? shouldNavigateToKyc,
+    PledgeMfResponse? pledgeMfResponse,
     bool clearSnackbar = false,
     EligibilityOverlayType? currentOverlay,
     LenderSelectionView? lenderSelectionView,
@@ -239,10 +238,10 @@ final String? lastSaveMessage;
     bool clearSelectedLender = false,
     bool? isPortfolioRefreshing,
     String? loadingLenderId,
-      bool? redirectToKycAfterFetch,
-    
-     String? lastSavedLenderId,
-  String? lastSaveMessage,
+    bool? redirectToKycAfterFetch,
+
+    String? lastSavedLenderId,
+    String? lastSaveMessage,
 
     Map<String, double>? editedLoanAmounts,
     Map<String, bool?>? editLoanResult,
@@ -251,8 +250,8 @@ final String? lastSaveMessage;
     Set<String>? previousSelectedFundIds,
     List<bool>? kycStepChecks,
     String? otp,
-    isEditingLoan= false,
-        List<PledgeableFund>? fundsToAdd,
+    isEditingLoan = false,
+    List<PledgeableFund>? fundsToAdd,
     List<PledgeableFund>? fundsToRemove,
 
     bool? isSubmitting,
@@ -271,39 +270,52 @@ final String? lastSaveMessage;
       majorStep: majorStep ?? this.majorStep,
       pageIndex: pageIndex ?? this.pageIndex,
       formData: formData ?? this.formData,
-         isSavingLoan: isSavingLoan ?? this.isSavingLoan,
+      isSavingLoan: isSavingLoan ?? this.isSavingLoan,
       pledgeStatus: pledgeStatus ?? this.pledgeStatus,
- savingLenderId: savingLenderId ?? this.savingLenderId,
+      savingLenderId: savingLenderId ?? this.savingLenderId,
       mfDetailsResponse: mfDetailsResponse ?? this.mfDetailsResponse,
-      generalErrorMessage: clearErrors ? null : (generalErrorMessage ?? this.generalErrorMessage),
-      panNumberError: clearErrors ? null : (panNumberError ?? this.panNumberError),
-      panFullNameError: clearErrors ? null : (panFullNameError ?? this.panFullNameError),
+      generalErrorMessage: clearErrors
+          ? null
+          : (generalErrorMessage ?? this.generalErrorMessage),
+      panNumberError: clearErrors
+          ? null
+          : (panNumberError ?? this.panNumberError),
+      panFullNameError: clearErrors
+          ? null
+          : (panFullNameError ?? this.panFullNameError),
       panDobError: clearErrors ? null : (panDobError ?? this.panDobError),
       panStatus: panStatus ?? this.panStatus,
       isEditingLoan: isEditingLoan ?? this.isEditingLoan,
-       isStep2Loading: isStep2Loading ?? this.isStep2Loading,
-          editedFundAmounts: editedFundAmounts ?? this.editedFundAmounts,
-             fundsToAdd: fundsToAdd ?? this.fundsToAdd,           // <-- ADD
-      fundsToRemove: fundsToRemove ?? this.fundsToRemove, 
-    redirectToKycAfterFetch: redirectToKycAfterFetch ?? this.redirectToKycAfterFetch,
- pledgeMfResponse: pledgeMfResponse ?? this.pledgeMfResponse,
+      isStep2Loading: isStep2Loading ?? this.isStep2Loading,
+      editedFundAmounts: editedFundAmounts ?? this.editedFundAmounts,
+      fundsToAdd: fundsToAdd ?? this.fundsToAdd, // <-- ADD
+      fundsToRemove: fundsToRemove ?? this.fundsToRemove,
+      redirectToKycAfterFetch:
+          redirectToKycAfterFetch ?? this.redirectToKycAfterFetch,
+      pledgeMfResponse: pledgeMfResponse ?? this.pledgeMfResponse,
       otpStatus: otpStatus ?? this.otpStatus,
-      snackbarMessage: clearSnackbar ? null : (snackbarMessage ?? this.snackbarMessage),
+      snackbarMessage: clearSnackbar
+          ? null
+          : (snackbarMessage ?? this.snackbarMessage),
       isLoading: isLoading ?? this.isLoading,
       currentOverlay: currentOverlay ?? this.currentOverlay,
       lenderSelectionView: lenderSelectionView ?? this.lenderSelectionView,
-lastSavedLenderId: lastSavedLenderId ?? this.lastSavedLenderId,
-    lastSaveMessage: lastSaveMessage ?? this.lastSaveMessage,
+      lastSavedLenderId: lastSavedLenderId ?? this.lastSavedLenderId,
+      lastSaveMessage: lastSaveMessage ?? this.lastSaveMessage,
       lenders: lenders ?? this.lenders,
-      selectedLenderId: clearSelectedLender ? null : (selectedLenderId ?? this.selectedLenderId),
-      isPortfolioRefreshing: isPortfolioRefreshing ?? this.isPortfolioRefreshing,
+      selectedLenderId: clearSelectedLender
+          ? null
+          : (selectedLenderId ?? this.selectedLenderId),
+      isPortfolioRefreshing:
+          isPortfolioRefreshing ?? this.isPortfolioRefreshing,
       editedLoanAmounts: editedLoanAmounts ?? this.editedLoanAmounts,
       editLoanResult: editLoanResult ?? this.editLoanResult,
       pledgeableFunds: pledgeableFunds ?? this.pledgeableFunds,
-          shouldNavigateToKyc: shouldNavigateToKyc ?? this.shouldNavigateToKyc,
+      shouldNavigateToKyc: shouldNavigateToKyc ?? this.shouldNavigateToKyc,
 
       selectedFundIds: selectedFundIds ?? this.selectedFundIds,
-      previousSelectedFundIds: previousSelectedFundIds ?? this.previousSelectedFundIds,
+      previousSelectedFundIds:
+          previousSelectedFundIds ?? this.previousSelectedFundIds,
       kycStepChecks: kycStepChecks ?? this.kycStepChecks,
       otp: otp ?? this.otp,
       isSubmitting: isSubmitting ?? this.isSubmitting,
@@ -357,8 +369,8 @@ lastSavedLenderId: lastSavedLenderId ?? this.lastSavedLenderId,
     selectedLenderId,
     pledgeMfResponse,
     isPortfolioRefreshing,
-       fundsToAdd,        // <-- ADD
-    fundsToRemove,  
+    fundsToAdd, // <-- ADD
+    fundsToRemove,
     editedLoanAmounts,
     pledgeableFunds,
     selectedFundIds,

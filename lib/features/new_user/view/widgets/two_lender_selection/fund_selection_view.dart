@@ -34,168 +34,194 @@ class FundSelectionView extends StatelessWidget {
       context: blocContext,
       barrierDismissible: false,
       builder: (dialogContext) {
-        return StatefulBuilder(builder: (context, setState) {
-          bool isSubmitting = false;
+        return StatefulBuilder(
+          builder: (context, setState) {
+            bool isSubmitting = false;
 
-        Future<void> _onConfirm() async {
-  final enteredAmount = double.tryParse(amountController.text);
-  print("💰 Entered: $enteredAmount | Eligible Limit: $eligibleLimit");
+            Future<void> _onConfirm() async {
+              final enteredAmount = double.tryParse(amountController.text);
+              print(
+                "💰 Entered: $enteredAmount | Eligible Limit: $eligibleLimit",
+              );
 
-  if (enteredAmount == null || enteredAmount <= 0) {
-    CSnackBar.show(blocContext, 'Invalid amount entered', isError: true);
-    return;
-  }
+              if (enteredAmount == null || enteredAmount <= 0) {
+                CSnackBar.show(
+                  blocContext,
+                  'Invalid amount entered',
+                  isError: true,
+                );
+                return;
+              }
 
-  if (enteredAmount > eligibleLimit) {
-    CSnackBar.show(
-      blocContext,
-      'Amount exceeds eligible limit (₹${eligibleLimit.toStringAsFixed(0)})',
-      isError: true,
-    );
-    return;
-  }
+              if (enteredAmount > eligibleLimit) {
+                CSnackBar.show(
+                  blocContext,
+                  'Amount exceeds eligible limit (₹${eligibleLimit.toStringAsFixed(0)})',
+                  isError: true,
+                );
+                return;
+              }
 
-  // Show a local loader attached to the dialog's navigator
-  showDialog<void>(
-    context: dialogContext,
-    barrierDismissible: false,
-    useRootNavigator: false,
-    builder: (_) => WillPopScope(
-      onWillPop: () async => false,
-      child: Container(
-        color: Colors.black54,
-        child: const Center(
-          child: SizedBox(
-            width: 56,
-            height: 56,
-            child: CircularProgressIndicator(strokeWidth: 3),
-          ),
-        ),
-      ),
-    ),
-  );
-
-  // dispatch save event AFTER showing loader
-  eligibilityBloc.add(SaveEditedLoanAmount(lender.id, enteredAmount));
-
-  try {
-    // Wait for the bloc to emit a save result for this lender AND for the saving flag to clear
-    final finalState = await eligibilityBloc.stream
-        .firstWhere((s) =>
-            s.lastSavedLenderId != null &&
-            s.lastSavedLenderId == lender.id &&
-            s.lastSaveMessage != null &&
-            s.lastSaveMessage!.trim().isNotEmpty &&
-            s.isSavingLoan == false) // <-- use isSavingLoan here
-        .timeout(const Duration(seconds: 30));
-
-    // Close the local loader (dialog's navigator)
-    try {
-      if (Navigator.of(dialogContext).canPop()) {
-        Navigator.of(dialogContext).pop(); // closes the loader
-      }
-    } catch (_) {}
-
-    // Show the message returned by bloc
-    CSnackBar.show(blocContext, finalState.lastSaveMessage!);
-
-    // Close the edit dialog and return the entered amount
-    if (Navigator.of(dialogContext).canPop()) {
-      Navigator.of(dialogContext).pop(enteredAmount);
-    }
-  } on TimeoutException {
-    // Close local loader if still open
-    try {
-      if (Navigator.of(dialogContext).canPop()) {
-        Navigator.of(dialogContext).pop();
-      }
-    } catch (_) {}
-
-    CSnackBar.show(blocContext, 'Request timed out. Please try again.', isError: true);
-
-    if (Navigator.of(dialogContext).canPop()) {
-      Navigator.of(dialogContext).pop();
-    }
-  } catch (e) {
-    // Close local loader if still open
-    try {
-      if (Navigator.of(dialogContext).canPop()) {
-        Navigator.of(dialogContext).pop();
-      }
-    } catch (_) {}
-
-    CSnackBar.show(blocContext, 'Something went wrong', isError: true);
-
-    if (Navigator.of(dialogContext).canPop()) {
-      Navigator.of(dialogContext).pop();
-    }
-  }
-}
-
-
-          return AlertDialog(
-            backgroundColor: const Color(0xFF1F2937),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-            title: CText(
-              'Edit Loan Amount',
-              style: AppTypography.h3.copyWith(color: AppColors.white),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: amountController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: false),
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  style: AppTypography.bodyWhite.copyWith(fontSize: 24),
-                  textAlign: TextAlign.center,
-                  decoration: const InputDecoration(
-                    prefixText: '₹ ',
-                    prefixStyle: TextStyle(color: AppColors.white, fontSize: 24),
-                    enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: AppColors.bSecondaryColor),
-                    ),
-                    focusedBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: AppColors.bPrimaryColor),
+              // Show a local loader attached to the dialog's navigator
+              showDialog<void>(
+                context: dialogContext,
+                barrierDismissible: false,
+                useRootNavigator: false,
+                builder: (_) => WillPopScope(
+                  onWillPop: () async => false,
+                  child: Container(
+                    color: Colors.black54,
+                    child: const Center(
+                      child: SizedBox(
+                        width: 56,
+                        height: 56,
+                        child: CircularProgressIndicator(strokeWidth: 3),
+                      ),
                     ),
                   ),
-                  autofocus: true,
                 ),
-                const SizedBox(height: 10),
-                CText(
-                  'Eligible limit: ₹${eligibleLimit.toStringAsFixed(0)}',
-                  style: AppTypography.bodySecondary.copyWith(
-                    color: AppColors.bSecondaryColor,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-            actionsPadding: const EdgeInsets.symmetric(horizontal: 8.0),
-            actions: [
-              TextButton(
-                child: CText('cancel'.tr, style: AppTypography.bodySecondary),
-                onPressed: () {
+              );
+
+              // dispatch save event AFTER showing loader
+              eligibilityBloc.add(
+                SaveEditedLoanAmount(lender.id, enteredAmount),
+              );
+
+              try {
+                // Wait for the bloc to emit a save result for this lender AND for the saving flag to clear
+                final finalState = await eligibilityBloc.stream
+                    .firstWhere(
+                      (s) =>
+                          s.lastSavedLenderId != null &&
+                          s.lastSavedLenderId == lender.id &&
+                          s.lastSaveMessage != null &&
+                          s.lastSaveMessage!.trim().isNotEmpty &&
+                          s.isSavingLoan == false,
+                    ) // <-- use isSavingLoan here
+                    .timeout(const Duration(seconds: 30));
+
+                // Close the local loader (dialog's navigator)
+                try {
+                  if (Navigator.of(dialogContext).canPop()) {
+                    Navigator.of(dialogContext).pop(); // closes the loader
+                  }
+                } catch (_) {}
+
+                // Show the message returned by bloc
+                CSnackBar.show(blocContext, finalState.lastSaveMessage!);
+
+                // Close the edit dialog and return the entered amount
+                if (Navigator.of(dialogContext).canPop()) {
+                  Navigator.of(dialogContext).pop(enteredAmount);
+                }
+              } on TimeoutException {
+                // Close local loader if still open
+                try {
                   if (Navigator.of(dialogContext).canPop()) {
                     Navigator.of(dialogContext).pop();
                   }
-                },
+                } catch (_) {}
+
+                CSnackBar.show(
+                  blocContext,
+                  'Request timed out. Please try again.',
+                  isError: true,
+                );
+
+                if (Navigator.of(dialogContext).canPop()) {
+                  Navigator.of(dialogContext).pop();
+                }
+              } catch (e) {
+                // Close local loader if still open
+                try {
+                  if (Navigator.of(dialogContext).canPop()) {
+                    Navigator.of(dialogContext).pop();
+                  }
+                } catch (_) {}
+
+                CSnackBar.show(
+                  blocContext,
+                  'Something went wrong',
+                  isError: true,
+                );
+
+                if (Navigator.of(dialogContext).canPop()) {
+                  Navigator.of(dialogContext).pop();
+                }
+              }
+            }
+
+            return AlertDialog(
+              backgroundColor: const Color(0xFF1F2937),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              TextButton(
-                child: CText(
-                  'confirm'.tr,
-                  style: AppTypography.bodyWhite.copyWith(
-                    color: AppColors.bPrimaryColor,
+              contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              title: CText(
+                'Edit Loan Amount',
+                style: AppTypography.h3.copyWith(color: AppColors.white),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: amountController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: false,
+                    ),
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    style: AppTypography.bodyWhite.copyWith(fontSize: 24),
+                    textAlign: TextAlign.center,
+                    decoration: const InputDecoration(
+                      prefixText: '₹ ',
+                      prefixStyle: TextStyle(
+                        color: AppColors.white,
+                        fontSize: 24,
+                      ),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(
+                          color: AppColors.bSecondaryColor,
+                        ),
+                      ),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: AppColors.bPrimaryColor),
+                      ),
+                    ),
+                    autofocus: true,
                   ),
-                ),
-                onPressed: _onConfirm,
+                  const SizedBox(height: 10),
+                  CText(
+                    'Eligible limit: ₹${eligibleLimit.toStringAsFixed(0)}',
+                    style: AppTypography.bodySecondary.copyWith(
+                      color: AppColors.bSecondaryColor,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          );
-        });
+              actionsPadding: const EdgeInsets.symmetric(horizontal: 8.0),
+              actions: [
+                TextButton(
+                  child: CText('cancel'.tr, style: AppTypography.bodySecondary),
+                  onPressed: () {
+                    if (Navigator.of(dialogContext).canPop()) {
+                      Navigator.of(dialogContext).pop();
+                    }
+                  },
+                ),
+                TextButton(
+                  child: CText(
+                    'confirm'.tr,
+                    style: AppTypography.bodyWhite.copyWith(
+                      color: AppColors.bPrimaryColor,
+                    ),
+                  ),
+                  onPressed: _onConfirm,
+                ),
+              ],
+            );
+          },
+        );
       },
     );
   }
@@ -245,9 +271,11 @@ class FundSelectionView extends StatelessWidget {
           previous.isLoading != current.isLoading ||
           previous.isPortfolioRefreshing != current.isPortfolioRefreshing,
       listener: (context, state) {
-        final canNavigate = state.shouldNavigateToKyc == true &&
+        final canNavigate =
+            state.shouldNavigateToKyc == true &&
             state.isLoading == false &&
-            (state.isPortfolioRefreshing == false || state.isPortfolioRefreshing == null);
+            (state.isPortfolioRefreshing == false ||
+                state.isPortfolioRefreshing == null);
 
         if (!canNavigate) return;
 
@@ -256,14 +284,15 @@ class FundSelectionView extends StatelessWidget {
           Navigator.of(context, rootNavigator: true).pop();
         } catch (_) {}
 
-     Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (ctx) => BlocProvider.value(
-        value: eligibilityBloc,            // pass the existing instance
-        child: KycVerificationScreen(),     // no `const` — ensures fresh instance/context
-      ),
-    ),
-  );
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (ctx) => BlocProvider.value(
+              value: eligibilityBloc, // pass the existing instance
+              child:
+                  KycVerificationScreen(), // no `const` — ensures fresh instance/context
+            ),
+          ),
+        );
 
         // Acknowledge navigation so bloc doesn't try again
         context.read<EligibilityBloc>().add(AcknowledgeKycNavigation());
@@ -320,14 +349,15 @@ class FundSelectionView extends StatelessWidget {
                                             ),
                                           ),
                                           clipBehavior: Clip.antiAlias,
-                                          child: displayLender.logoAsset.isNotEmpty
+                                          child:
+                                              displayLender.logoAsset.isNotEmpty
                                               ? Image.network(
                                                   displayLender.logoAsset,
                                                   errorBuilder: (_, __, ___) =>
                                                       const Icon(
-                                                    Icons.business,
-                                                    color: Colors.grey,
-                                                  ),
+                                                        Icons.business,
+                                                        color: Colors.grey,
+                                                      ),
                                                 )
                                               : const Icon(
                                                   Icons.business,
@@ -373,58 +403,72 @@ class FundSelectionView extends StatelessWidget {
                                       mainAxisAlignment:
                                           MainAxisAlignment.spaceBetween,
                                       children: [
-                                        _buildDetailColumn(
-                                          'interestRate'.tr,
-                                          '${displayLender.interestRate}%',
+                                        Flexible(
+                                          child: _buildDetailColumn(
+                                            'interestRate'.tr,
+                                            '${displayLender.interestRate}%',
+                                          ),
                                         ),
-                                        Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            CText(
-                                              'loanAmount'.tr,
-                                              style: AppTypography.bodySecondary
-                                                  .copyWith(fontSize: 12),
-                                            ),
-                                            Gaps.hXs,
-                                            GestureDetector(
-                                              onTap: () => _showEditLoanDialog(
-                                                context,
-                                                selectedLender,
-                                                displayAmount,
+                                        Flexible(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              CText(
+                                                'loanAmount'.tr,
+                                                style: AppTypography
+                                                    .bodySecondary
+                                                    .copyWith(fontSize: 12),
                                               ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Flexible(
-                                                    child: CText(
-                                                      formatCurrency.format(
-                                                        displayLender.loanAmount,
-                                                      ),
-                                                      style: AppTypography.bodyWhite
-                                                          .copyWith(
-                                                            fontSize: 14,
-                                                            fontWeight:
-                                                                FontWeight.w500,
-                                                          ),
-                                                      overflow: TextOverflow.ellipsis,
+                                              Gaps.hXs,
+                                              GestureDetector(
+                                                onTap: () =>
+                                                    _showEditLoanDialog(
+                                                      context,
+                                                      selectedLender,
+                                                      displayAmount,
                                                     ),
-                                                  ),
-                                                  Gaps.wXs,
-                                                  const Icon(
-                                                    Icons.edit_outlined,
-                                                    color:
-                                                        AppColors.bSecondaryColor,
-                                                    size: 14,
-                                                  ),
-                                                ],
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Flexible(
+                                                      child: CText(
+                                                        formatCurrency.format(
+                                                          displayLender
+                                                              .loanAmount,
+                                                        ),
+
+                                                        style: AppTypography
+                                                            .bodyWhite
+                                                            .copyWith(
+                                                              fontSize: 14,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                    ),
+                                                    Gaps.wXs,
+                                                    const Icon(
+                                                      Icons.edit_outlined,
+                                                      color: AppColors
+                                                          .bSecondaryColor,
+                                                      size: 14,
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
-                                        _buildDetailColumn(
-                                          'pledgeableMFs'.tr,
-                                          '${displayLender.pledgeableMFs}',
+                                        Flexible(
+                                          child: _buildDetailColumn(
+                                            'pledgeableMFs'.tr,
+                                            '${displayLender.pledgeableMFs}',
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -436,11 +480,13 @@ class FundSelectionView extends StatelessWidget {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  CText(
-                                    'chooseFundsHint'.tr,
-                                    style:
-                                        AppTypography.bodySecondary.copyWith(
-                                      fontSize: 12,
+                                  Flexible(
+                                    child: CText(
+                                      'chooseFundsHint'.tr,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTypography.bodySecondary
+                                          .copyWith(fontSize: 12),
                                     ),
                                   ),
                                   const Icon(
@@ -457,7 +503,8 @@ class FundSelectionView extends StatelessWidget {
                         // --- List of Funds ---
                         BlocBuilder<EligibilityBloc, EligibilityState>(
                           buildWhen: (previous, current) =>
-                              previous.selectedFundIds != current.selectedFundIds,
+                              previous.selectedFundIds !=
+                              current.selectedFundIds,
                           builder: (context, state) {
                             return ListView.builder(
                               shrinkWrap: true,
@@ -469,7 +516,9 @@ class FundSelectionView extends StatelessWidget {
                                 final bool isSelected = state.selectedFundIds
                                     .contains(fund.fundCode);
                                 return FundListItem(
-                                  key: ValueKey('${fund.fundCode}-${isSelected}'),
+                                  key: ValueKey(
+                                    '${fund.fundCode}-${isSelected}',
+                                  ),
                                   fund: fund,
                                   isSelected: isSelected,
                                   onToggle: () => context
@@ -504,8 +553,8 @@ class FundSelectionView extends StatelessWidget {
                           // NOTE: ConfirmFundSelection event should NOT require BuildContext anymore.
                           // Update your event signature to ConfirmFundSelection() if needed.
                           blocContext.read<EligibilityBloc>().add(
-                                ConfirmFundSelection(),
-                              );
+                            ConfirmFundSelection(),
+                          );
                         },
                         type: ButtonType.primaryWhite,
                         suffixIcon: const Icon(
