@@ -1,9 +1,7 @@
-// eligibility_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 import 'package:las_app/common_widgets/c_button.dart';
-import 'package:las_app/common_widgets/c_snackbar.dart';
 import 'package:las_app/common_widgets/c_text.dart';
 import 'package:las_app/core/network/api_client.dart';
 import 'package:las_app/core/theme/app_colors.dart';
@@ -34,8 +32,6 @@ class _EligibilityScreenState extends State<EligibilityScreen> {
   PersistentBottomSheetController? _bottomSheetController;
   bool _isOverlayOpen = false;
 
-  // For double-back-to-exit on the investment page
-  DateTime? _lastBackPressed;
 int _backPressCount = 0;
 
   @override
