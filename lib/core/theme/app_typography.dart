@@ -39,6 +39,18 @@ class AppTypography {
     height: 1.4,
   );
 
+  static TextStyle regularTxt = _base.copyWith(
+    fontWeight: FontWeight.w400,
+  );
+
+  static TextStyle semiTxt = _base.copyWith(
+    fontWeight: FontWeight.w600,
+  );
+
+  static TextStyle boldTxt = _base.copyWith(
+    fontWeight: FontWeight.bold,
+  );
+
   // ===== Captions / Labels =====
   static TextStyle get caption => _base.copyWith(
     fontSize: 12,
