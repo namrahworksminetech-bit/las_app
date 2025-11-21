@@ -20,7 +20,7 @@ import '../kyc_helper.dart';
 
 class DigioRepository {
   final ApiClient _apiClient;
-  Timer? _delayedUpdateTimer;
+  Timer? _pollingTimer;
 
   DigioRepository(this._apiClient);
 
@@ -131,29 +131,15 @@ class DigioRepository {
         );
         print('workflowResult : ' + workflowResult.toString());
 
-        // Call KYC status update API after delay
+        // Start polling KYC status
         if (workflowResult != null) {
-          print('🔄 Calling _updateKycStatus...');
-          await Future.delayed(const Duration(seconds: 2));
           final reqId = digioDetails["req_id"]?.toString();
-          print('📋 ReqId from digioDetails: $reqId');
           if (reqId != null) {
             final cleanDocumentId = KycHelper.extractDocumentId(
               workflowResult.toString(),
             );
-            _delayedUpdateTimer = Timer(Duration(seconds: 110), () async {
-              final result = await updateKycStatus(context, cleanDocumentId);
-              print('✅ _updateKycStatus result: $result');
-              if (result is Success<String?> && result.value != null) {
-                // Don't open WebView, let native SDK handle KYC
-                print('✅ KYC status updated, native SDK will handle the flow');
-              }
-            });
-          } else {
-            print('❌ ReqId is null in digioDetails');
+            startPollingKycStatus(context, cleanDocumentId);
           }
-        } else {
-          print('❌ workflowResult is null');
         }
       } on PlatformException {
         workflowResult = 'Failed to get platform version.';
@@ -263,10 +249,20 @@ class DigioRepository {
     // }
   }
 
-  void cancelDelayedUpdate() {
-    _delayedUpdateTimer?.cancel();
-    _delayedUpdateTimer = null;
-    print('🚫 Delayed update timer cancelled');
+  void startPollingKycStatus(BuildContext? context, String documentId) {
+    stopPolling();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
+      final result = await updateKycStatus(context, documentId);
+      if (result is Success) {
+        stopPolling();
+      }
+    });
+    updateKycStatus(context, documentId);
+  }
+
+  void stopPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
   }
 
   static void openWebView(BuildContext context, String url) {
