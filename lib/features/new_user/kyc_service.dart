@@ -44,7 +44,7 @@ class KycRepository {
           context,
           MaterialPageRoute(
             builder: (context) => WebViewScreen(
-              url: response.data.url, 
+              url: response.data.url,
               title: stepName,
               onKycComplete: onKycComplete,
             ),

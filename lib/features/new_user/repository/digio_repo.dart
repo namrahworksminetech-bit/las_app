@@ -21,6 +21,7 @@ import '../kyc_helper.dart';
 class DigioRepository {
   final ApiClient _apiClient;
   Timer? _pollingTimer;
+  bool _isPollingActive = false;
 
   DigioRepository(this._apiClient);
 
@@ -30,6 +31,19 @@ class DigioRepository {
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
+    final existingDocId = prefs.getString('docId$reqId');
+
+    print("-------------${existingDocId}");
+
+    // If docId already exists, skip API call and directly start polling
+    if (existingDocId != null) {
+      print('📋 DocId already exists, starting polling directly');
+      if (!_isPollingActive) {
+        startPollingKycStatus(context, existingDocId);
+      }
+      return Success({'message': 'Using existing docId'});
+    }
+
     if (token == null || token.isEmpty) {
       print('❌ Token missing!');
       throw Exception('Token missing! Please login again.');
@@ -95,54 +109,65 @@ class DigioRepository {
 
     if (status.isGranted) {
       Map<String, dynamic> digioDetails = data;
+      final reqId = digioDetails["req_id"]?.toString();
+
+      if (reqId == null) return null;
+
+      final prefs = await SharedPreferences.getInstance();
+      String? cleanDocumentId = prefs.getString('docId$reqId');
+
+      print("cleanDocumentId---------------------------$cleanDocumentId");
 
       var workflowResult;
-      try {
-        var digioConfig = DigioConfig();
-        digioConfig.theme.primaryColor = "#32a83a";
-        // digioConfig.logo = "https://www.gstatic.com/mobilesdk/160503_mobilesdk/logo/2x/firebase_28dp.png";
-        if (digioDetails["environment"] == "production") {
-          digioConfig.environment = Environment.PRODUCTION;
-        } else {
-          digioConfig.environment = Environment.SANDBOX;
-        }
-        final _kycWorkflowPlugin = KycWorkflow(digioConfig);
-        _kycWorkflowPlugin.setGatewayEventListener((
-          GatewayEvent? gatewayEvent,
-        ) {
-          print("gateway funnel event" + gatewayEvent.toString());
-        });
-        // Validate required fields
-        final id = digioDetails["id"]?.toString();
-        final customerIdentifier = digioDetails["customer_identifier"]
-            ?.toString();
-        final accessToken = digioDetails["access_token"]?.toString();
 
-        if (id == null || customerIdentifier == null || accessToken == null) {
-          print('❌ Missing required Digio parameters');
-          return null;
-        }
+      if (cleanDocumentId == null) {
+        try {
+          var digioConfig = DigioConfig();
+          digioConfig.theme.primaryColor = "#32a83a";
+          if (digioDetails["environment"] == "production") {
+            digioConfig.environment = Environment.PRODUCTION;
+          } else {
+            digioConfig.environment = Environment.SANDBOX;
+          }
+          final _kycWorkflowPlugin = KycWorkflow(digioConfig);
+          _kycWorkflowPlugin.setGatewayEventListener((
+            GatewayEvent? gatewayEvent,
+          ) {
+            print("gateway funnel event" + gatewayEvent.toString());
+          });
 
-        workflowResult = await _kycWorkflowPlugin.start(
-          id,
-          customerIdentifier,
-          accessToken,
-          null,
-        );
-        print('workflowResult : ' + workflowResult.toString());
+          final id = digioDetails["id"]?.toString();
+          final customerIdentifier = digioDetails["customer_identifier"]
+              ?.toString();
+          final accessToken = digioDetails["access_token"]?.toString();
 
-        // Start polling KYC status
-        if (workflowResult != null) {
-          final reqId = digioDetails["req_id"]?.toString();
-          if (reqId != null) {
-            final cleanDocumentId = KycHelper.extractDocumentId(
+          if (id == null || customerIdentifier == null || accessToken == null) {
+            print('❌ Missing required Digio parameters');
+            return null;
+          }
+
+          workflowResult = await _kycWorkflowPlugin.start(
+            id,
+            customerIdentifier,
+            accessToken,
+            null,
+          );
+          print('workflowResult : ' + workflowResult.toString());
+
+          if (workflowResult != null && reqId != null) {
+            cleanDocumentId = KycHelper.extractDocumentId(
               workflowResult.toString(),
             );
-            startPollingKycStatus(context, cleanDocumentId);
+            await prefs.setString("docId$reqId", cleanDocumentId);
           }
+        } on PlatformException {
+          workflowResult = 'Failed to get platform version.';
         }
-      } on PlatformException {
-        workflowResult = 'Failed to get platform version.';
+      }
+
+      if (cleanDocumentId != null) {
+        print("sucessss--------------");
+        startPollingKycStatus(context, cleanDocumentId);
       }
     } else if (status.isDenied) {
       print("❌ Camera permission denied");
@@ -204,18 +229,18 @@ class DigioRepository {
           'Network error occurred.';
 
       // Show snackbar for connection errors
-      if (context != null && context.mounted) {
-        CSnackBar.show(context, msg, isError: true);
-      }
+      // if (context != null && context.mounted) {
+      //   CSnackBar.show(context, msg, isError: true);
+      // }
 
       return Failure(msg);
     } catch (e) {
       print('❌ Exception: $e');
 
       // Show snackbar for general errors
-      if (context != null && context.mounted) {
-        CSnackBar.show(context, 'Error: $e', isError: true);
-      }
+      // if (context != null && context.mounted) {
+      //   CSnackBar.show(context, 'Error: $e', isError: true);
+      // }
 
       return Failure('Error: $e');
     }
@@ -250,19 +275,23 @@ class DigioRepository {
   }
 
   void startPollingKycStatus(BuildContext? context, String documentId) {
+    if (_isPollingActive) return;
+
     stopPolling();
+    _isPollingActive = true;
     _pollingTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
       final result = await updateKycStatus(context, documentId);
       if (result is Success) {
+        print("----sucesssss");
         stopPolling();
       }
     });
-    updateKycStatus(context, documentId);
   }
 
   void stopPolling() {
     _pollingTimer?.cancel();
     _pollingTimer = null;
+    _isPollingActive = false;
   }
 
   static void openWebView(BuildContext context, String url) {

@@ -129,7 +129,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
             final pledgeRepo = PledgeStatusRepository(
               GetIt.instance<ApiClient>(),
             );
-            final res = await pledgeRepo.checkPledgeStatus(
+            final res = await pledgeRepo.checkPledgeMfStatus(
               reqId: reqId,
               authToken: response.token!,
             );

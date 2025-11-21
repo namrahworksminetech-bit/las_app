@@ -50,19 +50,55 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     _checkFirstPledgeStatus();
   }
 
+  void _autoStartKyc() {
+    final appState = GetIt.instance<AppStateProvider>();
+    final reqId = appState.reqId;
+
+    if (reqId == null) return;
+
+    final List<String> stepNames = [
+      "fillBasicInfo".tr,
+      "aadharPanVerification".tr,
+      "linkAccountMandate".tr,
+      "loanAgreementSigning".tr,
+    ];
+
+    KycRepository.startKyc(
+      context,
+      lenderCode: "BFL",
+      reqId: reqId,
+      stepName: stepNames[0],
+      onSuccess: () {
+        print('✅ KYC URL opened successfully - starting status polling');
+        if (!_hasStartedKyc) {
+          _hasStartedKyc = true;
+          _startStatusPolling();
+        }
+      },
+      // onKycComplete: () {
+      //   print('🎯 KYC completed from WebView - calling Digio API');
+      //   _callDigioAPI();
+      //   if (!_hasStartedKyc) {
+      //     _hasStartedKyc = true;
+      //     _startStatusPolling();
+      //   }
+      // },
+    );
+  }
+
   void _startStatusPolling() {
     setState(() {
       _isPolling = true;
     });
-    _checkPledgeStatus();
+    _checkWekSocketStatus();
     _statusTimer = Timer.periodic(const Duration(seconds: 2), (_) {
       if (mounted && _isPolling) {
-        _checkPledgeStatus();
+        _checkWekSocketStatus();
       }
     });
   }
 
-  Future<void> _checkPledgeStatus() async {
+  Future<void> _checkWekSocketStatus() async {
     if (!mounted || !_isPolling) return;
 
     final appState = GetIt.instance<AppStateProvider>();
@@ -71,7 +107,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
     if (reqId == null || token == null) return;
 
-    final result = await _pledgeRepo.checkPledgeStatus(
+    final result = await _pledgeRepo.checkSocketStatus(
       reqId: reqId,
       authToken: token,
     );
@@ -79,17 +115,22 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     result.when(
       success: (data) {
         if (mounted) {
-          // Extract status from nested structure: data.data.status
-          // Handle both String and List cases
-          final statusData = data['data']?['status'];
+          // Handle WebSocket response: direct {"status":"kyc_done"} or nested structure
           final String? status;
 
-          if (statusData is String) {
-            status = statusData;
-          } else if (statusData is List && statusData.isNotEmpty) {
-            status = statusData.first as String?;
+          if (data['status'] != null) {
+            // Direct WebSocket response: {"status":"kyc_done"}
+            status = data['status'] as String?;
           } else {
-            status = null;
+            // Nested API response: data.data.status
+            final statusData = data['data']?['status'];
+            if (statusData is String) {
+              status = statusData;
+            } else if (statusData is List && statusData.isNotEmpty) {
+              status = statusData.first as String?;
+            } else {
+              status = null;
+            }
           }
 
           if (status != null && status != _lastStatus) {
@@ -125,7 +166,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
     if (reqId == null || token == null) return;
 
-    final result = await _pledgeRepo.checkPledgeStatus(
+    final result = await _pledgeRepo.checkPledgeMfStatus(
       reqId: reqId,
       authToken: token,
     );
@@ -151,6 +192,17 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
             print('📊 Status changed: $_lastStatus → $status');
             _lastStatus = status;
             _updateStepsBasedOnStatus(status);
+
+            // Auto start KYC only if status is not in completed states
+            final completedStatuses = [
+              'kyc_done',
+              'mandate_done',
+              'penny_drop_done',
+              'kfs_agreement_done',
+            ];
+            if (!completedStatuses.contains(status)) {
+              _autoStartKyc();
+            }
           }
         }
       },
@@ -276,18 +328,6 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     setState(() {
       _loadingStepIndex = stepIndex;
     });
-
-    // For 4th step (index 3), just mark as completed
-    // if (stepIndex == 3) {
-    //   print('🚀 4th step clicked - marking as completed');
-    //   context.read<EligibilityBloc>().add(UpdateKycStep(stepIndex, true));
-    //   setState(() {
-    //     _loadingStepIndex = null;
-    //   });
-    //   return;
-    // }
-
-    // For steps 2 and 3, if kyc_done status, skip start-kyc API
 
     final allowedStatuses = [
       'penny_drop_done',
