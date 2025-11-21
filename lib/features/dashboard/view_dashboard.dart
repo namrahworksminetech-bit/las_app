@@ -2,7 +2,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import 'package:las_app/common_widgets/c_text.dart';
+import 'package:las_app/core/app_state_provider.dart';
 import 'package:las_app/core/extensions/string_ext.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/utils/assets.dart';
@@ -69,8 +71,10 @@ class _DashboardState extends State<Dashboard> {
   }
 
   Widget bodyLayout() {
-    return FutureBuilder(
-      future: DashboardRepository().getDashboard('31e05649-154f-11f0-9951-0275dbaa620b'),
+     return FutureBuilder(
+    future: DashboardRepository().getDashboard(
+      GetIt.I<AppStateProvider>().reqId ?? '',
+    ),
       builder: (context, snapData) {
         return Column(
           children: [

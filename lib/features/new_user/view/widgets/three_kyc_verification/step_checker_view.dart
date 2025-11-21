@@ -151,17 +151,6 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
             print('📊 Status changed: $_lastStatus → $status');
             _lastStatus = status;
             _updateStepsBasedOnStatus(status);
-
-            // // Call Digio API only when KYC is completed
-            // // kyc_done
-            // // penny_drop_done
-            // if (status == 'kyc_done') {
-            //   _statusTimer?.cancel();
-            //   if (Navigator.canPop(context)) {
-            //     Navigator.pop(context);
-            //   }
-            //   _callDigioAPI();
-            // }
           }
         }
       },
@@ -215,20 +204,19 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
       case 'not_started' || 'pan_verified' || 'pending':
         // All steps remain false
         break;
-      case 'verified':
-        steps[0] = true;
-        break;
+      // case 'kyc_done':
+      //   steps[0] = true;
+      //   break;
       case 'kyc_done':
         steps[0] = true;
         steps[1] = true;
         break;
-      case ('mandate_done' || 'kfs_agreement_done'):
-        // case 'penny_drop_done':
+      case 'mandate_done' || 'penny_drop_done':
         steps[0] = true;
         steps[1] = true;
         steps[2] = true;
         break;
-      case 'penny_drop_done':
+      case 'kfs_agreement_done':
         steps[0] = true;
         steps[1] = true;
         steps[2] = true;
@@ -237,6 +225,14 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     }
 
     context.read<EligibilityBloc>().add(UpdateKycStepsAll(steps));
+
+    // Stop polling only when all steps are completed
+    if (steps.every((step) => step)) {
+      _statusTimer?.cancel();
+      setState(() {
+        _isPolling = false;
+      });
+    }
   }
 
   void _navigateToNextScreen() {
@@ -292,8 +288,16 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     // }
 
     // For steps 2 and 3, if kyc_done status, skip start-kyc API
-    if ((stepIndex == 2) ||
-        (stepIndex == 3) && _lastStatus == 'penny_drop_done') {
+
+    final allowedStatuses = [
+      'penny_drop_done',
+      'kyc_done',
+      'mandate_done',
+      'kfs_agreement_done',
+    ];
+
+    if ((stepIndex == 2 || stepIndex == 3) &&
+        allowedStatuses.contains(_lastStatus)) {
       print(
         '🎯 Step $stepIndex clicked with kyc_done status - calling Digio API',
       );
@@ -348,6 +352,10 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
       onKycComplete: () {
         print('🎯 KYC completed from WebView - calling Digio API');
         _callDigioAPI();
+        if (!_hasStartedKyc) {
+          _hasStartedKyc = true;
+          _startStatusPolling();
+        }
       },
     );
 
@@ -360,6 +368,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   @override
   void dispose() {
     _statusTimer?.cancel();
+    _digioRepo.stopPolling();
     super.dispose();
   }
 
@@ -376,6 +385,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         _statusTimer?.cancel();
+        _digioRepo.stopPolling();
         setState(() {
           _isPolling = false;
         });
@@ -484,6 +494,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                     GestureDetector(
                       onTap: () {
                         _statusTimer?.cancel();
+                        _digioRepo.stopPolling();
                         setState(() {
                           _isPolling = false;
                         });

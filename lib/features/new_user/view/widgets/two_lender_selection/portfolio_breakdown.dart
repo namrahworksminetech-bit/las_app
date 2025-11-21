@@ -35,11 +35,14 @@ class PortfolioBreakdownView extends StatelessWidget {
       decimalDigits: 2,
     );
 
-    final isRefreshing =
-        context.watch<EligibilityBloc>().state.isPortfolioRefreshing;
+    final isRefreshing = context
+        .watch<EligibilityBloc>()
+        .state
+        .isPortfolioRefreshing;
 
     // Extract data from the response
-    final List<PledgeableFund> pledgeableFunds = mfDetailsResponse.pledgeableFunds;
+    final List<PledgeableFund> pledgeableFunds =
+        mfDetailsResponse.pledgeableFunds;
     final double? nonPledgeableFunds = mfDetailsResponse.nonPledgeableAmount;
     final double? dematFunds = mfDetailsResponse.dematAmount;
     final double unapprovedFunds = 0.0; // or another API field if available
@@ -131,29 +134,39 @@ class PortfolioBreakdownView extends StatelessWidget {
         decoration: BoxDecoration(
           border: showBorder
               ? const Border(
-                  bottom: BorderSide(color: AppColors.bSecondaryColor, width: 0.5),
+                  bottom: BorderSide(
+                    color: AppColors.bSecondaryColor,
+                    width: 0.5,
+                  ),
                 )
               : null,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            CText(title, style: AppTypography.bodyWhite),
-            Row(
-              children: [
-                CText(
-                  value,
-                  style: AppTypography.bodyWhite.copyWith(
-                    fontWeight: FontWeight.w500,
+            Flexible(child: CText(title, style: AppTypography.bodyWhite)),
+            Flexible(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: CText(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.bodyWhite.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ),
-                ),
-                Gaps.wXs,
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  color: AppColors.bSecondaryColor,
-                  size: 14,
-                ),
-              ],
+                  Gaps.wXs,
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    color: AppColors.bSecondaryColor,
+                    size: 14,
+                  ),
+                ],
+              ),
             ),
           ],
         ),

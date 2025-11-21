@@ -12,6 +12,7 @@ import 'package:las_app/common_widgets/webview_screen.dart';
 
 
 import 'package:las_app/core/app_state_provider.dart';
+import 'package:las_app/features/home/view_home.dart';
 import 'package:las_app/features/new_user/repository/video_kyc_repo.dart';
 
 class LoanSuccessScreen extends StatefulWidget {
@@ -108,9 +109,11 @@ class _LoanSuccessScreenState extends State<LoanSuccessScreen>
   }
 
   void _goToDashboard() {
-
-    // TODO: Replace with Azhar's Dashboard page name.
-    Get.snackbar('Navigation', 'Go to dashboard tapped');
+  Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(builder: (context) => Home()),
+    (route) => false,   // remove all previous routes
+  );
   }
 
   @override
