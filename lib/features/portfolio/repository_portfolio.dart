@@ -1,19 +1,30 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:get_it/get_it.dart';
+import 'package:las_app/core/app_state_provider.dart';
 import 'package:las_app/core/network/api_client.dart';
 import 'package:las_app/features/portfolio/model_portfolio.dart';
 
 class PortfolioRepository {
+  final AppStateProvider _appState = GetIt.I<AppStateProvider>();
+
   Future<RepayResult> withdraw(data) async {
     debugPrint('Data ::: ${data['amount']}');
     try {
-      final token =
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtb2JpbGUiOiIrOTE5MDAwMDEwMDAwIiwidXNlcklkIjozMjA4LCJpYXQiOjE3NjMzODQwNjEsImV4cCI6MTc2MzM4NTg2MX0.XRbWDVq48YBbMEUFK-nAhnWQi6SQHyqjjs4Aq19q2y4';
-      // final token = await FlutterSecureStorage().read(key: 'token');
+
+      final token = _appState.token;
+
+      if (token == null || token.isEmpty) {
+        throw Exception("Missing auth token");
+      }
+
+  
       final response = await ApiClient().post(
         '/customer-portal/withDrawl',
-        data: {'req_id': data['reqId'], "disbursement_amount": data['amount']},
+        data: {
+          'req_id': data['reqId'],
+          "disbursement_amount": data['amount']
+        },
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',
@@ -32,9 +43,14 @@ class PortfolioRepository {
 
   Future<RepayResult> repayment(data) async {
     try {
-      final token =
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtb2JpbGUiOiIrOTE5MDAwMDEwMDAwIiwidXNlcklkIjozMjA4LCJpYXQiOjE3NjMzODQwNjEsImV4cCI6MTc2MzM4NTg2MX0.XRbWDVq48YBbMEUFK-nAhnWQi6SQHyqjjs4Aq19q2y4';
-      // final token = await FlutterSecureStorage().read(key: 'token');
+   
+      final token = _appState.token;
+
+      if (token == null || token.isEmpty) {
+        throw Exception("Missing auth token");
+      }
+
+
       final response = await ApiClient().post(
         '/customer-portal/repayment',
         data: {'req_id': data['reqId']},

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import 'package:las_app/common_widgets/c_text.dart';
+import 'package:las_app/core/app_state_provider.dart';
 import 'package:las_app/core/extensions/string_ext.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/utils/assets.dart';
@@ -82,12 +84,11 @@ class _PortfolioState extends State<Portfolio> {
   }
 
   Widget bodyLayout() {
+    final reqId = GetIt.I<AppStateProvider>().reqId ?? '';
     return SafeArea(
       child: SingleChildScrollView(
         child: FutureBuilder(
-          future: DashboardRepository().getDashboard(
-            '31e05649-154f-11f0-9951-0275dbaa620b',
-          ),
+          future: DashboardRepository().getDashboard(reqId),
           builder: (context, snapData) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -438,9 +439,10 @@ class _PortfolioState extends State<Portfolio> {
   }
 
   Widget repayLayout(BuildContext ctx) {
+     final reqId = GetIt.I<AppStateProvider>().reqId ?? '';
     return FutureBuilder(
       future: PortfolioRepository().repayment({
-        'reqId': 'b5cc9725-be1b-11f0-8e58-0ace226b9915',
+        'reqId': reqId,
       }),
       builder: (context, snapData) {
         var v = (snapData.data?.data?.isNotEmpty ?? false)
@@ -674,14 +676,13 @@ class _PortfolioState extends State<Portfolio> {
   }
 
   Widget withdrawLayout() {
+       final reqId = GetIt.I<AppStateProvider>().reqId ?? '';
     return BlocProvider(
       create: (context) => PortfolioBloc(),
       child: BlocBuilder<PortfolioBloc, PortfolioState>(
         builder: (context, state) {
           return FutureBuilder(
-            future: DashboardRepository().getDashboard(
-              '31e05649-154f-11f0-9951-0275dbaa620b',
-            ),
+            future: DashboardRepository().getDashboard(reqId),
             builder: (context, snapData) {
               var v = snapData.data?.data;
               return Padding(

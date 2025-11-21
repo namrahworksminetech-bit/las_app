@@ -23,7 +23,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     on<LoginResendOtpPressed>(_onResendOtpPressed);
   }
 
-  /// 🔹 Send OTP
+ 
   Future<void> _onSendOtpPressed(
     LoginSendOtpPressed event,
     Emitter<LoginState> emit,
