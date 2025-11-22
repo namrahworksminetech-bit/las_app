@@ -23,6 +23,9 @@ class DigioRepository {
   Timer? _pollingTimer;
   bool _isPollingActive = false;
 
+  // in-memory cache to avoid duplicate concurrent penny-drop calls
+  final Map<String, bool> _pennydropDoneCache = {};
+
   DigioRepository(this._apiClient);
 
   Future<Result<Map<String, dynamic>>> getDigioConfig({
@@ -83,7 +86,6 @@ class DigioRepository {
           e.message ??
           'Network error occurred.';
 
-      // Show snackbar for connection errors
       if (context != null && context.mounted) {
         CSnackBar.show(context, msg, isError: true);
       }
@@ -92,7 +94,6 @@ class DigioRepository {
     } catch (e) {
       print('❌ Exception: $e');
 
-      // Show snackbar for general errors
       if (context != null && context.mounted) {
         CSnackBar.show(context, 'Error: $e', isError: true);
       }
@@ -178,6 +179,7 @@ class DigioRepository {
     return null;
   }
 
+  /// Update KYC status (penny-drop). Returns Success on 200/201.
   Future<Result<String?>> updateKycStatus(
     BuildContext? context,
     String documentId,
@@ -189,6 +191,15 @@ class DigioRepository {
     if (token == null || token.isEmpty) {
       print('❌ Token missing for KYC status update!');
       return const Failure('Token missing');
+    }
+
+    // If we've already recorded success for this reqId in-memory or persisted, skip early.
+    if (reqId != null) {
+      final persisted = prefs.getBool('pennydrop_done_$reqId') ?? false;
+      if (persisted || (_pennydropDoneCache[reqId] == true)) {
+        print('🔁 Penny-drop already succeeded for reqId=$reqId, skipping updateKycStatus call.');
+        return const Success(null);
+      }
     }
 
     try {
@@ -206,8 +217,16 @@ class DigioRepository {
       if (response.statusCode == 200 || response.statusCode == 201) {
         print('✅ KYC status updated successfully');
         final data = response.data['data'];
+
+        // Persist success flag so future polling won't call again
+        if (reqId != null) {
+          await prefs.setBool('pennydrop_done_$reqId', true);
+          _pennydropDoneCache[reqId] = true;
+        }
+
         if (data != null && data['link'] != null) {
           final link = data['link'] as String;
+          // Opening the link in webview as before
           Get.to(
             () => CommonWebView.WebViewScreen(
               url: link,
@@ -219,7 +238,7 @@ class DigioRepository {
         return const Success(null);
       } else {
         print('❌ Failed to update KYC status');
-        return const Failure('Failed to update KYC status');
+         return const Failure('Failed to update KYC status');
       }
     } on DioException catch (e) {
       print("⏰ Dio timeout or error: ${e.type}");
@@ -228,62 +247,81 @@ class DigioRepository {
           e.message ??
           'Network error occurred.';
 
-      // Show snackbar for connection errors
-      // if (context != null && context.mounted) {
-      //   CSnackBar.show(context, msg, isError: true);
-      // }
+      // Optionally show snackbar
+      if (context != null && context.mounted) {
+        CSnackBar.show(context, msg, isError: true);
+      }
 
       return Failure(msg);
     } catch (e) {
       print('❌ Exception: $e');
 
-      // Show snackbar for general errors
-      // if (context != null && context.mounted) {
-      //   CSnackBar.show(context, 'Error: $e', isError: true);
-      // }
+      if (context != null && context.mounted) {
+        CSnackBar.show(context, 'Error: $e', isError: true);
+      }
 
       return Failure('Error: $e');
     }
-
-    // on DioException catch (e) {
-    //   print("❌ Dio error: ${e.response?.data}");
-    //   return Failure(
-    //     e.response?.data['message'] ?? e.message ?? 'Network error',
-    //   );
-    // } catch (e) {
-    //   print('❌ Error updating KYC status: $e');
-    //   return Failure('Error: $e');
-    // }
-
-    // try {
-    //   const staticUrl =
-    //       "https://uat-loan.valuenable.in/location-request/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImJiNjVkNTEyLWM0NjMtMTFmMC1hNWIwLTBhZmM4NTk2ZDYyZiIsImN1c3RvbWVySWQiOjEwNjM1LCJ1c2VyIjp7Im5hbWUiOiJBc2h3aW4gUGFuZGV5IiwiZW1haWwiOiJtYW5pc2hAdmFsdWVuYWJsZS5pbiIsInJvbGVzIjpbIlVTRVIiXX0sInNvdXJjZSI6ImxhbWYiLCJsZW5kZXIiOiIiLCJpYXQiOjE3NjM2MTA3MzksImV4cCI6MTc2MzYxNzkzOX0.j5j-Mg7ADK6qAHZpN8GfZreTxB9OUCaQV1BT8eJGXaI";
-    //
-    //   // Open in WebView
-    //   Get.to(
-    //     () => CommonWebView.WebViewScreen(
-    //       url: staticUrl,
-    //       title: 'Penny Drop Verification',
-    //     ),
-    //   );
-    //
-    //   return const Success(staticUrl);
-    // } catch (e) {
-    //   print('❌ Error updating KYC status: $e');
-    //   return Failure('Error: $e');
-    // }
   }
 
-  void startPollingKycStatus(BuildContext? context, String documentId) {
+  /// Start polling Digio KYC status for given documentId. Will stop after success.
+  void startPollingKycStatus(BuildContext? context, String documentId) async {
     if (_isPollingActive) return;
 
+    // stop any previous polling then start fresh
     stopPolling();
     _isPollingActive = true;
+
+    // Read reqId & persistent flag first to avoid unnecessary calls
+    final prefs = await SharedPreferences.getInstance();
+    final appState = GetIt.instance<AppStateProvider>();
+    final reqId = appState.reqId;
+    if (reqId != null) {
+      final already = prefs.getBool('pennydrop_done_$reqId') ?? false;
+      if (already) {
+        print('🔁 Pennydrop already done for reqId=$reqId — not starting polling.');
+        _isPollingActive = false;
+        return;
+      }
+    }
+
     _pollingTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
+      // double check stop condition
+      if (!_isPollingActive) {
+        timer.cancel();
+        return;
+      }
+
+      // Check again persisted flag to guard against race conditions
+      if (reqId != null) {
+        final alreadyNow = prefs.getBool('pennydrop_done_$reqId') ?? false;
+        if (alreadyNow) {
+          print('🔁 Pennydrop persisted true during polling for reqId=$reqId — stopping.');
+          stopPolling();
+          return;
+        }
+      }
+
+      print('🔄 DigioRepository: polling updateKycStatus for docId=$documentId');
+
       final result = await updateKycStatus(context, documentId);
-      if (result is Success) {
-        print("----sucesssss");
+
+      // If updateKycStatus returned Success, stop polling immediately.
+      bool success = false;
+      result.when(
+        success: (_) {
+          success = true;
+        },
+        failure: (_) {
+          success = false;
+        },
+      );
+
+      if (success) {
+        print('----pennydrop success -> stopping polling');
         stopPolling();
+      } else {
+        print('----pennydrop not successful yet, continue polling');
       }
     });
   }
