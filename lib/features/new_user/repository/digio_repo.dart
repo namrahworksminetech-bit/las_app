@@ -197,7 +197,9 @@ class DigioRepository {
     if (reqId != null) {
       final persisted = prefs.getBool('pennydrop_done_$reqId') ?? false;
       if (persisted || (_pennydropDoneCache[reqId] == true)) {
-        print('🔁 Penny-drop already succeeded for reqId=$reqId, skipping updateKycStatus call.');
+        print(
+          '🔁 Penny-drop already succeeded for reqId=$reqId, skipping updateKycStatus call.',
+        );
         return const Success(null);
       }
     }
@@ -238,7 +240,7 @@ class DigioRepository {
         return const Success(null);
       } else {
         print('❌ Failed to update KYC status');
-         return const Failure('Failed to update KYC status');
+        return const Failure('Failed to update KYC status');
       }
     } on DioException catch (e) {
       print("⏰ Dio timeout or error: ${e.type}");
@@ -248,17 +250,17 @@ class DigioRepository {
           'Network error occurred.';
 
       // Optionally show snackbar
-      if (context != null && context.mounted) {
-        CSnackBar.show(context, msg, isError: true);
-      }
+      // if (context != null && context.mounted) {
+      //   CSnackBar.show(context, msg, isError: true);
+      // }
 
       return Failure(msg);
     } catch (e) {
       print('❌ Exception: $e');
 
-      if (context != null && context.mounted) {
-        CSnackBar.show(context, 'Error: $e', isError: true);
-      }
+      // if (context != null && context.mounted) {
+      //   CSnackBar.show(context, 'Error: $e', isError: true);
+      // }
 
       return Failure('Error: $e');
     }
@@ -279,7 +281,9 @@ class DigioRepository {
     if (reqId != null) {
       final already = prefs.getBool('pennydrop_done_$reqId') ?? false;
       if (already) {
-        print('🔁 Pennydrop already done for reqId=$reqId — not starting polling.');
+        print(
+          '🔁 Pennydrop already done for reqId=$reqId — not starting polling.',
+        );
         _isPollingActive = false;
         return;
       }
@@ -296,13 +300,17 @@ class DigioRepository {
       if (reqId != null) {
         final alreadyNow = prefs.getBool('pennydrop_done_$reqId') ?? false;
         if (alreadyNow) {
-          print('🔁 Pennydrop persisted true during polling for reqId=$reqId — stopping.');
+          print(
+            '🔁 Pennydrop persisted true during polling for reqId=$reqId — stopping.',
+          );
           stopPolling();
           return;
         }
       }
 
-      print('🔄 DigioRepository: polling updateKycStatus for docId=$documentId');
+      print(
+        '🔄 DigioRepository: polling updateKycStatus for docId=$documentId',
+      );
 
       final result = await updateKycStatus(context, documentId);
 
