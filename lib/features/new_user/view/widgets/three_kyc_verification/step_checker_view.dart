@@ -54,10 +54,9 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     super.initState();
     _pledgeRepo = PledgeStatusRepository(GetIt.instance<ApiClient>());
     _digioRepo = DigioRepository(GetIt.instance<ApiClient>());
+    _connectWebSocket();
     _checkFirstPledgeStatus();
   }
-
-  
 
   // Safely pop the current route by deferring until next frame.
   void _safePop() {
@@ -170,16 +169,24 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     );
   }
 
-  void _startStatusPolling() {
-    setState(() {
-      _isPolling = true;
-    });
-    _checkWekSocketStatus();
-    _statusTimer = Timer.periodic(const Duration(seconds: 2), (_) {
-      if (mounted && _isPolling) {
-        _checkWekSocketStatus();
-      }
-    });
+  void _connectWebSocket() {
+    if (!_isPolling) {
+      setState(() {
+        _isPolling = true;
+      });
+      _checkWekSocketStatus();
+    }
+  }
+
+  void _onWebSocketDisconnected() {
+    if (mounted && _isPolling) {
+      // Reconnect after 3 seconds if disconnected
+      Timer(const Duration(seconds: 3), () {
+        if (mounted && _isPolling) {
+          _checkWekSocketStatus();
+        }
+      });
+    }
   }
 
   /// centralised logic to decide whether a currently open webview should be closed
@@ -216,8 +223,8 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
       debugPrint('🔔 Scheduling automatic WebView close for status: $status');
 
-      // close open webview safely
-      // _safePop();
+      // close open webview safely and navigate back to app
+      _safePop();
 
       // After certain statuses we also want to auto-start the next step:
       if (status == 'penny_drop_done') {
@@ -263,6 +270,10 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
           if (status != null && status != _lastStatus) {
             print('📊 Status changed==============: $_lastStatus → $status');
             _lastStatus = status;
+
+            // Call pledge-mf API when socket value updates
+            _callPledgeMfApi();
+
             _updateStepsBasedOnStatus(status);
 
             // This will close webview when needed AND auto-start subsequent steps where appropriate
@@ -309,7 +320,8 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
         }
       },
       failure: (error) {
-        print('❌ Error checking pledge status: $error');
+        print('❌ WebSocket connection failed: $error');
+        _onWebSocketDisconnected();
       },
     );
   }
@@ -365,7 +377,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
             }
 
             // Ensure we close any webview if first fetched status is already past a step
-            _maybeCloseWebViewForStatus(status);
+            // _maybeCloseWebViewForStatus(status);
           }
         }
       },
@@ -401,6 +413,46 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
       },
       failure: (error) {
         print('❌ Digio API error: $error');
+      },
+    );
+  }
+
+  /// Call pledge-mf API when socket value updates
+  Future<void> _callPledgeMfApi() async {
+    final appState = GetIt.instance<AppStateProvider>();
+    final reqId = appState.reqId;
+    final token = appState.token;
+
+    if (reqId == null || token == null) {
+      print('❌ Missing reqId or token for pledge-mf API');
+      return;
+    }
+
+    print('🚀 Calling /customer/pledge-mf API...');
+    final result = await _pledgeRepo.checkPledgeMfStatus(
+      reqId: reqId,
+      authToken: token,
+    );
+
+    result.when(
+      success: (data) {
+        print('✅ Pledge-mf API success: $data');
+        // Extract status from response and update steps
+        final statusData = data['data']?['status'];
+        String? status;
+
+        if (statusData is String) {
+          status = statusData;
+        } else if (statusData is List && statusData.isNotEmpty) {
+          status = statusData.first as String?;
+        }
+
+        if (status != null) {
+          _updateStepsBasedOnStatus(status);
+        }
+      },
+      failure: (error) {
+        print('❌ Pledge-mf API error: $error');
       },
     );
   }
@@ -604,7 +656,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
       _callDigioAPI();
       if (!_hasStartedKyc) {
         _hasStartedKyc = true;
-        _startStatusPolling();
+        _connectWebSocket();
       }
       setState(() {
         _loadingStepIndex = null;
@@ -636,6 +688,9 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   @override
   void dispose() {
     _statusTimer?.cancel();
+    setState(() {
+      _isPolling = false;
+    });
     try {
       _digioRepo.stopPolling();
     } catch (_) {}
