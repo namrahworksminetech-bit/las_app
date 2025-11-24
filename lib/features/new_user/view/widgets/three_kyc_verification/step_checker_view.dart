@@ -117,7 +117,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
       "aadharPanVerification".tr,
       "linkAccountMandate".tr,
       "loanAgreementSigning".tr,
-      "finalReview".tr,
+      "Set Mandate".tr,
     ];
 
     // mark as started to avoid duplicates
