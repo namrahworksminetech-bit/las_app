@@ -730,14 +730,14 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
     });
 
     // Test function for fillBasicInfo (step 0)
-    if (stepIndex == 0) {
-      print('🧪 fillBasicInfo clicked - starting test flow');
-      // await _testKycFlow();
-      setState(() {
-        _loadingStepIndex = null;
-      });
-      return;
-    }
+    // if (stepIndex == 0) {
+    //   print('🧪 fillBasicInfo clicked - starting test flow');
+    //   // await _testKycFlow();
+    //   setState(() {
+    //     _loadingStepIndex = null;
+    //   });
+    //   return;
+    // }
 
     final allowedStatuses = [
       'penny_drop_done',
@@ -785,7 +785,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
     }
 
     // For step 1 open KYC URL (real flow)
-    if (stepIndex == 1) {
+    if (stepIndex == 0 || stepIndex == 1) {
       // _isTestMode = false; // Ensure real flow
       _startKycForStep(stepIndex);
       return;
