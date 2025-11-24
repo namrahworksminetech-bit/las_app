@@ -5,6 +5,7 @@ import 'package:get_it/get_it.dart';
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:las_app/app.dart';
 
 import 'package:las_app/common_widgets/c_button.dart';
 import 'package:las_app/common_widgets/c_input.dart';
@@ -14,6 +15,7 @@ import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
+import 'package:las_app/features/new_user/repository/pledge_status_repo.dart';
 import 'package:las_app/features/new_user/repository/rta_repo.dart';
 import 'package:las_app/features/new_user/view/succcess_pledge_view.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
@@ -34,7 +36,7 @@ class _PledgeFundsOtpScreenState extends State<PledgeFundsOtpScreen> {
   bool _isSubmitting = false;
 
   final RtaRepository _rtaRepo = RtaRepository();
-
+final PledgeStatusRepository _pledgeStatusRepository = PledgeStatusRepository();
   @override
   void dispose() {
     _otpController.dispose();
@@ -106,12 +108,36 @@ class _PledgeFundsOtpScreenState extends State<PledgeFundsOtpScreen> {
       if (mounted) setState(() => _isSubmitting = false);
     }
   }
+
 @override
 void initState() {
   super.initState();
+_callPledgeStatusApi(); 
   _otpController.addListener(() {
-    if (mounted) setState(() {}); // rebuild to update the button enabled state
+    if (mounted) setState(() {}); 
   });
+}
+Future<void> _callPledgeStatusApi() async {
+  final appState = getIt<AppStateProvider>();
+
+  final reqId = appState.reqId;           
+  final token = appState.token;         
+  final result = await _pledgeStatusRepository.checkPledgeMfStatus(
+    reqId: reqId!,
+    type: "pledge",
+   authToken: token!,
+  );
+
+  result.when(
+    success: (data) {
+      print("Pledge Status Success: $data");
+    
+    },
+    failure: (error) {
+      print("Error: $error");
+
+    },
+  );
 }
 
   @override
