@@ -467,7 +467,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
         break;
       case 'final_step_done':
       case 'completed':
-      case 'all_done':
+      case 'mandate_done':
         steps = [true, true, true, true, true];
         break;
       default:
