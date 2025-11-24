@@ -54,9 +54,9 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     _checkFirstPledgeStatus();
   }
 
-  // ---------------- Safe navigation helpers ----------------
+  
 
-  /// Safely pop the current route by deferring until next frame.
+  // Safely pop the current route by deferring until next frame.
   void _safePop() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -117,7 +117,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
       "aadharPanVerification".tr,
       "linkAccountMandate".tr,
       "loanAgreementSigning".tr,
-      "Set Mandate".tr,
+      "SetMandate".tr,
     ];
 
     // mark as started to avoid duplicates

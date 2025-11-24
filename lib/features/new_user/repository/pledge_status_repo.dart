@@ -122,6 +122,7 @@ class PledgeStatusRepository {
 
   Future<Result<Map<String, dynamic>>> checkPledgeMfStatus({
     required String reqId,
+    String? type,
     required String authToken,
   }) async {
     if (_apiClient == null) {
@@ -131,7 +132,7 @@ class PledgeStatusRepository {
     try {
       final response = await _apiClient!.post(
         '/customer/pledge-mf',
-        data: {'req_id': reqId, 'type': 'pledge'},
+        data: {'req_id': reqId, 'type': type ?? 'status'},
         options: Options(
           headers: {
             'Authorization': 'Bearer $authToken',
