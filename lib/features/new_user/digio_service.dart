@@ -20,22 +20,26 @@ class DigioService {
     if (_kycWorkflowPlugin != null) {
       return const Success(null);
     }
-    
+
     try {
       var digioConfig = DigioConfig();
       digioConfig.theme.primaryColor = "#32a83a";
-      digioConfig.logo = "https://www.gstatic.com/mobilesdk/160503_mobilesdk/logo/2x/firebase_28dp.png";
-      digioConfig.environment = environment == 'production' ? Environment.PRODUCTION : Environment.SANDBOX;
+      digioConfig.logo =
+          "https://www.gstatic.com/mobilesdk/160503_mobilesdk/logo/2x/firebase_28dp.png";
+      digioConfig.environment = environment == 'production'
+          ? Environment.PRODUCTION
+          : Environment.SANDBOX;
       digioConfig.serviceMode = ServiceMode.OTP;
 
       _kycWorkflowPlugin = KycWorkflow(digioConfig);
       _kycWorkflowPlugin!.setGatewayEventListener((GatewayEvent? gatewayEvent) {
-        if (gatewayEvent?.event != null && gatewayEvent?.event != _lastEventId) {
+        if (gatewayEvent?.event != null &&
+            gatewayEvent?.event != _lastEventId) {
           _lastEventId = gatewayEvent?.event;
           print("gateway funnel event ${gatewayEvent?.event}");
         }
       });
-      
+
       return const Success(null);
     } catch (e) {
       return Failure('Failed to initialize KYC SDK: $e');
@@ -50,7 +54,7 @@ class DigioService {
     if (_isProcessing) {
       return const Failure('KYC process already in progress');
     }
-    
+
     try {
       if (_kycWorkflowPlugin == null) {
         return const Failure('KYC SDK not initialized');
@@ -58,14 +62,14 @@ class DigioService {
 
       _isProcessing = true;
       HashMap<String, String> additionalData = HashMap<String, String>();
-      
+
       final result = await _kycWorkflowPlugin!.start(
         customerId,
         identifier,
         accessToken,
         additionalData,
       );
-      
+
       return Success(result.toString());
     } catch (e) {
       return Failure('Failed to start KYC: $e');

@@ -1,19 +1,16 @@
 import 'dart:async';
-import 'dart:convert';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:las_app/common_widgets/c_button.dart';
 import 'package:las_app/common_widgets/c_text.dart';
-import 'package:las_app/common_widgets/webview_screen.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
-
-import 'package:las_app/features/new_user/view/succcess_pledge_view.dart';
 import 'package:las_app/features/new_user/view/widgets/four_pledge_funds/pledge_funds_otp_screen.dart';
 import 'package:las_app/features/new_user/view/widgets/two_lender_selection/lender_selection.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
@@ -22,7 +19,6 @@ import '../../../kyc_service.dart';
 import '../../../../../core/network/api_client.dart';
 import '../../../repository/pledge_status_repo.dart';
 import '../../../repository/digio_repo.dart';
-import '../../../digio_service.dart';
 
 class KycVerificationScreen extends StatefulWidget {
   const KycVerificationScreen({super.key});
@@ -37,32 +33,193 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   late final DigioRepository _digioRepo;
   String? _lastStatus;
   bool _hasStartedKyc = false;
-  int _apiCallCount = 0;
   int? _loadingStepIndex;
   bool _isPolling = false;
+
+  // track whether a KYC WebView is currently open and which step opened it
+  bool _isWebViewOpen = false;
+  int? _currentOpenStep; // 0-based index of the step whose webview is open
+
+  // ensure we call startKyc for a step only once
+  final Set<int> _startedKycSteps = {};
+
+  // guard to ensure penny-drop is not invoked repeatedly in-session
+  bool _pennyDropCalled = false;
 
   @override
   void initState() {
     super.initState();
     _pledgeRepo = PledgeStatusRepository(GetIt.instance<ApiClient>());
     _digioRepo = DigioRepository(GetIt.instance<ApiClient>());
-    // Call pledge-mf API once to update status
     _checkFirstPledgeStatus();
+  }
+
+  // ---------------- Safe navigation helpers ----------------
+
+  /// Safely pop the current route by deferring until next frame.
+  void _safePop() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      try {
+        if (Navigator.canPop(context)) Navigator.pop(context);
+      } catch (e, st) {
+        debugPrint('SafePop failed: $e\n$st');
+      }
+    });
+  }
+
+  /// Safely push the LenderSelectionScreen and update bloc state (defers to next frame).
+  void _safePushToLenderSelection() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final bloc = context.read<EligibilityBloc>();
+      try {
+        bloc.add(const SetLenderSelectionView(LenderSelectionView.fundSelection));
+        bloc.add(const JumpToPage(2));
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (ctx) => BlocProvider.value(
+              value: bloc,
+              child: const LenderSelectionScreen(),
+            ),
+          ),
+        );
+      } catch (e, st) {
+        debugPrint('SafePushToLenderSelection failed: $e\n$st');
+        if (Navigator.canPop(context)) Navigator.pop(context);
+      }
+    });
+  }
+
+  // ---------------------------------------------------------
+
+  void _autoStartKyc() {
+    // auto-start step 0 if needed (existing behavior)
+    _startKycForStep(0);
+  }
+
+  /// Start KYC flow for a given step index (0..4). Ensures it's only called once per step.
+  void _startKycForStep(int stepIndex) {
+    if (_startedKycSteps.contains(stepIndex)) {
+      debugPrint('startKycForStep($stepIndex) already called — skipping');
+      return;
+    }
+
+    final appState = GetIt.instance<AppStateProvider>();
+    final reqId = appState.reqId;
+    if (reqId == null) {
+      debugPrint('Cannot start KYC for step $stepIndex — missing reqId');
+      return;
+    }
+
+    final List<String> stepNames = [
+      "fillBasicInfo".tr,
+      "aadharPanVerification".tr,
+      "linkAccountMandate".tr,
+      "loanAgreementSigning".tr,
+      "Set Mandate".tr,
+    ];
+
+    // mark as started to avoid duplicates
+    _startedKycSteps.add(stepIndex);
+
+    // mark webview open state
+    setState(() {
+      _isWebViewOpen = true;
+      _currentOpenStep = stepIndex;
+    });
+
+    debugPrint('▶️ Starting KYC for step $stepIndex (${stepNames[stepIndex]})');
+
+    KycRepository.startKyc(
+      context,
+      lenderCode: "BFL",
+      reqId: reqId,
+      stepName: stepNames[stepIndex],
+      onSuccess: () {
+        debugPrint('✅ startKyc onSuccess for step $stepIndex - starting polling if needed');
+        setState(() {
+          _loadingStepIndex = null;
+        });
+        if (!_hasStartedKyc) {
+          _hasStartedKyc = true;
+          _startStatusPolling();
+        }
+      },
+      onKycComplete: () {
+        debugPrint('📦 onKycComplete for step $stepIndex - clearing state and calling Digio');
+        // clear webview state first
+        setState(() {
+          _isWebViewOpen = false;
+          _currentOpenStep = null;
+        });
+        // safe pop
+        _safePop();
+        // call digio API (which will also attempt penny-drop once)
+        _callDigioAPI();
+      },
+    );
   }
 
   void _startStatusPolling() {
     setState(() {
       _isPolling = true;
     });
-    _checkPledgeStatus();
+    _checkWekSocketStatus();
     _statusTimer = Timer.periodic(const Duration(seconds: 2), (_) {
       if (mounted && _isPolling) {
-        _checkPledgeStatus();
+        _checkWekSocketStatus();
       }
     });
   }
 
-  Future<void> _checkPledgeStatus() async {
+  /// centralised logic to decide whether a currently open webview should be closed
+  /// and whether to auto-start subsequent KYC steps.
+  void _maybeCloseWebViewForStatus(String status) {
+    // terminal statuses on which we want to automatically close an open webview
+    final closeStatuses = {
+      'kyc_done',
+      'penny_drop_done',
+      'kfs_agreement_done',
+      'mandate_done',
+      'final_step_done',
+      'completed',
+    };
+
+    if (!_isWebViewOpen) {
+      // even if webview isn't open, we still may need to auto-start next KYC step based on status
+      if (status == 'penny_drop_done') {
+        // after penny-drop done, start KYC for step index 3 (kfs agreement) once
+        _startKycForStep(3);
+      } else if (status == 'kfs_agreement_done') {
+        // start the final step (index 4) once
+        _startKycForStep(4);
+      }
+      return;
+    }
+
+    if (closeStatuses.contains(status)) {
+      // clear state now to avoid multiple nav attempts
+      setState(() {
+        _isWebViewOpen = false;
+        _currentOpenStep = null;
+      });
+
+      debugPrint('🔔 Scheduling automatic WebView close for status: $status');
+
+      // close open webview safely
+      _safePop();
+
+      // After certain statuses we also want to auto-start the next step:
+      if (status == 'penny_drop_done') {
+        _startKycForStep(3);
+      } else if (status == 'kfs_agreement_done') {
+        _startKycForStep(4);
+      }
+    }
+  }
+
+  Future<void> _checkWekSocketStatus() async {
     if (!mounted || !_isPolling) return;
 
     final appState = GetIt.instance<AppStateProvider>();
@@ -71,7 +228,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
     if (reqId == null || token == null) return;
 
-    final result = await _pledgeRepo.checkPledgeStatus(
+    final result = await _pledgeRepo.checkSocketStatus(
       reqId: reqId,
       authToken: token,
     );
@@ -79,17 +236,19 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     result.when(
       success: (data) {
         if (mounted) {
-          // Extract status from nested structure: data.data.status
-          // Handle both String and List cases
-          final statusData = data['data']?['status'];
           final String? status;
 
-          if (statusData is String) {
-            status = statusData;
-          } else if (statusData is List && statusData.isNotEmpty) {
-            status = statusData.first as String?;
+          if (data['status'] != null) {
+            status = data['status'] as String?;
           } else {
-            status = null;
+            final statusData = data['data']?['status'];
+            if (statusData is String) {
+              status = statusData;
+            } else if (statusData is List && statusData.isNotEmpty) {
+              status = statusData.first as String?;
+            } else {
+              status = null;
+            }
           }
 
           if (status != null && status != _lastStatus) {
@@ -97,17 +256,41 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
             _lastStatus = status;
             _updateStepsBasedOnStatus(status);
 
-            print("status---------------${status}");
-            // Only call Digio API when KYC is actually completed
+            // This will close webview when needed AND auto-start subsequent steps where appropriate
+            _maybeCloseWebViewForStatus(status);
+
+            print("status---------------$status");
+            // Only call Digio API when KYC is actually completed (status == kyc_done)
             if (status == 'kyc_done') {
               _statusTimer?.cancel();
               setState(() {
                 _isPolling = false;
               });
-              if (Navigator.canPop(context)) {
-                Navigator.pop(context);
+              if (_isWebViewOpen) {
+                setState(() {
+                  _isWebViewOpen = false;
+                  _currentOpenStep = null;
+                });
+                _safePop();
               }
               _callDigioAPI();
+            }
+
+            // For the final 'completed' status: ensure webview closed and stop polling
+            if (status == 'completed') {
+              // mark steps completed & stop polling
+              _statusTimer?.cancel();
+              setState(() {
+                _isPolling = false;
+              });
+
+              if (_isWebViewOpen) {
+                setState(() {
+                  _isWebViewOpen = false;
+                  _currentOpenStep = null;
+                });
+                _safePop();
+              }
             }
           }
         }
@@ -125,7 +308,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
     if (reqId == null || token == null) return;
 
-    final result = await _pledgeRepo.checkPledgeStatus(
+    final result = await _pledgeRepo.checkPledgeMfStatus(
       reqId: reqId,
       authToken: token,
     );
@@ -133,8 +316,6 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     result.when(
       success: (data) {
         if (mounted) {
-          // Extract status from nested structure: data.data.status
-          // Handle both String and List cases
           final statusData = data['data']?['status'];
           final String? status;
 
@@ -146,11 +327,29 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
             status = null;
           }
 
-          // Only update if status changed
           if (status != null && status != _lastStatus) {
             print('📊 Status changed: $_lastStatus → $status');
             _lastStatus = status;
             _updateStepsBasedOnStatus(status);
+
+            final completedStatuses = [
+              'kyc_done',
+              'mandate_done',
+              'penny_drop_done',
+              'kfs_agreement_done',
+              'final_step_done',
+            ];
+            if (!completedStatuses.contains(status)) {
+              _autoStartKyc();
+            }
+
+            // If status is already penny_drop_done when screen opens, auto start step 3
+            if (status == 'penny_drop_done') {
+              _startKycForStep(3);
+            }
+
+            // Ensure we close any webview if first fetched status is already past a step
+            _maybeCloseWebViewForStatus(status);
           }
         }
       },
@@ -160,6 +359,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     );
   }
 
+  /// Call Digio config and then trigger penny-drop once (if not already called).
   Future<void> _callDigioAPI() async {
     print('🔴 _callDigioAPI method called');
     final appState = GetIt.instance<AppStateProvider>();
@@ -178,8 +378,10 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     );
 
     result.when(
-      success: (data) {
+      success: (data) async {
         print('✅ Digio API called successfully: $data');
+        // After Digio config succeeds, attempt penny-drop once.
+        await _callPennyDropOnce(reqId);
       },
       failure: (error) {
         print('❌ Digio API error: $error');
@@ -187,31 +389,72 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     );
   }
 
+  /// Ensure penny-drop update is invoked only once for this reqId.
+  Future<void> _callPennyDropOnce(String reqId) async {
+    if (_pennyDropCalled) {
+      print('🔁 Penny-drop already called in this session for reqId=$reqId -> skipping');
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final already = prefs.getBool('pennydrop_called_$reqId') ?? false;
+    if (already) {
+      print('🔁 Penny-drop already marked in prefs for reqId=$reqId -> skipping');
+      _pennyDropCalled = true;
+      return;
+    }
+
+    final docId = prefs.getString('docId$reqId');
+    if (docId == null || docId.isEmpty) {
+      print('⚠️ docId not found for reqId=$reqId. Penny-drop cannot be called now.');
+      return;
+    }
+
+    // mark in-memory to prevent concurrent calls
+    _pennyDropCalled = true;
+
+    print('▶️ Calling penny-drop update for docId=$docId reqId=$reqId');
+
+    try {
+      final result = await _digioRepo.updateKycStatus(context, docId);
+      result.when(
+        success: (link) async {
+          print('✅ Penny-drop API success for docId=$docId, response link: $link');
+          // persist success flag so future sessions skip
+          await prefs.setBool('pennydrop_called_$reqId', true);
+          // After successful penny-drop, auto-start the next KYC step (kfs agreement -> index 3)
+          _startKycForStep(3);
+        },
+        failure: (error) {
+          print('❌ Penny-drop API failure: $error');
+          // reset in-memory flag to allow retry later
+          _pennyDropCalled = false;
+        },
+      );
+    } catch (e, st) {
+      print('❌ Exception while calling penny-drop: $e\n$st');
+      _pennyDropCalled = false;
+    }
+  }
+
   void _updateStepsBasedOnStatus(String? status) {
     if (status == null) return;
 
     print('📊 Current status: $status');
 
-    if (status == 'completed') {
-      if (Navigator.canPop(context)) {
-        Navigator.pop(context); // closes the WebView
-      }
-    }
-
-    List<bool> steps = [false, false, false, false];
+    List<bool> steps = [false, false, false, false, false];
 
     switch (status) {
-      case 'not_started' || 'pan_verified' || 'pending':
+      case 'not_started':
+      case 'pan_verified':
+      case 'pending':
         // All steps remain false
         break;
-      // case 'kyc_done':
-      //   steps[0] = true;
-      //   break;
       case 'kyc_done':
         steps[0] = true;
         steps[1] = true;
         break;
-      case 'mandate_done' || 'penny_drop_done':
+      case 'penny_drop_done':
         steps[0] = true;
         steps[1] = true;
         steps[2] = true;
@@ -221,6 +464,14 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
         steps[1] = true;
         steps[2] = true;
         steps[3] = true;
+        break;
+      case 'final_step_done':
+      case 'completed':
+      case 'mandate_done':
+        steps = [true, true, true, true, true];
+        break;
+      default:
+        // If backend returns an index or different string, you can parse it here
         break;
     }
 
@@ -238,30 +489,31 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   void _navigateToNextScreen() {
     _statusTimer?.cancel();
     final bloc = context.read<EligibilityBloc>();
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => BlocProvider.value(
-          value: bloc,
-          child: const PledgeFundsOtpScreen(),
-        ),
-      ),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      try {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BlocProvider.value(
+              value: bloc,
+              child: const PledgeFundsOtpScreen(),
+            ),
+          ),
+        );
+      } catch (e, st) {
+        debugPrint('Safe navigateToNextScreen failed: $e\n$st');
+      }
+    });
   }
 
   bool _isStepClickable(int index, List<bool> checks) {
-    // First step is always clickable if not completed
     if (index == 0) return !checks[0];
-
-    // Other steps are clickable only if previous step is completed
     return index > 0 && checks[index - 1] && !checks[index];
   }
 
   bool _isStepVisible(int index, List<bool> checks) {
-    // First step is always visible
     if (index == 0) return true;
-
-    // Other steps are visible only if previous step is completed
     return index > 0 && checks[index - 1];
   }
 
@@ -272,35 +524,22 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   ) async {
     print('💆 Step $stepIndex clicked');
 
-    // Show loading for this step
     setState(() {
       _loadingStepIndex = stepIndex;
     });
-
-    // For 4th step (index 3), just mark as completed
-    // if (stepIndex == 3) {
-    //   print('🚀 4th step clicked - marking as completed');
-    //   context.read<EligibilityBloc>().add(UpdateKycStep(stepIndex, true));
-    //   setState(() {
-    //     _loadingStepIndex = null;
-    //   });
-    //   return;
-    // }
-
-    // For steps 2 and 3, if kyc_done status, skip start-kyc API
 
     final allowedStatuses = [
       'penny_drop_done',
       'kyc_done',
       'mandate_done',
       'kfs_agreement_done',
+      'final_step_done',
     ];
 
+    // If step 2 or 3 logic remains same; for final (index 4) we'll call startKycFlow
     if ((stepIndex == 2 || stepIndex == 3) &&
         allowedStatuses.contains(_lastStatus)) {
-      print(
-        '🎯 Step $stepIndex clicked with kyc_done status - calling Digio API',
-      );
+      print('🎯 Step $stepIndex clicked with allowed status - calling Digio API');
       await Future.delayed(const Duration(milliseconds: 500));
       _callDigioAPI();
       if (!_hasStartedKyc) {
@@ -313,53 +552,25 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
       return;
     }
 
-    // For other steps, open KYC URL
-    final appState = GetIt.instance<AppStateProvider>();
-    final reqId = appState.reqId;
-    final lenderCode = "BFL";
-
-    print('🏦 Lender code: $lenderCode');
-    print('🎯 ReqId: $reqId');
-    print('📋 Step Index: $stepIndex');
-
-    final List<String> stepNames = [
-      "fillBasicInfo".tr,
-      "aadharPanVerification".tr,
-      "linkAccountMandate".tr,
-      "loanAgreementSigning".tr,
-    ];
-
-    if (reqId == null || lenderCode == null) {
-      print('❌ Missing reqId or lenderCode');
+    // If final step clicked -> start KYC flow API that returns URL and open it
+    if (stepIndex == 4) {
+      // Start KYC for final step (index 4)
+      _startKycForStep(4);
+      setState(() {
+        _loadingStepIndex = null;
+      });
       return;
     }
 
-    KycRepository.startKyc(
-      context,
-      lenderCode: "BFL",
-      reqId: reqId,
-      stepName: stepNames[stepIndex],
-      onSuccess: () {
-        print('✅ KYC URL opened successfully - starting status polling');
-        setState(() {
-          _loadingStepIndex = null;
-        });
-        if (!_hasStartedKyc) {
-          _hasStartedKyc = true;
-          _startStatusPolling();
-        }
-      },
-      onKycComplete: () {
-        print('🎯 KYC completed from WebView - calling Digio API');
-        _callDigioAPI();
-        if (!_hasStartedKyc) {
-          _hasStartedKyc = true;
-          _startStatusPolling();
-        }
-      },
-    );
+    // For other steps (0,1) open KYC URL
+    if (stepIndex == 0 || stepIndex == 1) {
+      _startKycForStep(stepIndex);
+      setState(() {
+        _loadingStepIndex = null;
+      });
+      return;
+    }
 
-    // Clear loading if there's an error
     setState(() {
       _loadingStepIndex = null;
     });
@@ -368,75 +579,39 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   @override
   void dispose() {
     _statusTimer?.cancel();
-    _digioRepo.stopPolling();
+    try {
+      _digioRepo.stopPolling();
+    } catch (_) {}
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // keep your header as-is (3/4)
     final List<String> steps = [
       "fillBasicInfo".tr,
       "aadharPanVerification".tr,
       "linkAccountMandate".tr,
       "loanAgreementSigning".tr,
+      "finalReview".tr,
     ];
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         _statusTimer?.cancel();
-        _digioRepo.stopPolling();
+        try {
+          _digioRepo.stopPolling();
+        } catch (_) {}
         setState(() {
           _isPolling = false;
+          _isWebViewOpen = false;
+          _currentOpenStep = null;
         });
-        final bloc = context.read<EligibilityBloc>();
-        try {
-          bloc.add(
-            const SetLenderSelectionView(LenderSelectionView.fundSelection),
-          );
-          bloc.add(const JumpToPage(2));
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (ctx) => BlocProvider.value(
-                value: bloc,
-                child: const LenderSelectionScreen(),
-              ),
-            ),
-          );
-        } catch (e, st) {
-          debugPrint('Failed to navigate back to fund selection: $e\n$st');
-          if (Navigator.of(context).canPop()) Navigator.of(context).pop();
-        }
+        _safePushToLenderSelection();
       },
       child: Scaffold(
         backgroundColor: AppColors.black,
-        // floatingActionButton: FloatingActionButton(
-        //   onPressed: () async {
-        //     var headers = {
-        //       'accept': 'application/json',
-        //       'Content-Type': 'application/json',
-        //       'Authorization':
-        //           'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiQXNod2luIFBhbmRleSIsIm1vYmlsZSI6Iis5MTkxMDY2MjE5NTkiLCJ1c2VySWQiOjQ3NTMsImlhdCI6MTc2MzQ2NjM3NywiZXhwIjoxNzYzNDY4MTc3fQ.Ayz_EE5dcDjv-C1tDk5S9hOAPT7N2AloO9LgYZ8g584',
-        //     };
-        //     var data = json.encode({
-        //       "req_id": "bb65d512-c463-11f0-a5b0-0afc8596d62f",
-        //       "kyc_id": "KID251118171857981MIIVKF2L7ZTWZP",
-        //       "kyc_status": "success",
-        //     });
-        //     var dio = Dio();
-        //     var response = await dio.request(
-        //       'https://api-dev.valuenable.in/lamf/customer/update-pennydrop-status',
-        //       options: Options(method: 'POST', headers: headers),
-        //       data: data,
-        //     );
-        //
-        //     if (response.statusCode == 200) {
-        //       print(json.encode(response.data));
-        //     } else {
-        //       print(response.statusMessage);
-        //     }
-        //   },
-        // ),
         body: Stack(
           children: [
             SafeArea(
@@ -447,7 +622,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                   children: [
                     Gaps.hXl,
 
-                    // ===== Progress Indicator =====
+                    // ===== Progress Indicator ===== (KEPT EXACTLY AS REQUESTED)
                     Row(
                       children: [
                         CircularPercentIndicator(
@@ -494,49 +669,18 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                     GestureDetector(
                       onTap: () {
                         _statusTimer?.cancel();
-                        _digioRepo.stopPolling();
+                        try {
+                          _digioRepo.stopPolling();
+                        } catch (_) {}
                         setState(() {
                           _isPolling = false;
+                          _isWebViewOpen = false;
+                          _currentOpenStep = null;
                         });
-                        final bloc = context.read<EligibilityBloc>();
 
-                        try {
-                          // 1) Set the lender selection subview to fundSelection
-                          bloc.add(
-                            const SetLenderSelectionView(
-                              LenderSelectionView.fundSelection,
-                            ),
-                          );
-
-                          // 2) Jump the main page controller to the lender-selection page (pageIndex = 2)
-                          bloc.add(const JumpToPage(2));
-
-                          // Navigator.of(context).pushReplacement(
-                          //   MaterialPageRoute(
-                          //     builder: (ctx) => BlocProvider.value(
-                          //       value: bloc,
-                          //       child: const LenderSelectionScreen(),
-                          //     ),
-                          //   ),
-                          // );
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (ctx) => BlocProvider.value(
-                                value: bloc,
-                                child: const LenderSelectionScreen(),
-                              ),
-                            ),
-                          );
-                        } catch (e, st) {
-                          debugPrint(
-                            'Failed to navigate back to fund selection: $e\n$st',
-                          );
-
-                          if (Navigator.of(context).canPop())
-                            Navigator.of(context).pop();
-                        }
+                        // schedule safe push to lender selection
+                        _safePushToLenderSelection();
                       },
-
                       child: Row(
                         children: [
                           const Icon(
@@ -577,7 +721,9 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                                 itemCount: steps.length,
                                 separatorBuilder: (_, __) => Gaps.hSm,
                                 itemBuilder: (context, index) {
-                                  final isChecked = checks[index];
+                                  final isChecked = checks.length > index
+                                      ? checks[index]
+                                      : false;
                                   final isClickable = _isStepClickable(
                                     index,
                                     checks,
@@ -587,19 +733,19 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                                     checks,
                                   );
                                   final isLoading = _loadingStepIndex == index;
-                                  final allStepsCompleted = checks.every(
-                                    (step) => step,
-                                  );
+                                  // ensure proceed requires exactly 5 true checks (and we guard length)
+                                  final allStepsCompleted =
+                                      checks.length >= 5 && checks.take(5).every((step) => step);
                                   return GestureDetector(
                                     onTap:
                                         (!allStepsCompleted &&
-                                            (isClickable || index == 3))
-                                        ? () => _handleStepClick(
-                                            context,
-                                            state,
-                                            index,
-                                          )
-                                        : null,
+                                                (isClickable || index == 4))
+                                            ? () => _handleStepClick(
+                                                context,
+                                                state,
+                                                index,
+                                              )
+                                            : null,
                                     child: AnimatedContainer(
                                       duration: const Duration(
                                         milliseconds: 200,
@@ -616,9 +762,9 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                                         border: Border.all(
                                           color: isVisible
                                               ? AppColors.bSecondaryColor
-                                                    .withOpacity(0.3)
+                                                  .withOpacity(0.3)
                                               : AppColors.bSecondaryColor
-                                                    .withOpacity(0.1),
+                                                  .withOpacity(0.1),
                                         ),
                                       ),
                                       child: Row(
@@ -642,10 +788,10 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                                                   border: Border.all(
                                                     color: isVisible
                                                         ? AppColors
-                                                              .bPrimaryColor
+                                                            .bPrimaryColor
                                                         : AppColors
-                                                              .bSecondaryColor
-                                                              .withOpacity(0.3),
+                                                            .bSecondaryColor
+                                                            .withOpacity(0.3),
                                                     width: 1.8,
                                                   ),
                                                 ),
@@ -667,10 +813,10 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                                                       color: isVisible
                                                           ? AppColors.white
                                                           : AppColors
-                                                                .bSecondaryColor
-                                                                .withOpacity(
-                                                                  0.5,
-                                                                ),
+                                                              .bSecondaryColor
+                                                              .withOpacity(
+                                                                0.5,
+                                                              ),
                                                     ),
                                               ),
                                             ],
@@ -679,25 +825,24 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                                               ? const SizedBox(
                                                   width: 14,
                                                   height: 14,
-                                                  child: CircularProgressIndicator(
+                                                  child:
+                                                      CircularProgressIndicator(
                                                     strokeWidth: 2,
                                                     valueColor:
                                                         AlwaysStoppedAnimation<
-                                                          Color
-                                                        >(
-                                                          AppColors
-                                                              .bPrimaryColor,
-                                                        ),
+                                                            Color>(
+                                                      AppColors.bPrimaryColor,
+                                                    ),
                                                   ),
                                                 )
                                               : Icon(
                                                   Icons.arrow_forward_ios,
                                                   color: isVisible
                                                       ? AppColors
-                                                            .bSecondaryColor
+                                                          .bSecondaryColor
                                                       : AppColors
-                                                            .bSecondaryColor
-                                                            .withOpacity(0.3),
+                                                          .bSecondaryColor
+                                                          .withOpacity(0.3),
                                                   size: 14,
                                                 ),
                                         ],
@@ -729,8 +874,10 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                         children: [
                           BlocBuilder<EligibilityBloc, EligibilityState>(
                             builder: (context, state) {
-                              final allStepsCompleted = state.kycStepChecks
-                                  .every((step) => step);
+                              // require at least 5 checks and all true for proceed
+                              final checks = state.kycStepChecks;
+                              final allStepsCompleted =
+                                  checks.length >= 5 && checks.take(5).every((s) => s);
 
                               return CButton(
                                 text: 'proceedToFinalStep'.tr,
@@ -740,13 +887,6 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                                           const Duration(milliseconds: 500),
                                         );
                                         _navigateToNextScreen();
-                                        // Navigator.pushReplacement(
-                                        //   context,
-                                        //   MaterialPageRoute(
-                                        //     builder: (context) =>
-                                        //         const LoanSuccessScreen(),
-                                        //   ),
-                                        // );
                                       }
                                     : null,
                                 type: allStepsCompleted
