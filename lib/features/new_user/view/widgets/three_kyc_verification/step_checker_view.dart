@@ -27,7 +27,8 @@ class KycVerificationScreen extends StatefulWidget {
   State<KycVerificationScreen> createState() => _KycVerificationScreenState();
 }
 
-class _KycVerificationScreenState extends State<KycVerificationScreen> {
+class _KycVerificationScreenState extends State<KycVerificationScreen>
+    with WidgetsBindingObserver {
   Timer? _statusTimer;
   late final PledgeStatusRepository _pledgeRepo;
   late final DigioRepository _digioRepo;
@@ -52,10 +53,31 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _pledgeRepo = PledgeStatusRepository(GetIt.instance<ApiClient>());
     _digioRepo = DigioRepository(GetIt.instance<ApiClient>());
     _connectWebSocket();
     _checkFirstPledgeStatus();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      print('🔄 App resumed - refreshing status');
+      _refreshStatusOnResume();
+    }
+  }
+
+  Future<void> _refreshStatusOnResume() async {
+    // Reset test mode when resuming from WebView
+    // _isTestMode = false;
+    await Future.delayed(const Duration(milliseconds: 500));
+    _callPledgeMfApi();
+    if (!_isPolling) {
+      _connectWebSocket();
+    }
+    _forceUpdateUI();
   }
 
   // Safely pop the current route by deferring until next frame.
@@ -153,6 +175,8 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
         debugPrint(
           '📦 onKycComplete for step $stepIndex - clearing state and calling Digio',
         );
+        // Reset test mode for real flow
+        // _isTestMode = false;
         // clear webview state first
         setState(() {
           _isWebViewOpen = false;
@@ -160,6 +184,10 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
         });
         // safe pop
         _safePop();
+        // refresh status after webview closes
+        Future.delayed(const Duration(milliseconds: 1000), () {
+          _refreshStatusOnResume();
+        });
         // call digio API only if not already called
         if (!_digioApiCalled) {
           _digioApiCalled = true;
@@ -293,6 +321,8 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                 });
                 _safePop();
               }
+              // Force UI update for kyc_done status
+
               // call digio API only if not already called
               if (!_digioApiCalled) {
                 _digioApiCalled = true;
@@ -306,6 +336,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
               _statusTimer?.cancel();
               setState(() {
                 _isPolling = false;
+                _loadingStepIndex = null; // Clear loader
               });
 
               if (_isWebViewOpen) {
@@ -355,6 +386,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
           if (status != null && status != _lastStatus) {
             print('📊 Status changed: $_lastStatus → $status');
             _lastStatus = status;
+
             _updateStepsBasedOnStatus(status);
 
             final completedStatuses = [
@@ -419,6 +451,12 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
   /// Call pledge-mf API when socket value updates
   Future<void> _callPledgeMfApi() async {
+    // Skip real API call in test mode
+    // if (_isTestMode) {
+    //   print('🧪 Test mode: Skipping real API call');
+    //   return;
+    // }
+
     final appState = GetIt.instance<AppStateProvider>();
     final reqId = appState.reqId;
     final token = appState.token;
@@ -570,11 +608,15 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
     context.read<EligibilityBloc>().add(UpdateKycStepsAll(steps));
 
-    // Stop polling only when all steps are completed
+    // Force UI update for every status change
+    _forceUpdateUI();
+
+    // Clear loading state when all steps are completed
     if (steps.every((step) => step)) {
       _statusTimer?.cancel();
       setState(() {
         _isPolling = false;
+        _loadingStepIndex = null; // Clear loader
       });
     }
   }
@@ -610,6 +652,64 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     return index > 0 && checks[index - 1];
   }
 
+  // Test mode flag
+  // bool _isTestMode = false;
+
+  // Future<void> _testKycFlow() async {
+  //   print('🧪 Starting test KYC flow');
+  //   // _isTestMode = true;
+  //
+  //   // Call start KYC API
+  //   final appState = GetIt.instance<AppStateProvider>();
+  //   final reqId = appState.reqId;
+  //
+  //   if (reqId == null) {
+  //     print('❌ Missing reqId for test KYC');
+  //     return;
+  //   }
+  //
+  //   // Start KYC API call
+  //   KycRepository.startKyc(
+  //     context,
+  //     lenderCode: "BFL",
+  //     reqId: reqId,
+  //     stepName: "fillBasicInfo".tr,
+  //     onSuccess: () {
+  //       print('✅ Test startKyc onSuccess');
+  //     },
+  //     onKycComplete: () {
+  //       print('📦 Test onKycComplete - updating UI');
+  //       // _forceUpdateUI();
+  //     },
+  //   );
+  //
+  //   // Simulate status updates every 30 seconds
+  //   Timer.periodic(const Duration(seconds: 30), (timer) {
+  //     if (!mounted) {
+  //       timer.cancel();
+  //       return;
+  //     }
+  //
+  //     // Simulate kyc_done status WITHOUT calling real API
+  //     print('🧪 Test: Simulating kyc_done status');
+  //     _lastStatus = 'completed';
+  //     _updateStepsBasedOnStatus('completed');
+  //     // _forceUpdateUI();
+  //
+  //     // Cancel timer after first update for testing
+  //     timer.cancel();
+  //   });
+  // }
+
+  void _forceUpdateUI() {
+    if (mounted) {
+      setState(() {
+        // Force UI rebuild
+      });
+      print('🔄 UI force updated');
+    }
+  }
+
   void _handleStepClick(
     BuildContext context,
     EligibilityState state,
@@ -628,6 +728,16 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     setState(() {
       _loadingStepIndex = stepIndex;
     });
+
+    // Test function for fillBasicInfo (step 0)
+    if (stepIndex == 0) {
+      print('🧪 fillBasicInfo clicked - starting test flow');
+      // await _testKycFlow();
+      setState(() {
+        _loadingStepIndex = null;
+      });
+      return;
+    }
 
     final allowedStatuses = [
       'penny_drop_done',
@@ -674,8 +784,9 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
       return;
     }
 
-    // For other steps (0,1) open KYC URL
-    if (stepIndex == 0 || stepIndex == 1) {
+    // For step 1 open KYC URL (real flow)
+    if (stepIndex == 1) {
+      // _isTestMode = false; // Ensure real flow
       _startKycForStep(stepIndex);
       return;
     }
@@ -687,6 +798,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _statusTimer?.cancel();
     setState(() {
       _isPolling = false;
