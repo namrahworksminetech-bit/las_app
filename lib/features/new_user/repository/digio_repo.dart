@@ -22,6 +22,7 @@ class DigioRepository {
   final ApiClient _apiClient;
   Timer? _pollingTimer;
   bool _isPollingActive = false;
+  static VoidCallback? hideLoaderCallback;
 
   // in-memory cache to avoid duplicate concurrent penny-drop calls
   final Map<String, bool> _pennydropDoneCache = {};
@@ -35,8 +36,6 @@ class DigioRepository {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
     final existingDocId = prefs.getString('docId$reqId');
-
-    print("-------------${existingDocId}");
 
     // If docId already exists, skip API call and directly start polling
     if (existingDocId != null) {
@@ -117,8 +116,6 @@ class DigioRepository {
       final prefs = await SharedPreferences.getInstance();
       String? cleanDocumentId = prefs.getString('docId$reqId');
 
-      print("cleanDocumentId---------------------------$cleanDocumentId");
-
       var workflowResult;
 
       if (cleanDocumentId == null) {
@@ -167,7 +164,6 @@ class DigioRepository {
       }
 
       if (cleanDocumentId != null) {
-        print("sucessss--------------");
         startPollingKycStatus(context, cleanDocumentId);
       }
     } else if (status.isDenied) {
@@ -182,8 +178,9 @@ class DigioRepository {
   /// Update KYC status (penny-drop). Returns Success on 200/201.
   Future<Result<String?>> updateKycStatus(
     BuildContext? context,
-    String documentId,
-  ) async {
+    String documentId, {
+    VoidCallback? onWebViewOpen,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
     final appState = GetIt.instance<AppStateProvider>();
@@ -228,6 +225,9 @@ class DigioRepository {
 
         if (data != null && data['link'] != null) {
           final link = data['link'] as String;
+          // Hide loader when webview opens
+          onWebViewOpen?.call();
+          hideLoaderCallback?.call();
           // Opening the link in webview as before
           Get.to(
             () => CommonWebView.WebViewScreen(
@@ -274,6 +274,18 @@ class DigioRepository {
     stopPolling();
     _isPollingActive = true;
 
+    // Show loader in KycVerificationScreen
+    if (context != null) {
+      final state = context.findAncestorStateOfType<State>();
+      if (state != null && state.mounted) {
+        try {
+          (state as dynamic).setState(() {
+            (state as dynamic)._loadingStepIndex = 2;
+          });
+        } catch (e) {}
+      }
+    }
+
     // Read reqId & persistent flag first to avoid unnecessary calls
     final prefs = await SharedPreferences.getInstance();
     final appState = GetIt.instance<AppStateProvider>();
@@ -303,6 +315,17 @@ class DigioRepository {
           print(
             '🔁 Pennydrop persisted true during polling for reqId=$reqId — stopping.',
           );
+          // Hide loader
+          if (context != null) {
+            final state = context.findAncestorStateOfType<State>();
+            if (state != null && state.mounted) {
+              try {
+                (state as dynamic).setState(() {
+                  (state as dynamic)._loadingStepIndex = null;
+                });
+              } catch (e) {}
+            }
+          }
           stopPolling();
           return;
         }
@@ -327,9 +350,22 @@ class DigioRepository {
 
       if (success) {
         print('----pennydrop success -> stopping polling');
+        // Hide loader using callback
+        hideLoaderCallback?.call();
         stopPolling();
       } else {
         print('----pennydrop not successful yet, continue polling');
+        // Keep loader visible during continuous polling
+        if (context != null) {
+          final state = context.findAncestorStateOfType<State>();
+          if (state != null && state.mounted) {
+            try {
+              (state as dynamic).setState(() {
+                (state as dynamic)._loadingStepIndex = 2;
+              });
+            } catch (e) {}
+          }
+        }
       }
     });
   }
@@ -338,6 +374,21 @@ class DigioRepository {
     _pollingTimer?.cancel();
     _pollingTimer = null;
     _isPollingActive = false;
+  }
+
+  void stopPollingWithLoader(BuildContext? context) {
+    // Hide loader when stopping
+    if (context != null) {
+      final state = context.findAncestorStateOfType<State>();
+      if (state != null && state.mounted) {
+        try {
+          (state as dynamic).setState(() {
+            (state as dynamic)._loadingStepIndex = null;
+          });
+        } catch (e) {}
+      }
+    }
+    stopPolling();
   }
 
   static void openWebView(BuildContext context, String url) {
