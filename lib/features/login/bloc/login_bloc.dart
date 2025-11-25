@@ -1,10 +1,13 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:las_app/core/app_state_provider.dart';
 import 'package:las_app/core/injection_container.dart';
 import 'package:las_app/features/login/repository/pledge_status_repo_drop.dart';
 import 'package:las_app/features/new_user/repository/pan_veirfy_repo.dart';
+import 'package:las_app/helper_widgets/auth_utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../repository/login_repository.dart';
 import '../../new_user/repository/pledge_status_repo.dart';
 import '../../../core/network/api_client.dart';
@@ -62,80 +65,96 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     }
   }
 
-  Future<void> _onVerifyOtpPressed(
-    LoginVerifyOtpPressed event,
-    Emitter<LoginState> emit,
-  ) async {
-    emit(state.copyWith(isLoading: true, otpError: null));
+Future<void> _onVerifyOtpPressed(
+  LoginVerifyOtpPressed event,
+  Emitter<LoginState> emit,
+) async {
+  emit(state.copyWith(isLoading: true, otpError: null));
 
-    final response = await repository.verifyOtp(
-      phoneNumber: event.mobile,
-      otpRef: event.otpRef,
-      otp: event.otp,
-    );
+  final response = await repository.verifyOtp(
+    phoneNumber: event.mobile,
+    otpRef: event.otpRef,
+    otp: event.otp,
+  );
 
-    emit(state.copyWith(isLoading: false));
+  emit(state.copyWith(isLoading: false));
 
-    if (response.token != null && response.token!.isNotEmpty) {
-      // ✅ Store globally
-      final appState = getIt<AppStateProvider>();
-      appState.setToken(response.token!);
-      appState.setMobileNumber(event.mobile);
+  if (response.token != null && response.token!.isNotEmpty) {
+    // ✅ Store globally (in-memory)
+    final appState = getIt<AppStateProvider>();
+    appState.setToken(response.token!);
+    appState.setMobileNumber(event.mobile);
 
-      if (response.reqId != null && response.reqId!.isNotEmpty) {
-        appState.setReqId(response.reqId!);
-      }
+    if (response.reqId != null && response.reqId!.isNotEmpty) {
+      appState.setReqId(response.reqId!);
+    }
 
-      if (response.name != null) {
-        appState.setName(response.name!);
-      }
+    if (response.name != null) {
+      appState.setName(response.name!);
+    }
 
-      await getIt<PanRepository>().saveToken(response.token!);
+    // Save token for other flows that expect it
+    await getIt<PanRepository>().saveToken(response.token!);
 
-      // Now check pledge status BEFORE telling UI to navigate.
-      String? pledgeStatus;
-      try {
-        final reqId = appState.reqId;
-        if (reqId != null && reqId.isNotEmpty) {
-          // Try the newer pledge-mf endpoint first
-          try {
-            final pledgeMfRepo = PledgeMfRepository(
-              GetIt.instance<ApiClient>(),
-            );
-            final pmfRes = await pledgeMfRepo.notifyPledgeMf(
-              reqId: reqId,
-              authToken: response.token!,
-            );
+    // ---------- NEW: persist token + reqId + timestamp via AuthService ----------
+    try {
+      await AuthService.instance.saveAuth(
+        token: response.token!,
+        reqId: response.reqId,
+      );
+      debugPrint('Auth persisted via AuthService.');
+    } catch (e) {
+      // Non-fatal: log and continue
+      debugPrint('Warning: AuthService.saveAuth failed: $e');
+    }
+    // ------------------------------------------------------------------------
 
-            if (pmfRes.error != null) {
-              // Log and continue to fallback
-              print('❌ pledge-mf returned error: ${pmfRes.error}');
-            } else {
-              final inner = pmfRes.extractInnerStatus();
-              print('ℹ️ pledge-mf inner status: $inner');
+    // Now check pledge status BEFORE telling UI to navigate.
+    String? pledgeStatus;
+    try {
+      final reqId = appState.reqId;
+      if (reqId != null && reqId.isNotEmpty) {
+        // Try the newer pledge-mf endpoint first
+        try {
+          final pledgeMfRepo = PledgeMfRepository(
+            GetIt.instance<ApiClient>(),
+          );
 
-              if (inner != null && inner.isNotEmpty) {
-                // inner may contain values like 'mf_fetched', 'mandate_done', 'completed', etc.
-                pledgeStatus = inner;
-              }
+          final pmfRes = await pledgeMfRepo.notifyPledgeMf(
+            reqId: reqId,
+            authToken: response.token!,
+          );
+
+          if (pmfRes.error != null) {
+            // Log and continue to fallback
+            debugPrint('❌ pledge-mf returned error: ${pmfRes.error}');
+          } else {
+            final inner = pmfRes.extractInnerStatus();
+            debugPrint('ℹ️ pledge-mf inner status: $inner');
+
+            if (inner != null && inner.isNotEmpty) {
+              // inner may contain values like 'mf_fetched', 'mandate_done', 'completed', etc.
+              pledgeStatus = inner;
             }
-          } catch (e) {
-            print('❌ Exception when calling pledge-mf: $e');
-            pledgeStatus = null;
           }
+        } catch (e, st) {
+          debugPrint('❌ Exception when calling pledge-mf: $e\n$st');
+          pledgeStatus = null;
+        }
 
-          // If pledgeStatus not decided by pledge-mf, fallback to old pledge status API
-          if (pledgeStatus == null) {
-            final pledgeRepo = PledgeStatusRepository(
-              GetIt.instance<ApiClient>(),
-            );
-            final res = await pledgeRepo.checkPledgeMfStatus(
-              reqId: reqId,
-              authToken: response.token!,
-            );
+        // If pledgeStatus not decided by pledge-mf, fallback to old pledge status API
+        if (pledgeStatus == null) {
+          final pledgeRepo = PledgeStatusRepository(
+            GetIt.instance<ApiClient>(),
+          );
+          final res = await pledgeRepo.checkPledgeMfStatus(
+            reqId: reqId,
+            authToken: response.token!,
+          );
 
-            res.when(
-              success: (data) {
+          res.when(
+            success: (data) {
+              try {
                 final statusData = data['data']?['status'];
                 if (statusData is String) {
                   pledgeStatus = statusData;
@@ -153,39 +172,46 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
                 } else {
                   pledgeStatus = null;
                 }
-              },
-              failure: (err) {
-                print('❌ Pledge status API failed: $err');
+              } catch (e) {
+                debugPrint('Error parsing pledge status success payload: $e');
                 pledgeStatus = null;
-              },
-            );
-          }
-        } else {
-          // no reqId -> normal flow
-          pledgeStatus = null;
+              }
+            },
+            failure: (err) {
+              debugPrint('❌ Pledge status API failed: $err');
+              pledgeStatus = null;
+            },
+          );
         }
-      } catch (e) {
-        print('❌ Exception while checking pledge status: $e');
+      } else {
+        // no reqId -> normal flow
+        debugPrint('No reqId available after login; skipping pledge status check.');
         pledgeStatus = null;
       }
-
-      // Finally emit token + pledgeStatus so UI can decide.
-      emit(
-        state.copyWith(
-          token: response.token,
-          snackbarMessage: 'OTP Verified Successfully!',
-          pledgeStatus: pledgeStatus,
-        ),
-      );
-    } else {
-      emit(
-        state.copyWith(
-          otpError: response.message ?? 'Invalid OTP',
-          snackbarMessage: response.message ?? 'OTP verification failed.',
-        ),
-      );
+    } catch (e, st) {
+      debugPrint('❌ Exception while checking pledge status: $e\n$st');
+      pledgeStatus = null;
     }
+
+    // Finally emit token + pledgeStatus so UI can decide.
+    emit(
+      state.copyWith(
+        token: response.token,
+        snackbarMessage: 'OTP Verified Successfully!',
+        pledgeStatus: pledgeStatus,
+      ),
+    );
+  } else {
+    emit(
+      state.copyWith(
+        otpError: response.message ?? 'Invalid OTP',
+        snackbarMessage: response.message ?? 'OTP verification failed.',
+      ),
+    );
   }
+}
+
+
 
   /// 🔹 Verify OTP
   //  Future<void> _onVerifyOtpPressed(

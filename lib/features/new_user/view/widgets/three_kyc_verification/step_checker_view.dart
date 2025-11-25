@@ -4,6 +4,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
+import 'package:las_app/features/dashboard/view_dashboard.dart';
+import 'package:las_app/features/home/view_home.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:las_app/common_widgets/c_button.dart';
 import 'package:las_app/common_widgets/c_text.dart';
@@ -890,34 +892,41 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
                     Gaps.hMd,
 
                     // ===== Back Button =====
-                    GestureDetector(
-                      onTap: () {
-                        _statusTimer?.cancel();
-                        try {
-                          _digioRepo.stopPolling();
-                        } catch (_) {}
-                        setState(() {
-                          _isPolling = false;
-                          _isWebViewOpen = false;
-                          _currentOpenStep = null;
-                        });
+                   GestureDetector(
+  onTap: () {
+    // stop timers / polling and clear UI flags
+    _statusTimer?.cancel();
+    try {
+      _digioRepo.stopPolling();
+    } catch (_) {}
+    setState(() {
+      _isPolling = false;
+      _isWebViewOpen = false;
+      _currentOpenStep = null;
+      _loadingStepIndex = null;
+    });
 
-                        // schedule safe push to lender selection
-                        _safePushToLenderSelection();
-                      },
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.arrow_back,
-                            color: AppColors.white,
-                            size: 20,
-                          ),
-                          Gaps.wSm,
-                          CText('goBack'.tr, style: AppTypography.bodyWhite),
-                        ],
-                      ),
-                    ),
-
+    // navigate to Dashboard and remove previous routes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const Home()),
+        (route) => false,
+      );
+    });
+  },
+  child: Row(
+    children: [
+      const Icon(
+        Icons.arrow_back,
+        color: AppColors.white,
+        size: 20,
+      ),
+      Gaps.wSm,
+      CText('goBack'.tr, style: AppTypography.bodyWhite),
+    ],
+  ),
+),
                     Gaps.hXl,
 
                     // ===== Header Text =====

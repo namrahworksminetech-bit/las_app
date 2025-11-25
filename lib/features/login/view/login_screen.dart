@@ -122,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
             final status = state.pledgeStatus;
             final normalStatuses = {'not_started'};
 
-            if (status == 'mf_fetched' || status == 'pending' || status=='pan_verified') {
+            if (status == 'mf_fetched' || status=='pan_verified') {
               // Navigate to Eligibility screen and ask it to start fetching immediately
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
@@ -145,54 +145,32 @@ class _LoginScreenState extends State<LoginScreen> {
                 MaterialPageRoute(builder: (context) => LoanSuccessScreen()),
               );
             } else if (<String>[
-              'kfs_agreement_done',
-              'penny_drop_done',
-              'pending',
-              'kyc_done',
-              'mandate_flow_fail',
-            ].contains((status ?? '').trim())) {
-              // show the portfolio fetching overlay first, then navigate to KYC screen after it closes
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (!(ModalRoute.of(context)?.isCurrent ?? true)) return;
+        'kfs_agreement_done',
+        'penny_drop_done',
+        'kyc_done',
+        'pending',               // ✅ moved here
+        'mandate_flow_fail',
+        'kyc_in_progress',
+      ].contains(status?.trim())) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!(ModalRoute.of(context)?.isCurrent ?? true)) return;
 
-                // Create a new bloc for the overlay (same dependency pattern you used earlier)
-                final overlayBloc = EligibilityBloc(
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (ctx) => BlocProvider(
+                create: (_) => EligibilityBloc(
                   repository: PanRepository(ApiClient()),
                   lenderRepository: LenderRepository(ApiClient()),
                   apiClient: ApiClient(),
-                );
-
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (ctx) {
-                    return BlocProvider.value(
-                      // Provide the new instance to the overlay
-                      value: overlayBloc,
-                      child: const PortfolioFetchingOverlay(),
-                    );
-                  },
-                ).then((_) {
-                  // overlay dismissed — now navigate to KYC screen with a NEW EligibilityBloc instance
-                  if (!(ModalRoute.of(context)?.isCurrent ?? true)) return;
-
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (ctx) => BlocProvider(
-                        create: (_) => EligibilityBloc(
-                          repository: PanRepository(ApiClient()),
-                          lenderRepository: LenderRepository(ApiClient()),
-                          apiClient: ApiClient(),
-                        ),
-                        child: KycVerificationScreen(),
-                      ),
-                    ),
-                  );
-                });
-              });
-            } else if (status == 'mandate_done' || status == 'completed' || status == 'penny_drop_done') {
+                ),
+                child: KycVerificationScreen(),
+              ),
+            ),
+          );
+        });
+        return;
+      } else if (status == 'mandate_done' || status == 'completed' ) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (ModalRoute.of(context)?.isCurrent ?? true) {
                   Navigator.pushReplacement(
