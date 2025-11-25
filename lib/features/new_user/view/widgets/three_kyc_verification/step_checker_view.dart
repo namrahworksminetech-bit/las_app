@@ -66,7 +66,6 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
-      print('🔄 App resumed - refreshing status');
       _refreshStatusOnResume();
     }
   }
@@ -298,7 +297,6 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
           }
 
           if (status != null && status != _lastStatus) {
-            print('📊 Status changed==============: $_lastStatus → $status');
             _lastStatus = status;
 
             // Call pledge-mf API when socket value updates
@@ -309,7 +307,6 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
             // This will close webview when needed AND auto-start subsequent steps where appropriate
             _maybeCloseWebViewForStatus(status);
 
-            print("status---------------$status");
             // Only call Digio API when KYC is actually completed (status == kyc_done)
             if (status == 'kyc_done') {
               _statusTimer?.cancel();
@@ -390,6 +387,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
             _lastStatus = status;
 
             _updateStepsBasedOnStatus(status);
+            // _updateStepsBasedOnStatus('kyc_done');
 
             final completedStatuses = [
               'kyc_done',
@@ -426,12 +424,18 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
     print('🔴 _callDigioAPI method called');
     final appState = GetIt.instance<AppStateProvider>();
     final reqId = appState.reqId;
-    print('📝 ReqId from AppState: $reqId');
 
     if (reqId == null) {
       print('❌ Missing reqId for Digio API');
       return;
     }
+
+    // Set callback to hide loader
+    DigioRepository.hideLoaderCallback = () {
+      setState(() {
+        _loadingStepIndex = null;
+      });
+    };
 
     print('🚀 Calling get-digio-config API...');
     final result = await _digioRepo.getDigioConfig(
@@ -453,12 +457,6 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
 
   /// Call pledge-mf API when socket value updates
   Future<void> _callPledgeMfApi() async {
-    // Skip real API call in test mode
-    // if (_isTestMode) {
-    //   print('🧪 Test mode: Skipping real API call');
-    //   return;
-    // }
-
     final appState = GetIt.instance<AppStateProvider>();
     final reqId = appState.reqId;
     final token = appState.token;
@@ -535,13 +533,21 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
     print('▶️ Calling penny-drop update for docId=$docId reqId=$reqId');
 
     try {
-      final result = await _digioRepo.updateKycStatus(context, docId);
+      final result = await _digioRepo.updateKycStatus(
+        context,
+        docId,
+        onWebViewOpen: () {
+          setState(() {
+            _loadingStepIndex = null;
+          });
+        },
+      );
       result.when(
         success: (link) async {
           print(
             '✅ Penny-drop API success for docId=$docId, response link: $link',
           );
-          // Hide loader
+          // Hide loader on success
           setState(() {
             _loadingStepIndex = null;
           });
@@ -552,20 +558,14 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
         },
         failure: (error) {
           print('❌ Penny-drop API failure: $error');
-          // Hide loader
-          setState(() {
-            _loadingStepIndex = null;
-          });
+          // Don't hide loader here - let repository handle it during polling
           // reset in-memory flag to allow retry later
           _pennyDropCalled = false;
         },
       );
     } catch (e, st) {
       print('❌ Exception while calling penny-drop: $e\n$st');
-      // Hide loader on exception
-      setState(() {
-        _loadingStepIndex = null;
-      });
+      // Don't hide loader here - let repository handle it
       _pennyDropCalled = false;
     }
   }
@@ -654,61 +654,11 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
     return index > 0 && checks[index - 1];
   }
 
-  // Test mode flag
-  // bool _isTestMode = false;
-
-  // Future<void> _testKycFlow() async {
-  //   print('🧪 Starting test KYC flow');
-  //   // _isTestMode = true;
-  //
-  //   // Call start KYC API
-  //   final appState = GetIt.instance<AppStateProvider>();
-  //   final reqId = appState.reqId;
-  //
-  //   if (reqId == null) {
-  //     print('❌ Missing reqId for test KYC');
-  //     return;
-  //   }
-  //
-  //   // Start KYC API call
-  //   KycRepository.startKyc(
-  //     context,
-  //     lenderCode: "BFL",
-  //     reqId: reqId,
-  //     stepName: "fillBasicInfo".tr,
-  //     onSuccess: () {
-  //       print('✅ Test startKyc onSuccess');
-  //     },
-  //     onKycComplete: () {
-  //       print('📦 Test onKycComplete - updating UI');
-  //       // _forceUpdateUI();
-  //     },
-  //   );
-  //
-  //   // Simulate status updates every 30 seconds
-  //   Timer.periodic(const Duration(seconds: 30), (timer) {
-  //     if (!mounted) {
-  //       timer.cancel();
-  //       return;
-  //     }
-  //
-  //     // Simulate kyc_done status WITHOUT calling real API
-  //     print('🧪 Test: Simulating kyc_done status');
-  //     _lastStatus = 'completed';
-  //     _updateStepsBasedOnStatus('completed');
-  //     // _forceUpdateUI();
-  //
-  //     // Cancel timer after first update for testing
-  //     timer.cancel();
-  //   });
-  // }
-
   void _forceUpdateUI() {
     if (mounted) {
       setState(() {
         // Force UI rebuild
       });
-      print('🔄 UI force updated');
     }
   }
 
@@ -730,16 +680,6 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
     setState(() {
       _loadingStepIndex = stepIndex;
     });
-
-    // Test function for fillBasicInfo (step 0)
-    // if (stepIndex == 0) {
-    //   print('🧪 fillBasicInfo clicked - starting test flow');
-    //   // await _testKycFlow();
-    //   setState(() {
-    //     _loadingStepIndex = null;
-    //   });
-    //   return;
-    // }
 
     final allowedStatuses = [
       'penny_drop_done',
@@ -771,7 +711,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
         _connectWebSocket();
       }
       setState(() {
-        _loadingStepIndex = null;
+        _loadingStepIndex = 2;
       });
       return;
     }
@@ -806,7 +746,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
       _isPolling = false;
     });
     try {
-      _digioRepo.stopPolling();
+      _digioRepo.stopPollingWithLoader(context);
     } catch (_) {}
     super.dispose();
   }
@@ -827,7 +767,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
       onPopInvokedWithResult: (didPop, result) {
         _statusTimer?.cancel();
         try {
-          _digioRepo.stopPolling();
+          _digioRepo.stopPollingWithLoader(context);
         } catch (_) {}
         setState(() {
           _isPolling = false;
@@ -905,6 +845,33 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
       _currentOpenStep = null;
       _loadingStepIndex = null;
     });
+                    GestureDetector(
+                      onTap: () {
+                        _statusTimer?.cancel();
+                        try {
+                          _digioRepo.stopPollingWithLoader(context);
+                        } catch (_) {}
+                        setState(() {
+                          _isPolling = false;
+                          _isWebViewOpen = false;
+                          _currentOpenStep = null;
+                        });
+
+                        // schedule safe push to lender selection
+                        _safePushToLenderSelection();
+                      },
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.arrow_back,
+                            color: AppColors.white,
+                            size: 20,
+                          ),
+                          Gaps.wSm,
+                          CText('goBack'.tr, style: AppTypography.bodyWhite),
+                        ],
+                      ),
+                    );
 
     // navigate to Dashboard and remove previous routes
     WidgetsBinding.instance.addPostFrameCallback((_) {

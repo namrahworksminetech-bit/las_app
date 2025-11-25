@@ -89,21 +89,32 @@ class _WebViewScreenState extends State<WebViewScreen> {
     super.dispose();
   }
 
+  Future<bool> _onWillPop() async {
+    if (await controller.canGoBack()) {
+      controller.goBack();
+      return false;
+    }
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title ?? 'WebView'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Get.back(),
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.title ?? 'WebView'),
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => Get.back(),
+          ),
         ),
-      ),
-      body: Stack(
-        children: [
-          WebViewWidget(controller: controller),
-          // if (isLoading) const Center(child: CircularProgressIndicator()),
-        ],
+        body: Stack(
+          children: [
+            WebViewWidget(controller: controller),
+            // if (isLoading) const Center(child: CircularProgressIndicator()),
+          ],
+        ),
       ),
     );
   }
