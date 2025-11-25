@@ -120,9 +120,9 @@ class _LoginScreenState extends State<LoginScreen> {
           // ✅ Navigate after OTP verification success + pledge status check
           if (state.token != null && state.token!.isNotEmpty) {
             final status = state.pledgeStatus;
-            final normalStatuses = {'not_started', 'pan_verified', 'pending'};
+            final normalStatuses = {'not_started'};
 
-            if (status == 'mf_fetched' || status == 'pending') {
+            if (status == 'mf_fetched' || status == 'pending' || status=='pan_verified') {
               // Navigate to Eligibility screen and ask it to start fetching immediately
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
@@ -147,6 +147,7 @@ class _LoginScreenState extends State<LoginScreen> {
             } else if (<String>[
               'kfs_agreement_done',
               'penny_drop_done',
+              'pending',
               'kyc_done',
               'mandate_flow_fail',
             ].contains((status ?? '').trim())) {

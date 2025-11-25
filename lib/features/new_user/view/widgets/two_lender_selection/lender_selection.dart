@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:las_app/features/dashboard/view_dashboard.dart';
+import 'package:las_app/features/home/view_home.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
 import 'package:las_app/core/theme/app_colors.dart';
@@ -16,8 +18,8 @@ import 'package:las_app/features/new_user/view/widgets/two_lender_selection/pled
 import 'package:las_app/features/new_user/view/widgets/two_lender_selection/portfolio_breakdown.dart';
 
 
-class LenderSelectionScreen extends StatefulWidget {
 
+class LenderSelectionScreen extends StatefulWidget {
   const LenderSelectionScreen({super.key});
 
   @override
@@ -26,6 +28,40 @@ class LenderSelectionScreen extends StatefulWidget {
 
 class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
   DateTime? lastBackPress;
+  
+  Future<bool> _showExitConfirmDialog() async {
+    final res = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Exit to Home?'),
+          content: const Text(
+              'Are you sure you want to leave this flow and go back to the home screen?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Confirm'),
+            ),
+          ],
+        );
+      },
+    );
+    return res ?? false;
+  }
+
+  /// Navigate to Dashboard clearing the stack
+  void _navigateToDashboard() {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const Home()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final formatCurrency = NumberFormat.currency(
@@ -42,300 +78,317 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
       }
     }
 
+    return WillPopScope(
+      onWillPop: () async {
+        // show confirm dialog and if confirmed navigate to Dashboard
+        final confirm = await _showExitConfirmDialog();
+        if (confirm) {
+          _navigateToDashboard();
+        }
+        // always block default pop because we handled navigation
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.black,
+        body: SafeArea(
+          child: BlocConsumer<EligibilityBloc, EligibilityState>(
+            listener: (context, state) {
+              if (state.generalErrorMessage != null) {
+                CSnackBar.show(
+                  context,
+                  state.generalErrorMessage!,
+                  isError: true,
+                );
+                context.read<EligibilityBloc>().add(ErrorMessageCleared());
+              }
+            },
+            builder: (context, state) {
+              final bool showFullHeader = state.lenderSelectionView ==
+                      LenderSelectionView.lenderList ||
+                  state.lenderSelectionView ==
+                      LenderSelectionView.portfolioBreakdown ||
+                  state.lenderSelectionView ==
+                      LenderSelectionView.pledgeableDetail;
 
-   return WillPopScope(
-  onWillPop: () async {
-    final now = DateTime.now();
-
-    if (lastBackPress == null ||
-        now.difference(lastBackPress!) > const Duration(seconds: 2)) {
-      lastBackPress = now;
-
-      CSnackBar.show(
-        context,
-        "Press again to exit",
-        isError: false,
-      );
-
-      return false; // don't exit yet
-    }
-
-    return true; // exit app
-  },
-  child: Scaffold(
-
-      backgroundColor: AppColors.black,
-      body: SafeArea(
-        child: BlocConsumer<EligibilityBloc, EligibilityState>(
-          listener: (context, state) {
-            if (state.generalErrorMessage != null) {
-              CSnackBar.show(
-                context,
-                state.generalErrorMessage!,
-                isError: true,
-              );
-              context.read<EligibilityBloc>().add(ErrorMessageCleared());
-            }
-          },
-          builder: (context, state) {
-            final bool showFullHeader =
-                state.lenderSelectionView == LenderSelectionView.lenderList ||
-                    state.lenderSelectionView ==
-                        LenderSelectionView.portfolioBreakdown ||
-                    state.lenderSelectionView == LenderSelectionView.pledgeableDetail;
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SingleChildScrollView(
-                  physics: const NeverScrollableScrollPhysics(),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Gaps.hXl,
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                        child: Row(
-                          children: [
-                            CircularPercentIndicator(
-                              radius: 35.0,
-                              lineWidth: 8.0,
-                              percent: 0.5,
-                              center: CText(
-                                "2/4",
-                                style: AppTypography.bodyWhite.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              progressColor: AppColors.bPrimaryColor,
-                              backgroundColor: AppColors.bSecondaryColor,
-                              circularStrokeCap: CircularStrokeCap.round,
-                            ),
-                            Gaps.wMd,
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                CText(
-                                  'lenderSelectionTitle'.tr,
-                                  style: AppTypography.h2,
-                                ),
-                                Gaps.hXs,
-                                CText(
-                                  'nextKycVerification'.tr,
-                                  style: AppTypography.bodySecondary,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      Gaps.hXl,
-                      const Divider(
-                          thickness: 1.5, color: AppColors.bSecondaryColor),
-                      Gaps.hMd,
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24.0, vertical: 16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                // Robust Go Back:
-                                GestureDetector(
-                                 onTap: () {
-  final bloc = context.read<EligibilityBloc>();
-
-  // Always navigate back *inside* the lender-selection flow to the LENDER LIST view.
-  // This will NOT pop the route. It will ask the bloc to change the internal sub-view.
-  try {
-    bloc.add(const SetLenderSelectionView(LenderSelectionView.lenderList));
-  } catch (e, st) {
-    debugPrint('Failed to add SetLenderSelectionView: $e\n$st');
-    // Fallback: if bloc isn't available for some reason, ensure we at least
-    // keep the user on-screen rather than popping overlays/routing back.
-  }
-},
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.arrow_back,
-                                        color: AppColors.white,
-                                        size: 20,
-                                      ),
-                                      Gaps.wXs,
-                                      CText(
-                                        'Go Back',
-                                        style: AppTypography.bodyWhite.copyWith(
-                                          decoration: TextDecoration.underline,
-                                        ),
-                                      ),
-                                    ],
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SingleChildScrollView(
+                    physics: const NeverScrollableScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Gaps.hXl,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                          child: Row(
+                            children: [
+                              CircularPercentIndicator(
+                                radius: 35.0,
+                                lineWidth: 8.0,
+                                percent: 0.5,
+                                center: CText(
+                                  "2/4",
+                                  style: AppTypography.bodyWhite.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
                                   ),
                                 ),
-
-                                RichText(
-                                  text: TextSpan(
-                                    children: [
-                                      TextSpan(
-                                        text: (state.lenderSelectionView ==
-                                                    LenderSelectionView
-                                                        .portfolioBreakdown ||
-                                                state.lenderSelectionView ==
-                                                    LenderSelectionView
-                                                        .pledgeableDetail)
-                                            ? 'viewLenders'.tr
-                                            : 'viewYourMfDetails'.tr,
-                                        style: AppTypography.bodyWhite.copyWith(
-                                          decoration: TextDecoration.underline,
-                                          decorationColor: AppColors.white,
-                                        ),
-                                        recognizer: TapGestureRecognizer()
-                                          ..onTap = () {
-                                            // safe add of toggle event
-                                            safeAdd(ViewDetailsToggled());
-                                          },
-                                      ),
-                                      const WidgetSpan(child: Gaps.wXs),
-                                      const WidgetSpan(
-                                        child: Icon(
-                                          Icons.arrow_forward_ios,
-                                          color: AppColors.white,
-                                          size: 12,
-                                        ),
-                                        alignment: PlaceholderAlignment.middle,
-                                      ),
-                                    ],
+                                progressColor: AppColors.bPrimaryColor,
+                                backgroundColor: AppColors.bSecondaryColor,
+                                circularStrokeCap: CircularStrokeCap.round,
+                              ),
+                              Gaps.wMd,
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CText(
+                                    'lenderSelectionTitle'.tr,
+                                    style: AppTypography.h2,
                                   ),
-                                ),
-                              ],
-                            ),
-                            if (showFullHeader) ...[
-                              Gaps.hXl,
-                              CText('eligibleCreditLimit'.tr,
-                                  style: AppTypography.bodyWhite),
-                              Gaps.hSm,
-                              Builder(
-                                builder: (_) {
-                                  final totalPledgeable = state.mfDetailsResponse
-                                          ?.pledgeableFunds
-                                          .fold<double>(
-                                              0,
-                                              (sum, fund) =>
-                                                  sum + (fund.availableAmount ?? 0)) ??
-                                      0.0;
-
-                                  return CText(
-                                    formatCurrency.format(totalPledgeable),
-                                    style: AppTypography.h1
-                                        .copyWith(color: AppColors.bPrimaryColor),
-                                  );
-                                },
+                                  Gaps.hXs,
+                                  CText(
+                                    'nextKycVerification'.tr,
+                                    style: AppTypography.bodySecondary,
+                                  ),
+                                ],
                               ),
-                              Gaps.hXxs,
-                              CText(
-                                'totalPortfolioValue'.trParams({
-                                  'value': formatCurrency.format(
-                                      state.mfDetailsResponse?.eligiblePortfolio ??
-                                          0),
-                                }),
-                                style: AppTypography.caption,
-                              ),
-                              Gaps.hXl,
                             ],
-                            AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 300),
-                              transitionBuilder: (child, animation) =>
-                                  FadeTransition(opacity: animation, child: child),
-                              child: () {
-                                final currentView = state.lenderSelectionView;
-                                if (currentView == LenderSelectionView.lenderList) {
-                                  return Container(
-                                    key: const ValueKey('info_box'),
-                                    margin: const EdgeInsets.only(top: 24.0),
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16.0, vertical: 18.0),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF1F2937),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
+                          ),
+                        ),
+                        Gaps.hXl,
+                        const Divider(
+                            thickness: 1.5, color: AppColors.bSecondaryColor),
+                        Gaps.hMd,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24.0, vertical: 16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  // Robust Go Back:
+                                  GestureDetector(
+                                    onTap: () async {
+                                      // Show confirm dialog; if confirmed navigate to Dashboard
+                                      final confirm = await _showExitConfirmDialog();
+                                      if (confirm) {
+                                        _navigateToDashboard();
+                                      } else {
+                                        // If user cancelled, keep them in current view but also
+                                        // ensure we stay on lender list subview (safe default).
+                                        try {
+                                          context.read<EligibilityBloc>().add(
+                                              const SetLenderSelectionView(
+                                                  LenderSelectionView
+                                                      .lenderList));
+                                        } catch (_) {}
+                                      }
+                                    },
                                     child: Row(
                                       children: [
                                         const Icon(
-                                          Icons.badge_outlined,
-                                          color: AppColors.bPrimaryColor,
-                                          size: 24,
+                                          Icons.arrow_back,
+                                          color: AppColors.white,
+                                          size: 20,
                                         ),
-                                        Gaps.wSm,
-                                        Expanded(
-                                          child: CText(
-                                            'selectLenderInfo'.tr,
-                                            style: AppTypography.bodyWhite,
+                                        Gaps.wXs,
+                                        CText(
+                                          'Go Back',
+                                          style: AppTypography.bodyWhite
+                                              .copyWith(
+                                            decoration:
+                                                TextDecoration.underline,
                                           ),
                                         ),
                                       ],
                                     ),
-                                  );
-                                }
+                                  ),
 
-                                if (currentView ==
-                                        LenderSelectionView.portfolioBreakdown ||
-                                    currentView ==
-                                        LenderSelectionView.pledgeableDetail) {
-                                  return Align(
-                                    key: const ValueKey('breakdown_title'),
-                                    alignment: Alignment.centerLeft,
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(
-                                          top: 24.0, bottom: 8.0),
-                                      child: CText(
-                                        currentView == LenderSelectionView
-                                                .portfolioBreakdown
-                                            ? 'portfolioBreakdown'.tr
-                                            : 'portfolioBreakdownPledgeableFunds'
-                                                .tr,
-                                        style: AppTypography.caption,
-                                      ),
+                                  RichText(
+                                    text: TextSpan(
+                                      children: [
+                                        TextSpan(
+                                          text: (state.lenderSelectionView ==
+                                                      LenderSelectionView
+                                                          .portfolioBreakdown ||
+                                                  state.lenderSelectionView ==
+                                                      LenderSelectionView
+                                                          .pledgeableDetail)
+                                              ? 'viewLenders'.tr
+                                              : 'viewYourMfDetails'.tr,
+                                          style:
+                                              AppTypography.bodyWhite.copyWith(
+                                            decoration:
+                                                TextDecoration.underline,
+                                            decorationColor: AppColors.white,
+                                          ),
+                                          recognizer: TapGestureRecognizer()
+                                            ..onTap = () {
+                                              // safe add of toggle event
+                                              safeAdd(ViewDetailsToggled());
+                                            },
+                                        ),
+                                        const WidgetSpan(child: Gaps.wXs),
+                                        const WidgetSpan(
+                                          child: Icon(
+                                            Icons.arrow_forward_ios,
+                                            color: AppColors.white,
+                                            size: 12,
+                                          ),
+                                          alignment: PlaceholderAlignment.middle,
+                                        ),
+                                      ],
                                     ),
-                                  );
-                                }
-                                return const SizedBox.shrink(key: ValueKey('empty'));
-                              }(),
-                            ),
-                          ],
+                                  ),
+                                ],
+                              ),
+                              if (showFullHeader) ...[
+                                Gaps.hXl,
+                                CText('eligibleCreditLimit'.tr,
+                                    style: AppTypography.bodyWhite),
+                                Gaps.hSm,
+                                Builder(
+                                  builder: (_) {
+                                    final totalPledgeable = state
+                                            .mfDetailsResponse
+                                            ?.pledgeableFunds
+                                            .fold<double>(
+                                                0,
+                                                (sum, fund) =>
+                                                    sum +
+                                                    (fund.availableAmount ??
+                                                        0)) ??
+                                        0.0;
+
+                                    return CText(
+                                      formatCurrency.format(totalPledgeable),
+                                      style: AppTypography.h1.copyWith(
+                                          color: AppColors.bPrimaryColor),
+                                    );
+                                  },
+                                ),
+                                Gaps.hXxs,
+                                CText(
+                                  'totalPortfolioValue'.trParams({
+                                    'value': formatCurrency.format(
+                                        state.mfDetailsResponse
+                                                ?.eligiblePortfolio ??
+                                            0),
+                                  }),
+                                  style: AppTypography.caption,
+                                ),
+                                Gaps.hXl,
+                              ],
+                              AnimatedSwitcher(
+                                duration:
+                                    const Duration(milliseconds: 300),
+                                transitionBuilder:
+                                    (child, animation) =>
+                                        FadeTransition(
+                                            opacity: animation,
+                                            child: child),
+                                child: () {
+                                  final currentView = state.lenderSelectionView;
+                                  if (currentView ==
+                                      LenderSelectionView.lenderList) {
+                                    return Container(
+                                      key: const ValueKey('info_box'),
+                                      margin:
+                                          const EdgeInsets.only(top: 24.0),
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16.0, vertical: 18.0),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF1F2937),
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.badge_outlined,
+                                            color: AppColors.bPrimaryColor,
+                                            size: 24,
+                                          ),
+                                          Gaps.wSm,
+                                          Expanded(
+                                            child: CText(
+                                              'selectLenderInfo'.tr,
+                                              style:
+                                                  AppTypography.bodyWhite,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }
+
+                                  if (currentView ==
+                                          LenderSelectionView
+                                              .portfolioBreakdown ||
+                                      currentView ==
+                                          LenderSelectionView
+                                              .pledgeableDetail) {
+                                    return Align(
+                                      key:
+                                          const ValueKey('breakdown_title'),
+                                      alignment: Alignment.centerLeft,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                            top: 24.0, bottom: 8.0),
+                                        child: CText(
+                                          currentView ==
+                                                  LenderSelectionView
+                                                      .portfolioBreakdown
+                                              ? 'portfolioBreakdown'.tr
+                                              : 'portfolioBreakdownPledgeableFunds'
+                                                  .tr,
+                                          style: AppTypography.caption,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  return const SizedBox.shrink(
+                                      key: ValueKey('empty'));
+                                }(),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    transitionBuilder: (child, animation) {
-                      final offsetAnimation = Tween<Offset>(
-                        begin: const Offset(0.0, 0.1),
-                        end: Offset.zero,
-                      ).animate(CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeInOut,
-                      ));
-                      return SlideTransition(
-                        position: offsetAnimation,
-                        child: FadeTransition(opacity: animation, child: child),
-                      );
-                    },
-                    child: _buildCurrentView(context, state),
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      transitionBuilder: (child, animation) {
+                        final offsetAnimation = Tween<Offset>(
+                          begin: const Offset(0.0, 0.1),
+                          end: Offset.zero,
+                        ).animate(CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeInOut,
+                        ));
+                        return SlideTransition(
+                          position: offsetAnimation,
+                          child:
+                              FadeTransition(opacity: animation, child: child),
+                        );
+                      },
+                      child: _buildCurrentView(context, state),
+                    ),
                   ),
-                ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
         ),
       ),
-    ) );
+    );
   }
 
   Widget _buildCurrentView(BuildContext context, EligibilityState state) {

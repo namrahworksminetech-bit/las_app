@@ -63,7 +63,7 @@ class LenderRepository {
 
   Future<Result<MfDetailsResponse>> editLoanAmount({
     required String reqId,
-    required double loanAmount,
+    required double? loanAmount,
     required String lenderId,
     required List<String> isinAdd,
     required List<String> isinRemove,

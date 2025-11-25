@@ -781,7 +781,7 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     print('🔁 Fund toggled: ${event.fundId}');
     print('📦 Selected funds after toggle: $currentSelected');
 
-    // ✅ Emit updated selection and store current state for future diffing
+    // Emit updated selection and store current state for future diffing
     emit(
       state.copyWith(
         selectedFundIds: currentSelected,
@@ -790,153 +790,178 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     );
   }
 
-  Future<void> _onConfirmFundSelection(
-    ConfirmFundSelection event,
-    Emitter<EligibilityState> emit,
-  ) async {
-    print('🧩 ConfirmFundSelection START');
-    emit(state.copyWith(isLoading: true, generalErrorMessage: null));
+Future<void> _onConfirmFundSelection(
+  ConfirmFundSelection event,
+  Emitter<EligibilityState> emit,
+) async {
+  print('🧩 ConfirmFundSelection START');
+  emit(state.copyWith(isLoading: true, generalErrorMessage: null));
 
-    try {
-      final lenderId = state.selectedLenderId ?? '';
-      final reqId = getIt<AppStateProvider>().reqId ?? '';
-      print('📋 reqId: $reqId, selectedLenderId: $lenderId');
+  try {
+    final lenderId = state.selectedLenderId ?? '';
+    final reqId = getIt<AppStateProvider>().reqId ?? '';
+    print('📋 reqId: $reqId, selectedLenderId: $lenderId');
 
-      if (reqId.isEmpty) {
+    if (reqId.isEmpty) {
+      emit(
+        state.copyWith(
+          isLoading: false,
+          generalErrorMessage: 'Missing reqId. Please restart the process.',
+        ),
+      );
+      return;
+    }
+
+    // Base loan amount (if this is purely loan-edit without fund add/remove)
+    final baseLoanAmount =
+        state.editedLoanAmounts[lenderId] ?? state.selectedLender?.loanAmount ?? 0.0;
+
+    // Defensive: drop any empty fund codes from current selection
+    final previousFunds = state.previousSelectedFundIds;
+    final currentFundsRaw = state.selectedFundIds;
+    final currentFunds = currentFundsRaw.where((s) => s.trim().isNotEmpty).toSet();
+    if (currentFundsRaw.length != currentFunds.length) {
+      debugPrint('⚠️ Removed empty/blank fund codes from selection');
+    }
+
+    // helpers & results
+    final List<String> isinAdd = [];
+    final List<String> isinRemove = [];
+    final List<String> isinModify = []; // ALWAYS keep empty per backend rule
+    final List<String> skipped = [];
+
+    PledgeableFund? findFund(String code) =>
+        state.pledgeableFunds.firstWhereOrNull((p) => p.fundCode == code);
+
+    // Build add list: fundCode:folioNo
+    for (final code in currentFunds.difference(previousFunds)) {
+      if (code.trim().isEmpty) {
+        debugPrint('⚠️ Skipping add entry for blank code');
+        skipped.add('add:$code');
+        continue;
+      }
+      final f = findFund(code);
+      final folio = f?.folioNo ?? '';
+      if (folio.isEmpty) {
+        debugPrint('⚠️ Skipping add entry for $code - folio missing');
+        skipped.add('add:$code');
+        continue;
+      }
+      isinAdd.add('$code:$folio');
+    }
+
+    // Build remove list: fundCode:folioNo
+    for (final code in previousFunds.difference(currentFunds)) {
+      if (code.trim().isEmpty) {
+        debugPrint('⚠️ Skipping remove entry for blank code');
+        skipped.add('remove:$code');
+        continue;
+      }
+      final f = findFund(code);
+      final folio = f?.folioNo ?? '';
+      if (folio.isEmpty) {
+        debugPrint('⚠️ Skipping remove entry for $code - folio missing');
+        skipped.add('remove:$code');
+        continue;
+      }
+      isinRemove.add('$code:$folio');
+    }
+
+    // Extra safety: filter out any malformed colon entries (guards against ":5544587")
+    bool looksValidIsinPair(String s) {
+      if (!s.contains(':')) return false;
+      final parts = s.split(':');
+      if (parts.length != 2) return false;
+      final isin = parts[0].trim();
+      final folio = parts[1].trim();
+      if (isin.isEmpty || folio.isEmpty) return false;
+      if (!RegExp(r'^[A-Z0-9]+$').hasMatch(isin)) return false;
+      return true;
+    }
+
+    final filteredIsinAdd = isinAdd.where(looksValidIsinPair).toList();
+    final filteredIsinRemove = isinRemove.where(looksValidIsinPair).toList();
+    if (filteredIsinAdd.length != isinAdd.length || filteredIsinRemove.length != isinRemove.length) {
+      debugPrint('⚠️ Removed malformed ISIN entries from lists');
+    }
+
+    debugPrint('📤 ISIN_ADD (${filteredIsinAdd.length}): $filteredIsinAdd');
+    debugPrint('📤 ISIN_REMOVE (${filteredIsinRemove.length}): $filteredIsinRemove');
+    debugPrint('📤 ISIN_MODIFY (always empty): $isinModify');
+    if (skipped.isNotEmpty) debugPrint('⚠️ Skipped entries: $skipped');
+
+    // Determine loan_amount to send as nullable double:
+    // - when add/remove present -> send null
+    // - otherwise -> send actual baseLoanAmount
+    double? loanAmountToSend;
+    if (filteredIsinAdd.isNotEmpty || filteredIsinRemove.isNotEmpty) {
+      loanAmountToSend = null;
+      debugPrint('⚠️ Add/remove detected -> sending loan_amount = null');
+    } else {
+      loanAmountToSend = baseLoanAmount;
+      debugPrint('ℹ️ No add/remove -> sending loan_amount = $loanAmountToSend');
+    }
+
+    // Final body preview for debugging
+    final bodyPreview = {
+      'req_id': reqId,
+      'loan_amount': loanAmountToSend,
+      'lender_id': lenderId,
+      'isin_add': filteredIsinAdd,
+      'isin_remove': filteredIsinRemove,
+      'isin_modify': isinModify,
+    };
+    debugPrint('📦 Final request body preview: $bodyPreview');
+
+    // Call repository (new method with named args)
+    final result = await lenderRepository.editLoanAmount(
+      reqId: reqId,
+      loanAmount: loanAmountToSend,
+      lenderId: lenderId,
+      isinAdd: filteredIsinAdd,
+      isinRemove: filteredIsinRemove,
+      isinModify: isinModify,
+    );
+
+    // Handle Result<MfDetailsResponse>
+    await result.when(
+      success: (updatedData) async {
+        debugPrint('✅ editLoanAmount success, updating state');
+
+        // Map lenders from response into UI model Lender
+        final updatedLenders = updatedData.lenders.map((l) {
+          return Lender(
+            id: l.id.toString(),
+            name: l.name ?? '-',
+            logoAsset: l.logo ?? '',
+            interestRate: l.loanInterest ?? 0.0,
+            loanAmount: l.loanAmount ?? 0.0,
+            pledgeableMFs: l.eligibleFundsCount ?? 0,
+            tag: '',
+          );
+        }).toList();
+
         emit(
           state.copyWith(
+            mfDetailsResponse: updatedData,
+            pledgeableFunds: updatedData.pledgeableFunds,
+            lenders: updatedLenders,
             isLoading: false,
-            generalErrorMessage: 'Missing reqId. Please restart the process.',
+            shouldNavigateToKyc: true,
+            generalErrorMessage: null,
           ),
         );
-        return;
-      }
-
-      // Base loan amount (if this is purely loan-edit without fund add/remove)
-      final baseLoanAmount =
-          state.editedLoanAmounts[lenderId] ??
-          state.selectedLender?.loanAmount ??
-          0.0;
-
-      // Defensive: drop any empty fund codes from current selection
-      final previousFunds = state.previousSelectedFundIds;
-      final currentFundsRaw = state.selectedFundIds;
-      final currentFunds = currentFundsRaw
-          .where((s) => s.trim().isNotEmpty)
-          .toSet();
-      if (currentFundsRaw.length != currentFunds.length) {
-        debugPrint('⚠️ Removed empty/blank fund codes from selection');
-      }
-
-      // helpers & results
-      final List<String> isinAdd = [];
-      final List<String> isinRemove = [];
-      final List<String> isinModify = []; // ALWAYS keep empty per backend rule
-      final List<String> skipped = [];
-
-      PledgeableFund? findFund(String code) =>
-          state.pledgeableFunds.firstWhereOrNull((p) => p.fundCode == code);
-
-      // Build add list: fundCode:folioNo
-      for (final code in currentFunds.difference(previousFunds)) {
-        final f = findFund(code);
-        final folio = f?.folioNo ?? '';
-        if (folio.isEmpty) {
-          debugPrint('⚠️ Skipping add entry for $code - folio missing');
-          skipped.add('add:$code');
-          continue;
-        }
-        isinAdd.add('$code:$folio');
-      }
-
-      // Build remove list: fundCode:folioNo
-      for (final code in previousFunds.difference(currentFunds)) {
-        final f = findFund(code);
-        final folio = f?.folioNo ?? '';
-        if (folio.isEmpty) {
-          debugPrint('⚠️ Skipping remove entry for $code - folio missing');
-          skipped.add('remove:$code');
-          continue;
-        }
-        isinRemove.add('$code:$folio');
-      }
-
-      debugPrint('📤 ISIN_ADD (${isinAdd.length}): $isinAdd');
-      debugPrint('📤 ISIN_REMOVE (${isinRemove.length}): $isinRemove');
-      debugPrint('📤 ISIN_MODIFY (always empty): $isinModify');
-      if (skipped.isNotEmpty) debugPrint('⚠️ Skipped entries: $skipped');
-
-      // Determine loan_amount to send:
-      double loanAmountToSend;
-      if (isinAdd.isNotEmpty || isinRemove.isNotEmpty) {
-        loanAmountToSend = 0.0; // backend rule when add/remove present
-        debugPrint('⚠️ Add/remove detected -> sending loan_amount = 0.0');
-      } else {
-        loanAmountToSend = baseLoanAmount;
-        debugPrint(
-          'ℹ️ No add/remove -> sending loan_amount = $loanAmountToSend',
-        );
-      }
-
-      // Final body preview for debugging
-      final bodyPreview = {
-        'req_id': reqId,
-        'loan_amount': loanAmountToSend,
-        'lender_id': lenderId.toString(),
-        'isin_add': isinAdd,
-        'isin_remove': isinRemove,
-        'isin_modify': isinModify,
-      };
-      debugPrint('📦 Final request body preview: $bodyPreview');
-
-      // Call repository
-      final result = await lenderRepository.editLoanAmount(
-        reqId: reqId,
-        loanAmount: loanAmountToSend,
-        lenderId: lenderId,
-        isinAdd: isinAdd,
-        isinRemove: isinRemove,
-        isinModify: isinModify,
-      );
-
-      await result.when(
-        success: (updatedData) async {
-          debugPrint('✅ editLoanAmount success, updating state');
-
-          // Map lenders from response into UI model Lender
-          final updatedLenders = updatedData.lenders.map((l) {
-            return Lender(
-              id: l.id.toString(),
-              name: l.name ?? '-',
-              logoAsset: l.logo ?? '',
-              interestRate: l.loanInterest ?? 0.0,
-              loanAmount: l.loanAmount ?? 0.0,
-              pledgeableMFs: l.eligibleFundsCount ?? 0,
-              tag: '',
-            );
-          }).toList();
-
-          emit(
-            state.copyWith(
-              mfDetailsResponse: updatedData,
-              pledgeableFunds: updatedData.pledgeableFunds,
-              lenders: updatedLenders,
-              isLoading: false,
-              shouldNavigateToKyc: true,
-              generalErrorMessage: null,
-            ),
-          );
-        },
-        failure: (error) {
-          debugPrint('❌ editLoanAmount failed: $error');
-          emit(state.copyWith(isLoading: false, generalErrorMessage: error));
-        },
-      );
-    } catch (e, st) {
-      debugPrint('💥 Unexpected exception in _onConfirmFundSelection: $e\n$st');
-      emit(state.copyWith(isLoading: false, generalErrorMessage: e.toString()));
-    }
+      },
+      failure: (error) {
+        debugPrint('❌ editLoanAmount failed: $error');
+        emit(state.copyWith(isLoading: false, generalErrorMessage: error));
+      },
+    );
+  } catch (e, st) {
+    debugPrint('💥 Unexpected exception in _onConfirmFundSelection: $e\n$st');
+    emit(state.copyWith(isLoading: false, generalErrorMessage: e.toString()));
   }
+}
 
   void _onViewDetailsToggled(
     ViewDetailsToggled event,
