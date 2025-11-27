@@ -10,7 +10,6 @@ import 'package:las_app/common_widgets/c_text.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
-import 'package:las_app/features/dashboard/view_dashboard.dart';
 import 'package:las_app/features/home/view_home.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
 import 'package:las_app/features/new_user/view/eligibility_form.dart';

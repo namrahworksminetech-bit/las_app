@@ -759,7 +759,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
       "aadharPanVerification".tr,
       "linkAccountMandate".tr,
       "loanAgreementSigning".tr,
-      "finalReview".tr,
+      "SetMandate".tr,
     ];
 
     return PopScope(

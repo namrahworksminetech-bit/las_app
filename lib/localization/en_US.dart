@@ -108,6 +108,7 @@ final Map<String, String> enUS = {
   "verifyDetails": "Verify details to proceed securely",
   "safeSecure": "Safe & Secure • Your data is encrypted",
   "proceedToFinalStep": "Proceed to Final Step",
+  "startingKyc" : 'Starting KYC',
 
   "pledgeFunds": "Pledge Funds",
   "nextApplicationSubmission": "Next: Application Submission",

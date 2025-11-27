@@ -232,7 +232,7 @@ Future<void> _onContinueApplicationPressed(BuildContext context) async {
         return;
       }
 
-      if (status == 'mf_fetched') {
+      if (status == 'mf_fetched' || status == 'pan_verified') {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const EligibilityScreen(startWithMfFetch: true)),
         );

@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../core/injection_container.dart';
 import '../core/network/api_client.dart';
@@ -102,13 +101,27 @@ class _WebViewScreenState extends State<WebViewScreen> {
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(widget.title ?? 'WebView'),
-          leading: IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Get.back(),
-          ),
+       appBar: AppBar(
+  leading: IconButton(
+    icon: const Icon(Icons.close),
+    onPressed: () => Get.back(),
+  ),
+  title: Row(
+    children: [
+      Image.asset(
+        'assets/images/sliQ.png',
+        height: 28,  // Adjust size as needed
+      ),
+      const SizedBox(width: 8),
+      Expanded(
+        child: Text(
+          widget.title ?? 'WebView',
+          overflow: TextOverflow.ellipsis,
         ),
+      ),
+    ],
+  ),
+),
         body: Stack(
           children: [
             WebViewWidget(controller: controller),
