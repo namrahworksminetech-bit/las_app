@@ -21,15 +21,26 @@ class _WebViewScreenState extends State<WebViewScreen> {
       ..loadRequest(Uri.parse(widget.url));
   }
 
+  Future<bool> _onWillPop() async {
+    if (await controller.canGoBack()) {
+      controller.goBack();
+      return false;
+    }
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Location Request'),
-        backgroundColor: const Color(0xFF32a83a),
-        foregroundColor: Colors.white,
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Location Request'),
+          backgroundColor: const Color(0xFF32a83a),
+          foregroundColor: Colors.white,
+        ),
+        body: WebViewWidget(controller: controller),
       ),
-      body: WebViewWidget(controller: controller),
     );
   }
 }

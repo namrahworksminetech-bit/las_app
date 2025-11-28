@@ -103,10 +103,12 @@ final Map<String, String> enUS = {
   "loanAgreementSigning": "Loan agreement signing",
   "kycVerification": "KYC Verification",
   "nextPledgeFunds": "Next: Pledge Funds",
+  "SetMandate" :"Set Mandate",
 
   "verifyDetails": "Verify details to proceed securely",
   "safeSecure": "Safe & Secure • Your data is encrypted",
   "proceedToFinalStep": "Proceed to Final Step",
+  "startingKyc" : 'Starting KYC',
 
   "pledgeFunds": "Pledge Funds",
   "nextApplicationSubmission": "Next: Application Submission",

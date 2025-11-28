@@ -63,7 +63,7 @@ class LenderRepository {
 
   Future<Result<MfDetailsResponse>> editLoanAmount({
     required String reqId,
-    required double loanAmount,
+    required double? loanAmount,
     required String lenderId,
     required List<String> isinAdd,
     required List<String> isinRemove,
@@ -93,7 +93,7 @@ class LenderRepository {
       );
 
       final response = await _apiClient.post(
-        "https://api-dev.valuenable.in/lamf/customer/edit-loan-amount",
+        "https://api-uat.valuenable.in/lamf/customer/edit-loan-amount",
         data: bodyJson,
         options: Options(
           headers: {

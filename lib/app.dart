@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
+import 'package:las_app/app_container.dart';
 import 'package:las_app/core/network/api_client.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
 import 'package:las_app/features/new_user/repository/lenders_data_repo.dart';
@@ -38,24 +39,26 @@ class _SliqAppState extends State<SliqApp> {
 
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp(
-      title: 'sLiQ'.tr,
-      debugShowCheckedModeBanner: false,
-      
-      translations: LocalizationService(),
-      locale: const Locale('en', 'US'),
-      fallbackLocale: const Locale('en', 'US'),
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
-      home: BlocProvider(
-        create: (_) => EligibilityBloc(
-          lenderRepository: LenderRepository(getIt<ApiClient>()),
-          repository: PanRepository(getIt<ApiClient>()),
-          apiClient: getIt<ApiClient>(),
+    return AppContainer(
+      child: GetMaterialApp(
+        title: 'sLiQ'.tr,
+        debugShowCheckedModeBanner: false,
+        
+        translations: LocalizationService(),
+        locale: const Locale('en', 'US'),
+        fallbackLocale: const Locale('en', 'US'),
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        themeMode: ThemeMode.system,
+        home: BlocProvider(
+          create: (_) => EligibilityBloc(
+            lenderRepository: LenderRepository(getIt<ApiClient>()),
+            repository: PanRepository(getIt<ApiClient>()),
+            apiClient: getIt<ApiClient>(),
+          ),
+          // child: const WelcomeScreen(),
+          child: const WelcomeScreen(),
         ),
-        // child: const WelcomeScreen(),
-        child: const WelcomeScreen(),
       ),
     );
   }

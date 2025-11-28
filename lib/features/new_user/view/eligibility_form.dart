@@ -9,6 +9,9 @@ import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/features/new_user/repository/lenders_data_repo.dart';
 import 'package:las_app/features/new_user/repository/pan_veirfy_repo.dart';
+import 'package:las_app/features/new_user/view/insurance_success_screen.dart';
+import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/insurance_step_one.dart';
+import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/insurance_step_two.dart';
 import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/step_fund_type.dart';
 import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/step_pan.dart';
 import 'package:las_app/helper_widgets/fetched_overlay.dart';
@@ -82,223 +85,213 @@ int _backPressCount = 0;
     });
   }
 
-  @override
+   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) {
-  final bloc = EligibilityBloc(
-    repository: PanRepository(ApiClient()),
-    lenderRepository: LenderRepository(ApiClient()),
-    apiClient: ApiClient(),
-  );
+        final bloc = EligibilityBloc(
+          repository: PanRepository(ApiClient()),
+          lenderRepository: LenderRepository(ApiClient()),
+          apiClient: ApiClient(),
+        );
 
-  if (widget.startWithMfFetch) {
-    // schedule immediately after creation so the bloc is ready
-    Future.microtask(() {
-      try {
-        bloc.add(const StartFetchingFromLogin());
-      } catch (e) {
-        print('Failed to dispatch StartFetchingFromLogin: $e');
-      }
-    });
-  }
+        if (widget.startWithMfFetch) {
+          // schedule immediately after creation so the bloc is ready
+          Future.microtask(() {
+            try {
+              bloc.add(const StartFetchingFromLogin());
+            } catch (e) {
+              print('Failed to dispatch StartFetchingFromLogin: $e');
+            }
+          });
+        }
 
-  return bloc;
-},
+        return bloc;
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.black,
+        body: BlocConsumer<EligibilityBloc, EligibilityState>(
+          listener: (context, state) {
+            // animate page when bloc pageIndex changes
+            if (state.pageIndex != (_pageController.page?.round() ?? 0)) {
+              _pageController.animateToPage(
+                state.pageIndex,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            }
 
-      child: WillPopScope(
-       onWillPop: () async {
-  final bloc = context.read<EligibilityBloc>();
-
-  // 🔥 If overlay open — close only
-  if (_isOverlayOpen) {
-    _bottomSheetController?.close();
-    setState(() => _isOverlayOpen = false);
-    return false;
-  }
-
-  // 🔥 Step 0 → show popup on FIRST back only
-  if (bloc.state.pageIndex == 0) {
-    if (_backPressCount == 0) {
-      _backPressCount++;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Press again to exit and end your session"),
-          duration: Duration(seconds: 2),
-        ),
-      );
-
-      Future.delayed(const Duration(seconds: 2), () {
-        _backPressCount = 0;
-      });
-
-      return false;
-    }
-
-    return true; // exit to welcome
-  }
-
-  // 🔥 For all other steps — go to previous bloc-defined step
-  bloc.add(PreviousStepPressed());
-  return false;
-},
-
-        child: Scaffold(
-          backgroundColor: AppColors.black,
-          body: BlocConsumer<EligibilityBloc, EligibilityState>(
-            listener: (context, state) {
-              // animate page when bloc pageIndex changes
-              if (state.pageIndex != (_pageController.page?.round() ?? 0)) {
-                _pageController.animateToPage(
-                  state.pageIndex,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                );
+            // overlay handling
+            if (state.currentOverlay != EligibilityOverlayType.none) {
+              _showOverlay(context, state.currentOverlay);
+            } else {
+              if (_isOverlayOpen) {
+                _bottomSheetController?.close();
+                _bottomSheetController = null;
+                setState(() => _isOverlayOpen = false);
               }
+            }
+          },
+         builder: (context, state) {
+  final List<Widget> allStepPages = [
+    const Step1InvestmentPage(),
 
-              // overlay handling
-              if (state.currentOverlay != EligibilityOverlayType.none) {
-                _showOverlay(context, state.currentOverlay);
-              } else {
-                if (_isOverlayOpen) {
-                  _bottomSheetController?.close();
-                  _bottomSheetController = null;
-                  setState(() => _isOverlayOpen = false);
-                }
-              }
-            },
-            builder: (context, state) {
-              final List<Widget> allStepPages = [
-                const Step1InvestmentPage(),
-                const Step1PanPage(),
-                Center(child: CText('Step 2.1', style: AppTypography.bodyWhite)),
-                Center(child: CText('Step 2.2', style: AppTypography.bodyWhite)),
-                Center(child: CText('Step 3.1', style: AppTypography.bodyWhite)),
-                Center(child: CText('Step 4.1', style: AppTypography.bodyWhite)),
-              ];
+    // index 1 (Insurance = custom UI otherwise normal PAN)
+    state.formData.investmentType == InvestmentType.insurancePolicy
+        ? const StepInsuranceDetailsPage()
+        : const Step1PanPage(),
 
-              return SafeArea(
-                child: Column(
-                  children: [
-                    if (state.majorStep == 1) ...[
-                      Gaps.hXl,
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            Image.asset('assets/images/sliQ.png', height: 50),
-                          ],
-                        ),
-                      ),
-                      Gaps.hXl,
-                      const Divider(
-                        thickness: 1.5,
-                        color: AppColors.bSecondaryColor,
-                      ),
-                    ],
+    // index 2 (Insurance = upload docs screen otherwise your existing flow)
+    state.formData.investmentType == InvestmentType.insurancePolicy
+        ? const StepInsuranceUploadPage()
+        : Center(child: CText("Step 2.1")),
 
+    Center(child: CText("Step 2.2")),
+    Center(child: CText("Step 3.1")),
+    Center(child: CText("Step 4.1")),
+  ];
+
+  // 🔹 decide when to show the global CTA + footer
+  final bool isInsuranceFlow =
+      state.formData.investmentType == InvestmentType.insurancePolicy;
+
+  // hide on insurance pages 1 & 2
+  final bool hideGlobalCtaOnThisPage =
+      isInsuranceFlow && (state.pageIndex == 1 || state.pageIndex == 2);
+
+  return SafeArea(
+    child: Column(
+      children: [
+                  if (state.majorStep == 1) ...[
                     Gaps.hXl,
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24.0),
                       child: Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
                         children: [
-                          CircularPercentIndicator(
-                            radius: 35.0,
-                            lineWidth: 8.0,
-                            percent: state.majorStep / 4.0,
-                            center: CText(
-                              "${state.majorStep}/4",
-                              style: AppTypography.bodyWhite.copyWith(
+                          Image.asset('assets/images/sliQ.png', height: 50),
+                        ],
+                      ),
+                    ),
+                    Gaps.hXl,
+                    const Divider(
+                      thickness: 1.5,
+                      color: AppColors.bSecondaryColor,
+                    ),
+                  ],
+
+                  Gaps.hXl,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Row(
+                      children: [
+                        CircularPercentIndicator(
+                          radius: 35.0,
+                          lineWidth: 8.0,
+                          percent: state.majorStep / 4.0,
+                          center: CText(
+                            "${state.majorStep}/4",
+                            style: AppTypography.bodyWhite.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          progressColor: AppColors.bPrimaryColor,
+                          backgroundColor: AppColors.bSecondaryColor,
+                          circularStrokeCap: CircularStrokeCap.round,
+                        ),
+                        Gaps.wMd,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CText(
+                              'CheckEligibility'.tr,
+                              style: AppTypography.h2.copyWith(
+                                color: AppColors.white,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 16,
                               ),
                             ),
-                            progressColor: AppColors.bPrimaryColor,
-                            backgroundColor: AppColors.bSecondaryColor,
-                            circularStrokeCap: CircularStrokeCap.round,
+                            Gaps.hXs,
+                            CText(
+                              'NextLenderSelection'.tr,
+                              style: AppTypography.body.copyWith(
+                                color: AppColors.bSecondaryColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Expanded(
+                    child: PageView(
+                      controller: _pageController,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: allStepPages,
+                    ),
+                  ),
+
+                  if (state.pageIndex != 1) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 0),
+                      child: CButton(
+                        text: state.isLoading
+                            ? 'Submitting'.tr
+                            : (state.majorStep == 4 ? 'Submit'.tr : 'Confirm&Continue'.tr),
+                        onPressed: state.isLoading
+    ? null
+    : () {
+        final isInsuranceFlow =
+            state.formData.investmentType == InvestmentType.insurancePolicy;
+
+        //  Insurance upload page -> go to success screen
+        if (isInsuranceFlow && state.pageIndex == 2) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const InsuranceSuccessScreen(),
+            ),
+          );
+        } else {
+          // normal behaviour -> go to next step
+          context.read<EligibilityBloc>().add(NextStepPressed());
+        }
+      },
+                        type: ButtonType.primaryWhite,
+                        suffixIcon: state.isLoading
+                            ? null
+                            : const Icon(
+                                Icons.arrow_forward,
+                                color: AppColors.black,
+                                size: 18,
+                              ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CText(
+                            'Powered by',
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.bSecondaryColor,
+                            ),
                           ),
-                          Gaps.wMd,
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              CText(
-                                'CheckEligibility'.tr,
-                                style: AppTypography.h2.copyWith(
-                                  color: AppColors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Gaps.hXs,
-                              CText(
-                                'NextLenderSelection'.tr,
-                                style: AppTypography.body.copyWith(
-                                  color: AppColors.bSecondaryColor,
-                                ),
-                              ),
-                            ],
+                          Gaps.wXs,
+                          Image.asset(
+                            'assets/images/value_enable_logo.png',
+                            height: 20,
                           ),
                         ],
                       ),
                     ),
-
-                    Expanded(
-                      child: PageView(
-                        controller: _pageController,
-                        physics: const NeverScrollableScrollPhysics(),
-                        children: allStepPages,
-                      ),
-                    ),
-
-                    if (state.pageIndex != 1) ...[
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 0),
-                        child: CButton(
-                          text: state.isLoading
-                              ? 'Submitting'.tr
-                              : (state.majorStep == 4
-                                  ? 'Submit'.tr
-                                  : 'Confirm&Continue'.tr),
-                          onPressed: state.isLoading
-                              ? () {}
-                              : () => context.read<EligibilityBloc>().add(
-                                  NextStepPressed(),
-                                ),
-                          type: ButtonType.primaryWhite,
-                          suffixIcon: state.isLoading
-                              ? null
-                              : const Icon(
-                                  Icons.arrow_forward,
-                                  color: AppColors.black,
-                                  size: 18,
-                                ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 24.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            CText(
-                              'Powered by',
-                              style: AppTypography.caption.copyWith(
-                                color: AppColors.bSecondaryColor,
-                              ),
-                            ),
-                            Gaps.wXs,
-                            Image.asset(
-                              'assets/images/value_enable_logo.png',
-                              height: 20,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
                   ],
-                ),
-              );
-            },
-          ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );

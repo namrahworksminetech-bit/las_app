@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'package:get_it/get_it.dart';
+import 'package:las_app/core/app_state_provider.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../core/results/result.dart';
 import '../../../core/network/api_client.dart';
 
@@ -13,12 +15,9 @@ class WebSocketService {
 
   WebSocketChannel? _channel;
   StreamController<Map<String, dynamic>>? _controller;
-  final _storage = const FlutterSecureStorage();
   Timer? _pingTimer;
   Timer? _reconnectTimer;
   Timer? _statusTimer;
-  bool _isConnecting = false;
-  bool _isMonitoringKyc = false;
 
   Stream<Map<String, dynamic>>? get stream => _controller?.stream;
 
@@ -54,7 +53,6 @@ class WebSocketService {
         },
       );
 
-      // Wait for connection to be ready
       await Future.delayed(const Duration(milliseconds: 500));
       print('✅ WebSocket connection established successfully');
     } catch (e) {
@@ -72,9 +70,12 @@ class WebSocketService {
 }
 
 class PledgeStatusRepository {
-  final ApiClient? _apiClient;
+  
+  final ApiClient _apiClient;
 
-  PledgeStatusRepository([this._apiClient]);
+  final AppStateProvider appState = GetIt.instance<AppStateProvider>();
+
+  PledgeStatusRepository([ApiClient? apiClient]) : _apiClient = apiClient ?? GetIt.instance<ApiClient>();
 
   Stream<Map<String, dynamic>> listenForKycStatus() {
     return WebSocketService.instance.stream ?? const Stream.empty();
@@ -122,16 +123,16 @@ class PledgeStatusRepository {
 
   Future<Result<Map<String, dynamic>>> checkPledgeMfStatus({
     required String reqId,
+    String? type,
     required String authToken,
   }) async {
-    if (_apiClient == null) {
-      return const Failure('API client not initialized');
-    }
-
+    
     try {
-      final response = await _apiClient!.post(
+      debugPrint('📡 checkPledgeMfStatus calling POST /customer/pledge-mf with reqId=$reqId');
+
+      final response = await _apiClient.post(
         '/customer/pledge-mf',
-        data: {'req_id': reqId, 'type': 'pledge'},
+        data: {'req_id': reqId, 'type': type ?? 'status'},
         options: Options(
           headers: {
             'Authorization': 'Bearer $authToken',
@@ -141,20 +142,37 @@ class PledgeStatusRepository {
         ),
       );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return Success(response.data);
-      } else {
-        return Failure('Failed to check pledge status');
+      final statusCode = response.statusCode;
+      final respData = response.data;
+
+      // If server returned JSON with a message, prefer that
+      String? serverMessage;
+      try {
+        if (respData is Map && respData['message'] != null) serverMessage = respData['message'].toString();
+      } catch (_) {}
+
+      if (statusCode == 200 || statusCode == 201) {
+        return Success(respData as Map<String, dynamic>);
       }
+
+      // Handle cases where statusCode is null but server returned a valid body
+      if (statusCode == null && respData is Map<String, dynamic>) {
+        // consider it success if payload contains expected fields
+        return Success(respData);
+      }
+
+      return Failure(
+          'Failed to check pledge status (HTTP ${statusCode ?? "null"}). ${serverMessage ?? ""}');
     } on DioException catch (e) {
-      print("⏰ Dio timeout or error: ${e.type}");
-      final msg =
-          e.response?.data?['message'] ??
-          e.message ??
-          'Network error occurred.';
+      debugPrint('⛔ DioException in checkPledgeMfStatus: type=${e.type}, response=${e.response?.data}');
+      final msg = e.response?.data?['message'] ?? e.message ?? 'Network error occurred.';
       return Failure(msg);
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('⛔ Unexpected error in checkPledgeMfStatus: $e\n$st');
       return Failure('Error: $e');
     }
   }
+
+
+
 }

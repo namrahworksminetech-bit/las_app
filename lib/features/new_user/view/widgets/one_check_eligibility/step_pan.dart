@@ -10,6 +10,7 @@ import 'package:las_app/common_widgets/c_text.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
+import 'package:las_app/features/home/view_home.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
 import 'package:las_app/features/new_user/view/eligibility_form.dart';
 
@@ -121,6 +122,30 @@ class _Step1PanPageState extends State<Step1PanPage> {
       ),
     );
   }
+Future<bool> _showExitConfirmDialog() async {
+  final res = await showDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text("Exit Application?"),
+        content: const Text(
+            "Are you sure you want to exit this step and go back to the Dashboard?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text("Confirm"),
+          ),
+        ],
+      );
+    },
+  );
+  return res ?? false;
+}
 
   @override
   Widget build(BuildContext context) {
@@ -139,8 +164,21 @@ class _Step1PanPageState extends State<Step1PanPage> {
           context.read<EligibilityBloc>().add(NextStepPressed());
         }
       },
-      child: BlocBuilder<EligibilityBloc, EligibilityState>(
-        builder: (context, state) {
+    child: WillPopScope(
+  onWillPop: () async {
+    final confirm = await _showExitConfirmDialog();
+    if (confirm) {
+      // Navigate to Dashboard and clear stack
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const Home()),
+        (route) => false,
+      );
+    }
+    // Return false to prevent default pop (we handled navigation)
+    return false;
+  },
+  child: BlocBuilder<EligibilityBloc, EligibilityState>(
+    builder: (context, state) {
           final showOtpField =
               state.otpStatus == PanOtpStatus.sent ||
               state.otpStatus == PanOtpStatus.sending ||
@@ -148,7 +186,7 @@ class _Step1PanPageState extends State<Step1PanPage> {
 
           return Column(
             children: [
-              // ---- compact "Go Back" row (same design as lender screen) ----
+             
               Padding(
                 padding: const EdgeInsets.fromLTRB(15.0, 9.0, 5.0, 0.0),
                 child: Row(
@@ -296,7 +334,7 @@ class _Step1PanPageState extends State<Step1PanPage> {
           );
         },
       ),
-    );
+    ));
   }
 
   String _getButtonText(EligibilityState state) {

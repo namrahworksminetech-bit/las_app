@@ -89,7 +89,7 @@ class PanRepository {
     return Failure('No response generated from verifyPan');
   }
 
-  // 🔹 Step 2: Generate PAN OTP
+  //  Step 2: Generate PAN OTP
   Future<Result<PanGenerateOtpResponseModel>> generateOtp() async {
     final reqId = _appState.reqId;
     if (reqId == null || reqId.isEmpty) {
