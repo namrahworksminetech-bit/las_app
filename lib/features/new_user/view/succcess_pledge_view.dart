@@ -14,6 +14,7 @@ import 'package:las_app/common_widgets/webview_screen.dart';
 import 'package:las_app/core/app_state_provider.dart';
 import 'package:las_app/features/home/view_home.dart';
 import 'package:las_app/features/new_user/repository/video_kyc_repo.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class LoanSuccessScreen extends StatefulWidget {
   const LoanSuccessScreen({super.key});
@@ -60,53 +61,52 @@ class _LoanSuccessScreenState extends State<LoanSuccessScreen>
     super.dispose();
   }
 
-  Future<void> _startVideoKyc() async {
-    if (_isLoading) return;
+Future<void> _startVideoKyc() async {
+  if (_isLoading) return;
 
-   
-    final appState = GetIt.instance<AppStateProvider>();
-    final reqId = appState.reqId;
-    if (reqId == null || reqId.isEmpty) {
-      Get.snackbar('Error', 'reqId not available');
+  final appState = GetIt.instance<AppStateProvider>();
+  final reqId = appState.reqId;
+  if (reqId == null || reqId.isEmpty) {
+    Get.snackbar('Error', 'reqId not available');
+    return;
+  }
+
+  setState(() => _isLoading = true);
+  Get.snackbar('Please wait', 'Starting Video KYC...');
+
+  try {
+    final repo = VideoKycRepository();
+    final urlString = await repo.startVcipApplication(reqId: reqId);
+
+    if (urlString.isEmpty) {
+      Get.snackbar('KYC Failed', 'No URL returned from server');
       return;
     }
 
-    setState(() => _isLoading = true);
-    Get.snackbar('Please wait', 'Starting Video KYC...');
-
-    try {
-      final repo = VideoKycRepository();
-      final urlString = await repo.startVcipApplication(reqId: reqId);
-
-      if (urlString.isEmpty) {
-        Get.snackbar('KYC Failed', 'No URL returned from server');
-        return;
-      }
-
-      // ALWAYS open in in-app WebViewScreen (no external launch)
-      if (context.mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => WebViewScreen(
-              url: urlString,
-              title: "Video KYC",
-              onKycComplete: () {
-                
-                Get.snackbar('KYC', 'KYC flow completed');
-              },
-            ),
-          ),
-        );
-      } else {
-        Get.snackbar('Error', 'Unable to open KYC link');
-      }
-    } catch (e) {
-      Get.snackbar('Video KYC Failed', e.toString());
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+    final uri = Uri.tryParse(urlString);
+    if (uri == null) {
+      Get.snackbar('KYC Failed', 'Invalid URL returned');
+      return;
     }
+
+    // Try to open externally (default: external application / browser)
+   final launched = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication, // <-- FIXED HERE
+    );
+    if (!launched) {
+      // Fallback: try in-app webview (optional) or show error
+      Get.snackbar('KYC Failed', 'Could not open link in external browser.');
+    } else {
+      // Optionally show a success snackbar or wait for the user to complete KYC in external browser
+      Get.snackbar('KYC', 'Opened in external browser');
+    }
+  } catch (e) {
+    Get.snackbar('Video KYC Failed', e.toString());
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
   }
+}
 
   void _goToDashboard() {
   Navigator.pushAndRemoveUntil(

@@ -9,6 +9,9 @@ import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/features/new_user/repository/lenders_data_repo.dart';
 import 'package:las_app/features/new_user/repository/pan_veirfy_repo.dart';
+import 'package:las_app/features/new_user/view/insurance_success_screen.dart';
+import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/insurance_step_one.dart';
+import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/insurance_step_two.dart';
 import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/step_fund_type.dart';
 import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/step_pan.dart';
 import 'package:las_app/helper_widgets/fetched_overlay.dart';
@@ -129,19 +132,36 @@ int _backPressCount = 0;
               }
             }
           },
-          builder: (context, state) {
-            final List<Widget> allStepPages = [
-              const Step1InvestmentPage(),
-              const Step1PanPage(),
-              Center(child: CText('Step 2.1', style: AppTypography.bodyWhite)),
-              Center(child: CText('Step 2.2', style: AppTypography.bodyWhite)),
-              Center(child: CText('Step 3.1', style: AppTypography.bodyWhite)),
-              Center(child: CText('Step 4.1', style: AppTypography.bodyWhite)),
-            ];
+         builder: (context, state) {
+  final List<Widget> allStepPages = [
+    const Step1InvestmentPage(),
 
-            return SafeArea(
-              child: Column(
-                children: [
+    // index 1 (Insurance = custom UI otherwise normal PAN)
+    state.formData.investmentType == InvestmentType.insurancePolicy
+        ? const StepInsuranceDetailsPage()
+        : const Step1PanPage(),
+
+    // index 2 (Insurance = upload docs screen otherwise your existing flow)
+    state.formData.investmentType == InvestmentType.insurancePolicy
+        ? const StepInsuranceUploadPage()
+        : Center(child: CText("Step 2.1")),
+
+    Center(child: CText("Step 2.2")),
+    Center(child: CText("Step 3.1")),
+    Center(child: CText("Step 4.1")),
+  ];
+
+  // 🔹 decide when to show the global CTA + footer
+  final bool isInsuranceFlow =
+      state.formData.investmentType == InvestmentType.insurancePolicy;
+
+  // hide on insurance pages 1 & 2
+  final bool hideGlobalCtaOnThisPage =
+      isInsuranceFlow && (state.pageIndex == 1 || state.pageIndex == 2);
+
+  return SafeArea(
+    child: Column(
+      children: [
                   if (state.majorStep == 1) ...[
                     Gaps.hXl,
                     Padding(
@@ -220,10 +240,24 @@ int _backPressCount = 0;
                             ? 'Submitting'.tr
                             : (state.majorStep == 4 ? 'Submit'.tr : 'Confirm&Continue'.tr),
                         onPressed: state.isLoading
-                            ? () {}
-                            : () => context.read<EligibilityBloc>().add(
-                                  NextStepPressed(),
-                                ),
+    ? null
+    : () {
+        final isInsuranceFlow =
+            state.formData.investmentType == InvestmentType.insurancePolicy;
+
+        //  Insurance upload page -> go to success screen
+        if (isInsuranceFlow && state.pageIndex == 2) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const InsuranceSuccessScreen(),
+            ),
+          );
+        } else {
+          // normal behaviour -> go to next step
+          context.read<EligibilityBloc>().add(NextStepPressed());
+        }
+      },
                         type: ButtonType.primaryWhite,
                         suffixIcon: state.isLoading
                             ? null

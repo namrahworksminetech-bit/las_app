@@ -31,7 +31,7 @@ class VideoKycRepository {
     };
 
     const String endpoint =
-        "https://api-dev.valuenable.in/lamf/customer/apply-vcip-application";
+        "https://api-uat.valuenable.in/lamf/customer/apply-vcip-application";
 
     final result = await _api.post(
       endpoint,

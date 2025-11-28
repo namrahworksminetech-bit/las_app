@@ -1717,7 +1717,14 @@ Future<void> _onConfirmFundSelection(
         );
         proceed = false;
       }
-    } else if (state.pageIndex == 1) {
+    } if (state.pageIndex == 1 && state.formData.investmentType == InvestmentType.insurancePolicy) {
+  emit(state.copyWith(
+    pageIndex: 2,  // goes to Insurance Upload page
+    majorStep: 1,
+    clearErrors: true,
+  ));
+  return;
+}else if (state.pageIndex == 1) {
       final pan = state.formData.panNumber;
       final name = state.formData.panFullName;
       final dob = state.formData.panDob;
@@ -1776,25 +1783,33 @@ Future<void> _onConfirmFundSelection(
         emit(state.copyWith(pageIndex: 1, majorStep: 1, clearErrors: true));
         break;
 
-      case 2:
-        if (state.selectedLenderId == null) {
-          emit(
-            state.copyWith(
-              generalErrorMessage: 'Please select a lender to continue.',
-            ),
-          );
-          return;
-        }
-        emit(
-          state.copyWith(
-            pageIndex: 4,
-            majorStep: 3,
-            clearErrors: true,
-            clearSelectedLender: true,
-          ),
-        );
-        break;
+    case 2:
+  // 🔥 If INSURANCE → Submit Upload Docs & Move to Success
+  if (state.formData.investmentType == InvestmentType.insurancePolicy) {
+    emit(state.copyWith(
+      pageIndex: 5,   // Your Success Screen index
+      majorStep: 4,
+      clearErrors: true,
+    ));
+    return;
+  }
 
+  // 🔥 Otherwise normal MF lender validation
+  if (state.selectedLenderId == null) {
+    emit(state.copyWith(
+      generalErrorMessage: 'Please select a lender to continue.',
+    ));
+    return;
+  }
+  emit(
+    state.copyWith(
+      pageIndex: 4,
+      majorStep: 3,
+      clearErrors: true,
+      clearSelectedLender: true,
+    ),
+  );
+  break;
       case 3:
         emit(state.copyWith(pageIndex: 4, majorStep: 3, clearErrors: true));
         break;
