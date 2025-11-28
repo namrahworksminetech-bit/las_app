@@ -14,7 +14,7 @@ class AppContainer extends StatelessWidget {
           final double screenWidth = constraints.maxWidth;
 
           // Apply max-width only on large screens
-          final double maxWidth = screenWidth > 600 ? 500 : screenWidth;
+          final double maxWidth = screenWidth > 450 ? 500 : screenWidth;
 
           return Align(
             alignment: Alignment.topCenter,

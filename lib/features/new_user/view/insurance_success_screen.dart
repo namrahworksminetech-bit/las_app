@@ -10,7 +10,7 @@ class InsuranceSuccessScreen extends StatelessWidget {
   void _goHome(BuildContext context) {
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => Home()),
+      MaterialPageRoute(builder: (_) => const Home()),
       (route) => false,
     );
   }
@@ -19,29 +19,35 @@ class InsuranceSuccessScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.black,
+
+      /// 🔥 Allow content to scroll
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             children: [
 
-              const Spacer(),
+              const SizedBox(height: 60),
 
-              // Checkmark animation removed for simplicity — optional to add back
+              /// Success Icon
               Container(
-                decoration: const BoxDecoration(shape: BoxShape.circle),
                 padding: const EdgeInsets.all(6),
+                decoration: const BoxDecoration(shape: BoxShape.circle),
                 child: Image.asset(
-                  'assets/images/successPledge.png', // your tick image
+                  'assets/images/successPledge.png',
                   width: 180,
                   height: 180,
                 ),
               ),
 
+              const SizedBox(height: 26),
 
               CText(
                 "Thank You!",
-                style: AppTypography.h2.copyWith(color: Colors.white),
+                style: AppTypography.h2.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
                 textAlign: TextAlign.center,
               ),
 
@@ -50,14 +56,15 @@ class InsuranceSuccessScreen extends StatelessWidget {
               CText(
                 "Your documents are submitted successfully and will be reviewed shortly for loan application.",
                 style: AppTypography.bodySecondary.copyWith(
-                  color: AppColors.white,
+                  color: Colors.white,
                   fontSize: 17,
                 ),
                 textAlign: TextAlign.center,
               ),
 
-              const Spacer(),
+              const SizedBox(height: 60),
 
+              /// CTA Button
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -79,7 +86,7 @@ class InsuranceSuccessScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      const Icon(Icons.arrow_right_alt,color: Colors.black),
+                      const Icon(Icons.arrow_right_alt, color: Colors.black),
                     ],
                   ),
                 ),
@@ -87,16 +94,22 @@ class InsuranceSuccessScreen extends StatelessWidget {
 
               const SizedBox(height: 18),
 
+              /// Powered By
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CText("Powered by ",
-                    style: AppTypography.caption.copyWith(color: Colors.grey)),
-                  Image.asset('assets/images/value_enable_logo.png', height: 18),
+                  CText(
+                    "Powered by ",
+                    style: AppTypography.caption.copyWith(color: Colors.grey),
+                  ),
+                  Image.asset(
+                    'assets/images/value_enable_logo.png',
+                    height: 18,
+                  ),
                 ],
               ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 50),
             ],
           ),
         ),

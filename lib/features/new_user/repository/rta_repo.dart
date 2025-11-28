@@ -30,7 +30,7 @@ class RtaRepository {
       throw Exception('Missing req_id in AppState');
     }
 
-    final url = 'https://api-dev.valuenable.in/lamf/customer/verify-rta-otp';
+    final url = 'https://api-uat.valuenable.in/lamf/customer/verify-rta-otp';
 
     final Map<String, dynamic> body = {
       "req_id": reqId,
