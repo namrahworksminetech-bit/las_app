@@ -18,6 +18,7 @@ import 'package:las_app/features/new_user/view/succcess_pledge_view.dart';
 import 'package:las_app/features/new_user/view/widgets/four_pledge_funds/pledge_funds_otp_screen.dart';
 import 'package:las_app/features/new_user/view/widgets/three_kyc_verification/step_checker_view.dart';
 import 'package:las_app/helper_widgets/fetching_overlay.dart';
+import '../../../common_widgets/webview_screen.dart';
 import '../../../core/network/api_client.dart';
 import '../bloc/login_bloc.dart';
 import '../repository/login_repository.dart';
@@ -122,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
             final status = state.pledgeStatus;
             final normalStatuses = {'not_started'};
 
-            if (status == 'mf_fetched' || status=='pan_verified') {
+            if (status == 'mf_fetched' || status == 'pan_verified') {
               // Navigate to Eligibility screen and ask it to start fetching immediately
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
@@ -145,32 +146,32 @@ class _LoginScreenState extends State<LoginScreen> {
                 MaterialPageRoute(builder: (context) => LoanSuccessScreen()),
               );
             } else if (<String>[
-        'kfs_agreement_done',
-        'penny_drop_done',
-        'kyc_done',
-        'pending',               // ✅ moved here
-        'mandate_flow_fail',
-        'kyc_in_progress',
-      ].contains(status?.trim())) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!(ModalRoute.of(context)?.isCurrent ?? true)) return;
+              'kfs_agreement_done',
+              'penny_drop_done',
+              'kyc_done',
+              'pending', // ✅ moved here
+              'mandate_flow_fail',
+              'kyc_in_progress',
+            ].contains(status?.trim())) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!(ModalRoute.of(context)?.isCurrent ?? true)) return;
 
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (ctx) => BlocProvider(
-                create: (_) => EligibilityBloc(
-                  repository: PanRepository(ApiClient()),
-                  lenderRepository: LenderRepository(ApiClient()),
-                  apiClient: ApiClient(),
-                ),
-                child: KycVerificationScreen(),
-              ),
-            ),
-          );
-        });
-        return;
-      } else if (status == 'mandate_done' || status == 'completed' ) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (ctx) => BlocProvider(
+                      create: (_) => EligibilityBloc(
+                        repository: PanRepository(ApiClient()),
+                        lenderRepository: LenderRepository(ApiClient()),
+                        apiClient: ApiClient(),
+                      ),
+                      child: KycVerificationScreen(),
+                    ),
+                  ),
+                );
+              });
+              return;
+            } else if (status == 'mandate_done' || status == 'completed') {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (ModalRoute.of(context)?.isCurrent ?? true) {
                   Navigator.pushReplacement(
@@ -320,7 +321,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
 
-                  /// ---------- Bottom Buttons ----------
+                  /// ---------- Test Buttons ----------
                   Align(
                     alignment: Alignment.bottomCenter,
                     child: Padding(
@@ -425,5 +426,16 @@ class _LoginScreenState extends State<LoginScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _openWebView(String url, BuildContext context) async {
+    try {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => WebViewScreen(url: url)),
+      );
+    } catch (e) {
+      print('Failed to open WebView: $e');
+    }
   }
 }

@@ -46,6 +46,7 @@ dependencies:
   percent_indicator: ^4.2.3
   shared_preferences: ^2.2.2
   webview_flutter: ^4.4.2
+  webview_flutter_android:
   geolocator: ^13.0.1
   web_socket_channel: ^3.0.3
   flutter_secure_storage: ^9.2.4

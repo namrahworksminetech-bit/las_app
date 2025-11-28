@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:html' as html;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -32,6 +34,13 @@ class _WebViewScreenState extends State<WebViewScreen> {
   @override
   void initState() {
     super.initState();
+    
+    // For web platform, open URL in new tab and close current screen
+    if (kIsWeb) {
+      _openUrlInNewTab(widget.url);
+      return;
+    }
+    
     _requestPermissions();
     controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -63,6 +72,14 @@ class _WebViewScreenState extends State<WebViewScreen> {
     }
     
     controller.loadRequest(Uri.parse(widget.url));
+  }
+
+  void _openUrlInNewTab(String url) {
+    if (kIsWeb) {
+      // Open in new Chrome window
+      html.window.open(url, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+      Get.back();
+    }
   }
 
   Future<void> _requestPermissions() async {
@@ -99,6 +116,15 @@ class _WebViewScreenState extends State<WebViewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // For web platform, show loading screen while opening URL
+    if (kIsWeb) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(

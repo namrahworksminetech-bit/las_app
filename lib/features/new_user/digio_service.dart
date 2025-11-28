@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kyc_workflow/digio_config.dart';
 import 'package:kyc_workflow/environment.dart';
@@ -17,6 +18,12 @@ class DigioService {
   String? _lastEventId;
 
   Future<Result<void>> initializeSDK(String environment) async {
+    // Skip SDK initialization for web platform
+    if (kIsWeb) {
+      print('🌐 Web platform detected - skipping Digio SDK initialization');
+      return const Success(null);
+    }
+
     if (_kycWorkflowPlugin != null) {
       return const Success(null);
     }
@@ -51,6 +58,12 @@ class DigioService {
     required String identifier,
     required String accessToken,
   }) async {
+    // Skip KYC start for web platform
+    if (kIsWeb) {
+      print('🌐 Web platform detected - skipping Digio KYC start');
+      return const Success('Web platform - KYC skipped');
+    }
+
     if (_isProcessing) {
       return const Failure('KYC process already in progress');
     }

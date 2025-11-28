@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:las_app/core/app_state_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -105,6 +106,12 @@ class DigioRepository {
     dynamic data, [
     BuildContext? context,
   ]) async {
+    // Skip Digio SDK for web platform
+    if (kIsWeb) {
+      print('🌐 Web platform detected - skipping Digio SDK');
+      return null;
+    }
+
     PermissionStatus status = await Permission.camera.request();
 
     if (status.isGranted) {

@@ -82,7 +82,7 @@ class BottomNavigation extends StatelessWidget {
     bool isSelected = page == bloc?.state.page;
     return Expanded(
       child: Stack(
-        alignment: AlignmentGeometry.topCenter,
+        alignment: Alignment.topCenter,
         children: [
           Container(
             height: 4,
