@@ -93,7 +93,7 @@ class LenderRepository {
       );
 
       final response = await _apiClient.post(
-        "https://api-dev.valuenable.in/lamf/customer/edit-loan-amount",
+        "https://api-uat.valuenable.in/lamf/customer/edit-loan-amount",
         data: bodyJson,
         options: Options(
           headers: {

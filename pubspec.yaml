@@ -51,6 +51,7 @@ dependencies:
   flutter_secure_storage: ^9.2.4
   kyc_workflow: 2.0.4
   permission_handler: ^12.0.1
+  file_picker: ^8.3.7
   flutter_svg: ^2.2.2
 
 

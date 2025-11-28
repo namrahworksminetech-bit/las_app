@@ -9,20 +9,17 @@ class AppContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: Colors.black,
-    
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final width = constraints.maxWidth;
-      
-          // Set a max width (like mobile width)
-          final double maxWidth = 345;
-      
+          final double screenWidth = constraints.maxWidth;
+
+          // Apply max-width only on large screens
+          final double maxWidth = screenWidth > 600 ? 500 : screenWidth;
+
           return Align(
             alignment: Alignment.topCenter,
             child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: maxWidth,
-              ),
+              constraints: BoxConstraints(maxWidth: maxWidth),
               child: child,
             ),
           );
