@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 
-enum ButtonType { primary, primaryWhite, secondary, secondaryBlack, secondaryGrey }
+enum ButtonType {
+  primary,
+  primaryWhite,
+  secondary,
+  secondaryBlack,
+  secondaryGrey,
+}
 
 class CButton extends StatelessWidget {
   final String text;
@@ -54,9 +60,7 @@ class CButton extends StatelessWidget {
       backgroundColor: backgroundColor,
       foregroundColor: foregroundColor,
       padding: const EdgeInsets.symmetric(vertical: 18),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(5),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
       elevation: 0,
       side: side,
     );
@@ -68,7 +72,7 @@ class CButton extends StatelessWidget {
         style: style,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.max,
           children: [
             if (isLoading)
               SizedBox(
@@ -80,11 +84,18 @@ class CButton extends StatelessWidget {
                 ),
               )
             else
-              Text(
-                text,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+              Flexible(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: Text(
+                    text,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
             if (suffixIcon != null && !isLoading) ...[
@@ -92,8 +103,8 @@ class CButton extends StatelessWidget {
               IconTheme(
                 data: IconThemeData(color: foregroundColor, size: 18),
                 child: suffixIcon!,
-              )
-            ]
+              ),
+            ],
           ],
         ),
       ),

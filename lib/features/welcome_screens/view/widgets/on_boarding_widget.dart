@@ -40,6 +40,7 @@ class OnboardingPageContent extends StatelessWidget {
           flex: 2,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            // mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 children: [
@@ -49,7 +50,7 @@ class OnboardingPageContent extends StatelessWidget {
                     width: 20,
                     height: 20,
                   ),
-                  Gaps.wXs,
+                  Gaps.wXss,
                   CText(
                     subtitle,
                     style: AppTypography.body.copyWith(
@@ -68,7 +69,7 @@ class OnboardingPageContent extends StatelessWidget {
                   color: AppColors.white,
                   fontSize: 26, // same as before
                   fontWeight: FontWeight.bold,
-                  height: 1.3,
+                  height: 1.2,
                 ),
               ),
             ],
