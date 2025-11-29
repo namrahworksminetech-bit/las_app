@@ -34,6 +34,8 @@ class AppStateProvider extends ChangeNotifier {
   }
 
   void setMobileNumber(String mobileNumber) {
+      print("📲 AppStateProvider → Mobile Saved: $mobileNumber"); // ← ADD THIS
+
     _mobileNumber = mobileNumber;
     notifyListeners();
   }

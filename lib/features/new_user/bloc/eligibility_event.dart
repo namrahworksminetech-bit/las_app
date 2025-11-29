@@ -35,6 +35,45 @@ class PanFullNameUpdated extends EligibilityEvent {
   List<Object?> get props => [fullName];
 }
 
+// 🚀 INSURANCE FLOW EVENTS
+
+/// 1️⃣ Fetch insurer list API
+class FetchInsurers extends EligibilityEvent {}
+
+/// 2️⃣ Store selected insurer + Step-1 form fields
+class SaveInsuranceForm extends EligibilityEvent {
+  final String insurerCode;
+  final String policyNumber;
+  final String name;
+  final String dob;
+
+  SaveInsuranceForm({
+    required this.insurerCode,
+    required this.policyNumber,
+    required this.name,
+    required this.dob,
+  });
+}
+
+/// 3️⃣ Upload Unit Statement
+class UploadUnitStatement extends EligibilityEvent {
+  final Uint8List fileBytes;
+  final String mimeType;
+  final String fileType;   // like "pdf", "jpg"
+  UploadUnitStatement({required this.fileBytes, required this.mimeType, required this.fileType});
+}
+
+/// 4️⃣ Upload Policy Bond
+class UploadPolicyBond extends EligibilityEvent {
+  final Uint8List fileBytes;
+  final String mimeType;
+  final String fileType;
+  UploadPolicyBond({required this.fileBytes, required this.mimeType, required this.fileType});
+}
+
+/// 5️⃣ Final submit event
+class SubmitInsuranceDetails extends EligibilityEvent {}
+
 class PanDobUpdated extends EligibilityEvent {
   final String dob;
   const PanDobUpdated(this.dob);
@@ -74,6 +113,35 @@ class EditLoanAmountPressed extends EligibilityEvent {
     required this.lenderId,
   });
 }
+
+
+
+class UploadHoldingFile extends EligibilityEvent {
+  final Uint8List fileBytes;
+  final String mimeType;
+  final String fileType; // 👈 NEW
+
+  UploadHoldingFile({
+    required this.fileBytes,
+    required this.mimeType,
+    required this.fileType,
+  });
+
+  @override
+  List<Object?> get props => [fileBytes, mimeType, fileType];
+}
+
+
+class SubmitShareDetails extends EligibilityEvent {
+  final String broker;
+  final String dpId;
+
+  SubmitShareDetails({
+    required this.broker,
+    required this.dpId,
+  });
+}
+
 // new event
 class ConfirmFundSelectionWithFunds extends EligibilityEvent {
   final List<PledgeableFund> fundsToAdd;
