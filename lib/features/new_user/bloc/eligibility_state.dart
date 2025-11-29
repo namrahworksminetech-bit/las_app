@@ -139,7 +139,53 @@ class EligibilityState extends Equatable {
     this.isSavingLoan = false,
     this.fundsToAdd = const [], // <-- ADD THIS
     this.fundsToRemove = const [],
+
+        this.isShareUploading = false,
+    this.isShareSubmitting = false,
+    this.shareUploadPath,
+    this.shareError,
+    this.shareSuccess = false,
+
+    this.insuranceCompanies = const [],
+    this.selectedInsuranceCode,
+    this.selectedInsuranceName,
+    this.unitStatementPath,
+    this.policyDocumentPath,
+    this.isUnitUploading = false,
+    this.isPolicyUploading = false,
+    this.isInsuranceSubmitting = false,
+    this.insuranceSuccess = false,
+    this.insuranceError,
+        this.insurers = const [],
+    this.insurerCode,
+    this.insurancePolicyNo,
+    this.insuranceName,
+    this.insuranceDob,
+    this.unitKey,
+    this.policyKey,
+    this.isFetchingInsurers = false,
+    this.isUploadingUnit = false,
+    this.isUploadingPolicy = false,
+    this.isSubmittingInsurance = false,
+  
   });
+
+    final List<Map<String, dynamic>> insurers;     // dropdown list
+  final String? insurerCode;                     // selected code
+  final String? insurancePolicyNo;
+  final String? insuranceName;
+  final String? insuranceDob;
+
+  /// ================= INSURANCE UPLOAD KEYS =============
+  final String? unitKey;        // unit_statement_path
+  final String? policyKey;   
+    final bool isFetchingInsurers;
+  final bool isUploadingUnit;
+  final bool isUploadingPolicy;
+  final bool isSubmittingInsurance;
+
+  final String? insuranceError;
+  final bool insuranceSuccess;
 
   final bool isSavingLoan;
   final List<PledgeableFund> fundsToAdd;
@@ -194,6 +240,26 @@ class EligibilityState extends Equatable {
   final Set<String> selectedFundIds;
   final Set<String> previousSelectedFundIds;
 
+   final bool isShareUploading;
+  final bool isShareSubmitting;
+  final String? shareUploadPath;
+  final String? shareError;
+  final bool shareSuccess;
+
+    final List<Map<String, dynamic>> insuranceCompanies;
+
+  final String? selectedInsuranceCode;
+  final String? selectedInsuranceName; 
+
+  final String? unitStatementPath;
+  final String? policyDocumentPath;
+
+  final bool isUnitUploading;
+  final bool isPolicyUploading;
+  final bool isInsuranceSubmitting;
+
+
+
   // KYC / OTP / misc
   final List<bool> kycStepChecks;
   final String otp;
@@ -209,6 +275,20 @@ class EligibilityState extends Equatable {
   final String? userMobileNumber;
 
   EligibilityState copyWith({
+
+       List<Map<String,dynamic>>? insurers,
+    String? insurerCode,
+    String? insurancePolicyNo,
+    String? insuranceName,
+    String? insuranceDob,
+    String? unitKey,
+    String? policyKey,
+    bool? isFetchingInsurers,
+    bool? isUploadingUnit,
+    bool? isUploadingPolicy,
+    bool? isSubmittingInsurance,
+    String? insuranceError,
+    bool? insuranceSuccess,
     int? majorStep,
     int? pageIndex,
     EligibilityFormData? formData,
@@ -265,8 +345,39 @@ class EligibilityState extends Equatable {
     String? rtaOtpError,
     String? userMobileNumber,
     bool clearErrors = false,
+
+        bool? isShareUploading,
+    bool? isShareSubmitting,
+    String? shareUploadPath,
+    String? shareError,
+    bool? shareSuccess,
+
+     List<Map<String, dynamic>>? insuranceCompanies,
+    String? selectedInsuranceCode,
+    String? selectedInsuranceName,
+    String? unitStatementPath,
+    String? policyDocumentPath,
+    bool? isUnitUploading,
+    bool? isPolicyUploading,
+    bool? isInsuranceSubmitting,
+
   }) {
     return EligibilityState(
+
+       insurers: insurers ?? this.insurers,
+      insurerCode: insurerCode ?? this.insurerCode,
+      insurancePolicyNo: insurancePolicyNo ?? this.insurancePolicyNo,
+      insuranceName: insuranceName ?? this.insuranceName,
+      insuranceDob: insuranceDob ?? this.insuranceDob,
+      unitKey: unitKey ?? this.unitKey,
+      policyKey: policyKey ?? this.policyKey,
+      isFetchingInsurers: isFetchingInsurers ?? this.isFetchingInsurers,
+      isUploadingUnit: isUploadingUnit ?? this.isUploadingUnit,
+      isUploadingPolicy: isUploadingPolicy ?? this.isUploadingPolicy,
+      isSubmittingInsurance:
+          isSubmittingInsurance ?? this.isSubmittingInsurance,
+      insuranceError: insuranceError,
+      insuranceSuccess: insuranceSuccess ?? this.insuranceSuccess,
       majorStep: majorStep ?? this.majorStep,
       pageIndex: pageIndex ?? this.pageIndex,
       formData: formData ?? this.formData,
@@ -330,6 +441,20 @@ class EligibilityState extends Equatable {
       isRtaOtpVerifying: isRtaOtpVerifying ?? this.isRtaOtpVerifying,
       rtaOtpError: rtaOtpError ?? this.rtaOtpError,
       userMobileNumber: userMobileNumber ?? this.userMobileNumber,
+         isShareUploading: isShareUploading ?? this.isShareUploading,
+      isShareSubmitting: isShareSubmitting ?? this.isShareSubmitting,
+      shareUploadPath: clearErrors ? null : (shareUploadPath ?? this.shareUploadPath),
+      shareError: clearErrors ? null : (shareError ?? this.shareError),
+      shareSuccess: shareSuccess ?? this.shareSuccess,
+        insuranceCompanies: insuranceCompanies ?? this.insuranceCompanies,
+        selectedInsuranceCode: selectedInsuranceCode ?? this.selectedInsuranceCode,
+        selectedInsuranceName: selectedInsuranceName ?? this.selectedInsuranceName,
+        unitStatementPath: unitStatementPath ?? this.unitStatementPath,
+        policyDocumentPath: policyDocumentPath ?? this.policyDocumentPath,
+        isUnitUploading: isUnitUploading ?? this.isUnitUploading,
+        isPolicyUploading: isPolicyUploading ?? this.isPolicyUploading,
+        isInsuranceSubmitting: isInsuranceSubmitting ?? this.isInsuranceSubmitting,
+       
     );
   }
 
@@ -353,6 +478,29 @@ class EligibilityState extends Equatable {
     formData,
     isSavingLoan,
     pledgeStatus,
+     isShareUploading,
+    isShareSubmitting,
+    shareUploadPath,
+    shareError,
+    shareSuccess,
+
+    // ===== INSURANCE FLOW =====
+    insurers,              // list of companies
+    insurerCode,           // selected code
+    insurancePolicyNo,
+    insuranceName,
+    insuranceDob,
+
+    unitKey,               // uploaded unit doc
+    policyKey,             // uploaded policy doc
+
+    isFetchingInsurers,
+    isUploadingUnit,
+    isUploadingPolicy,
+    isSubmittingInsurance,
+
+    insuranceError,
+    insuranceSuccess,
 
     isLoading,
     generalErrorMessage,
@@ -391,5 +539,13 @@ class EligibilityState extends Equatable {
     isRtaOtpVerifying,
     rtaOtpError,
     userMobileNumber,
+
+        isShareUploading,
+    isShareSubmitting,
+    shareUploadPath,
+    shareError,
+    shareSuccess,
+
+    
   ];
 }

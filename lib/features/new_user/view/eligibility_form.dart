@@ -12,6 +12,7 @@ import 'package:las_app/features/new_user/repository/pan_veirfy_repo.dart';
 import 'package:las_app/features/new_user/view/insurance_success_screen.dart';
 import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/insurance_step_one.dart';
 import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/insurance_step_two.dart';
+import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/shares_step.dart';
 import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/step_fund_type.dart';
 import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/step_pan.dart';
 import 'package:las_app/helper_widgets/fetched_overlay.dart';
@@ -133,22 +134,32 @@ int _backPressCount = 0;
             }
           },
          builder: (context, state) {
+  Widget step1Page;
+  Widget step2Page;
+
+  if (state.formData.investmentType == InvestmentType.insurancePolicy) {
+    // Insurance flow
+    step1Page = const StepInsuranceDetailsPage();   // index 1
+    step2Page = const StepInsuranceUploadPage();    // index 2
+  } else if (state.formData.investmentType == InvestmentType.shares) {
+    // Shares flow
+    step1Page = const StepSharesDetailsPage();      // index 1
+    step2Page = Center(child: CText("Step 2.1"));   // TODO: replace with actual next step for shares
+  } else {
+    // Mutual fund (default) flow
+    step1Page = const Step1PanPage();               // index 1
+    step2Page = Center(child: CText("Step 2.1"));   // existing MF flow step
+  }
+
   final List<Widget> allStepPages = [
-    const Step1InvestmentPage(),
+    const Step1InvestmentPage(), // index 0
 
-    // index 1 (Insurance = custom UI otherwise normal PAN)
-    state.formData.investmentType == InvestmentType.insurancePolicy
-        ? const StepInsuranceDetailsPage()
-        : const Step1PanPage(),
+    step1Page,                   // index 1: depends on type
+    step2Page,                   // index 2: depends on type
 
-    // index 2 (Insurance = upload docs screen otherwise your existing flow)
-    state.formData.investmentType == InvestmentType.insurancePolicy
-        ? const StepInsuranceUploadPage()
-        : Center(child: CText("Step 2.1")),
-
-    Center(child: CText("Step 2.2")),
-    Center(child: CText("Step 3.1")),
-    Center(child: CText("Step 4.1")),
+    Center(child: CText("Step 2.2")),  // index 3
+    Center(child: CText("Step 3.1")),  // index 4
+    Center(child: CText("Step 4.1")),  // index 5
   ];
 
   // 🔹 decide when to show the global CTA + footer
@@ -239,25 +250,21 @@ int _backPressCount = 0;
                         text: state.isLoading
                             ? 'Submitting'.tr
                             : (state.majorStep == 4 ? 'Submit'.tr : 'Confirm&Continue'.tr),
-                        onPressed: state.isLoading
+                  onPressed: state.isLoading || state.isSubmittingInsurance
     ? null
     : () {
-        final isInsuranceFlow =
+        final inInsuranceFlow =
             state.formData.investmentType == InvestmentType.insurancePolicy;
 
-        //  Insurance upload page -> go to success screen
-        if (isInsuranceFlow && state.pageIndex == 2) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const InsuranceSuccessScreen(),
-            ),
-          );
-        } else {
-          // normal behaviour -> go to next step
-          context.read<EligibilityBloc>().add(NextStepPressed());
+        if (inInsuranceFlow && state.pageIndex == 2) {
+          print("🔥 SUBMIT INSURANCE CALLED");
+          context.read<EligibilityBloc>().add(SubmitInsuranceDetails());
+          return; // ⛔ stops page skip
         }
+
+        context.read<EligibilityBloc>().add(NextStepPressed());
       },
+
                         type: ButtonType.primaryWhite,
                         suffixIcon: state.isLoading
                             ? null

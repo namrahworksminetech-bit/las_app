@@ -1,18 +1,23 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
+import 'package:get_it/get_it.dart';
 import 'package:las_app/app.dart';
 import 'package:las_app/core/app_state_provider.dart';
 import 'package:las_app/core/results/result.dart';
+import 'package:las_app/features/new_user/repository/insurance_repo.dart';
 import 'package:las_app/features/new_user/repository/lenders_data_repo.dart'
     hide DioException;
 import 'package:las_app/features/new_user/repository/rta_otp_repo.dart';
 import 'package:las_app/features/new_user/repository/digio_repo.dart';
 import 'package:las_app/features/new_user/digio_service.dart';
+import 'package:las_app/features/new_user/repository/shares_repo.dart';
 import 'package:las_app/helper_widgets/fund_utils.dart';
 import 'package:las_app/models/funds/funds_detail_model.dart';
 import 'package:las_app/models/funds/pledge_mf_response.dart';
@@ -42,21 +47,37 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
   final DigioRepository _digioRepository;
   final DigioService _digioService = getIt<DigioService>();
 
+final SharesRepository _sharesRepository = SharesRepository();
+
+
+String? shareFileKey;    // store uploaded file path
+bool isShareUploading = false;
   EligibilityBloc({
     required this.repository,
     required this.lenderRepository,
     required ApiClient apiClient,
   }) : _kycRepository = KycRepo(apiClient),
        _rtaOtpRepository = RtaOtpRepository(apiClient),
+       
        _digioRepository = DigioRepository(apiClient),
        super(const EligibilityState()) {
     _loadEligibilitySeenFlag();
     on<InvestmentTypeUpdated>(_onInvestmentTypeUpdated);
 
+    // ================= INSURANCE EVENTS =================
+on<FetchInsurers>(_onFetchInsurers);
+on<SaveInsuranceForm>(_onSaveInsuranceForm);
+on<UploadUnitStatement>(_onUploadUnitStatement);
+on<UploadPolicyBond>(_onUploadPolicyBond);
+on<SubmitInsuranceDetails>(_onSubmitInsuranceDetails);
+
     on<PanNumberUpdated>(_onPanNumberUpdated);
     on<PanFullNameUpdated>(_onPanFullNameUpdated);
     on<PanDobUpdated>(_onPanDobUpdated);
     on<AcknowledgeKycNavigation>(_onAcknowledgeKycNavigation);
+on<UploadHoldingFile>(_onUploadHoldingFile);
+on<SubmitShareDetails>(_onSubmitShareDetails);
+
 
     on<VerifyPanPressed>(_onVerifyPanPressed);
     on<SendPanOtpPressed>(_onSendPanOtpPressed);
@@ -65,6 +86,11 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     on<AutoSelectAllFunds>(_onAutoSelectAllFunds);
     on<JumpToPage>(_onJumpToPage);
     on<StartFetchingFromLogin>(_onStartFetchingFromLogin);
+
+   
+
+
+
 
     on<FetchStep2Data>(_onFetchStep2Data);
     on<LenderSelected>(_onLenderSelected);
@@ -101,7 +127,180 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     on<StartDigioKyc>(_onStartDigioKyc);
     on<DigioKycCompleted>(_onDigioKycCompleted);
     on<DigioKycFailed>(_onDigioKycFailed);
+
+
   }
+/* =========================================================
+                      INSURANCE FLOW BLoC
+   ========================================================= */
+final InsuranceRepository _insuranceRepo = GetIt.instance<InsuranceRepository>();
+
+
+/// ========== 1️⃣ Fetch Insurer List ==============
+Future<void> _onFetchInsurers(
+  FetchInsurers event,
+  Emitter<EligibilityState> emit,
+) async {
+  emit(state.copyWith(isFetchingInsurers: true, insuranceError: null));
+
+  final result = await _insuranceRepo.getInsurers();
+
+  result.when(
+    success: (companies) {
+      emit(state.copyWith(
+        insurers: companies,         // List<Map<String, dynamic>>
+        isFetchingInsurers: false,
+      ));
+    },
+    failure: (err) {
+      emit(state.copyWith(
+        isFetchingInsurers: false,
+        insuranceError: err,
+      ));
+    },
+  );
+}
+
+/// ========== 2️⃣ Save Step-1 Data =================
+Future<void> _onSaveInsuranceForm(
+  SaveInsuranceForm event,
+  Emitter<EligibilityState> emit,
+) async {
+  emit(state.copyWith(
+    insurerCode: event.insurerCode,
+    insurancePolicyNo: event.policyNumber,
+    insuranceName: event.name,
+    insuranceDob: event.dob,
+  ));
+}
+
+/// ========== 3️⃣ Upload UNIT-STATEMENT =============
+Future<void> _onUploadUnitStatement(
+  UploadUnitStatement event,
+  Emitter<EligibilityState> emit,
+) async {
+  emit(state.copyWith(isUploadingUnit: true, insuranceError: null));
+
+  /// 1️⃣ FIRST — get pre-signed URL
+  final urlRes = await _insuranceRepo.getUploadUrl(event.fileType);
+
+  String? urlError;
+  urlRes.when(
+    success: (_) {},
+    failure: (err) => urlError = err,
+  );
+
+  if (urlError != null) {
+    emit(state.copyWith(isUploadingUnit: false, insuranceError: urlError));
+    return;
+  }
+
+  /// 2️⃣ Upload file to S3
+  final uploadRes = await _insuranceRepo.uploadFile(
+    bytes: event.fileBytes,
+    fileType: event.fileType,
+    mimeType: event.mimeType,
+  );
+
+  uploadRes.when(
+    success: (key) {
+      emit(state.copyWith(
+        isUploadingUnit: false,
+        unitKey: key, //store path
+      ));
+    },
+    failure: (err) {
+      emit(state.copyWith(isUploadingUnit: false, insuranceError: err));
+    },
+  );
+}
+
+/// ========== 4️⃣ Upload POLICY-DOCUMENT ===========
+Future<void> _onUploadPolicyBond(
+  UploadPolicyBond event,
+  Emitter<EligibilityState> emit,
+) async {
+  emit(state.copyWith(isUploadingPolicy: true, insuranceError: null));
+
+  /// 1️⃣ Get Pre-Signed URL
+  final urlRes = await _insuranceRepo.getUploadUrl(event.fileType);
+
+  String? urlError;
+  urlRes.when(
+    success: (_) {},
+    failure: (err) => urlError = err,
+  );
+
+  if (urlError != null) {
+    emit(state.copyWith(isUploadingPolicy: false, insuranceError: urlError));
+    return;
+  }
+
+  /// 2️⃣ Upload File
+  final uploadRes = await _insuranceRepo.uploadFile(
+    bytes: event.fileBytes,
+    mimeType: event.mimeType,
+    fileType: event.fileType,
+  );
+
+  uploadRes.when(
+    success: (key) {
+      emit(state.copyWith(
+        isUploadingPolicy: false,
+        policyKey: key,
+      ));
+    },
+    failure: (err) {
+      emit(state.copyWith(isUploadingPolicy: false, insuranceError: err));
+    },
+  );
+}
+
+/// ========== 5️⃣ FINAL SUBMIT API ================
+Future<void> _onSubmitInsuranceDetails(
+  SubmitInsuranceDetails event,
+  Emitter<EligibilityState> emit,
+) async {
+  print("🚀 SUBMIT INSURANCE CLICKED");
+
+  if (state.unitKey == null || state.policyKey == null) {
+    emit(state.copyWith(insuranceError: "Upload both documents first"));
+    return;
+  }
+
+  emit(state.copyWith(
+    isSubmittingInsurance: true,
+    insuranceError: null,
+  ));
+
+  final res = await _insuranceRepo.submitInsurance(
+    insurerCode: state.insurerCode!,
+    policyNumber: state.insurancePolicyNo!,
+    name: state.insuranceName!,
+    dob: state.insuranceDob!,
+    unitFileKey: state.unitKey!,
+    policyFileKey: state.policyKey!,
+  );
+
+  res.when(
+    success: (_) {
+      print("🎉 INSURANCE POLICY SUBMITTED");
+      emit(state.copyWith(
+        isSubmittingInsurance: false,
+        insuranceSuccess: true,
+      ));
+    },
+    failure: (err) {
+      print("❌ SUBMIT FAILED → $err");
+      emit(state.copyWith(
+        isSubmittingInsurance: false,
+        insuranceError: err,
+      ));
+    },
+  );
+}
+
+
   void _onSetLenderSelectionView(
     SetLenderSelectionView event,
     Emitter<EligibilityState> emit,
@@ -120,6 +319,89 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
 
     emit(state.copyWith(editedFundAmounts: newMap));
   }
+
+
+
+Future<void> _onUploadHoldingFile(
+  UploadHoldingFile event,
+  Emitter<EligibilityState> emit,
+) async {
+  emit(state.copyWith(isShareUploading: true, shareError: null));
+
+  // 1️⃣ Get pre-signed URL & key
+  final urlResult = await _sharesRepository.getUploadUrl(event.fileType);
+
+  String? urlError;
+  urlResult.when(
+    success: (_) {},
+    failure: (err) => urlError = err,
+  );
+
+  if (urlError != null) {
+    emit(state.copyWith(isShareUploading: false, shareError: urlError));
+    return;
+  }
+
+  print("🔗 uploadUrl obtained → calling PUT upload..");
+
+  // 2️⃣ Upload file to S3
+  final uploadResult = await _sharesRepository.uploadFile(
+    documentType: event.fileType,
+    mimeType: event.mimeType,
+    bytes: event.fileBytes,
+  );
+
+  uploadResult.when(
+    success: (_) {
+      final uploadedKey = _sharesRepository.uploadKey; // 🔑 FINAL KEY
+      print("🔥 FINAL STORED KEY IN BLOC → $uploadedKey");
+
+      emit(state.copyWith(
+        isShareUploading: false,
+        shareUploadPath: uploadedKey, // ✅ store it in Bloc state
+      ));
+    },
+    failure: (err) {
+      emit(state.copyWith(isShareUploading: false, shareError: err));
+    },
+  );
+}
+
+Future<void> _onSubmitShareDetails(
+  SubmitShareDetails event,
+  Emitter<EligibilityState> emit,
+) async {
+  // Guard: make sure file is uploaded
+  if (state.shareUploadPath == null) {
+    emit(state.copyWith(
+      shareError: "Please upload your Demat Holding Statement before continuing.",
+    ));
+    return;
+  }
+
+  emit(state.copyWith(isShareSubmitting: true, shareError: null));
+
+  final result = await _sharesRepository.submitShare(
+    broker: event.broker,
+    dpId: event.dpId,
+    holdingKey: state.shareUploadPath!, // ✅ pass key directly
+  );
+
+  result.when(
+    success: (_) {
+      emit(state.copyWith(
+        isShareSubmitting: false,
+        shareSuccess: true,
+      ));
+    },
+    failure: (err) {
+      emit(state.copyWith(
+        isShareSubmitting: false,
+        shareError: err,
+      ));
+    },
+  );
+}
 
   // Replace your existing handler with this in EligibilityBloc
   void _onJumpToPage(JumpToPage event, Emitter<EligibilityState> emit) {
@@ -1702,133 +1984,180 @@ Future<void> _onConfirmFundSelection(
 
   //steps pressed
   //steps pressed
-  Future<void> _onNextStepPressed(
-    NextStepPressed event,
-    Emitter<EligibilityState> emit,
-  ) async {
-    bool proceed = true;
+ Future<void> _onNextStepPressed(
+  NextStepPressed event,
+  Emitter<EligibilityState> emit,
+) async {
+  bool proceed = true;
 
-    if (state.pageIndex == 0) {
-      if (state.formData.investmentType == InvestmentType.none) {
+  // STEP 0: Investment type selection
+  if (state.pageIndex == 0) {
+    if (state.formData.investmentType == InvestmentType.none) {
+      emit(
+        state.copyWith(
+          generalErrorMessage: 'Please select an investment type.',
+        ),
+      );
+      proceed = false;
+    }
+  }
+
+  // STEP 1: Insurance flow → go to Insurance Upload page (index 2)
+  if (state.pageIndex == 1 &&
+      state.formData.investmentType == InvestmentType.insurancePolicy) {
+    emit(
+      state.copyWith(
+        pageIndex: 2, // goes to Insurance Upload page
+        majorStep: 1,
+        clearErrors: true,
+      ),
+    );
+    return;
+  }
+
+  // STEP 1: Shares flow → go to next page (index 2), NO PAN validation
+  if (state.pageIndex == 1 &&
+      state.formData.investmentType == InvestmentType.shares) {
+    emit(
+      state.copyWith(
+        pageIndex: 2,
+        majorStep: 1,
+        clearErrors: true,
+      ),
+    );
+    return;
+  }
+
+  // STEP 1: PAN flow (Mutual Fund etc.)
+  if (state.pageIndex == 1) {
+    final pan = state.formData.panNumber;
+    final name = state.formData.panFullName;
+    final dob = state.formData.panDob;
+
+    String? panError, nameError, dobError;
+
+    if (pan == null || pan.isEmpty) {
+      panError = 'PAN number is required.';
+      proceed = false;
+    } else if (pan.length != 10) {
+      panError = 'Please enter a valid 10-digit PAN.';
+      proceed = false;
+    }
+
+    if (name == null || name.isEmpty) {
+      nameError = 'Name is required.';
+      proceed = false;
+    }
+
+    if (dob == null || dob.isEmpty) {
+      dobError = 'Date of Birth is required.';
+      proceed = false;
+    }
+
+    if (!proceed) {
+      emit(
+        state.copyWith(
+          panNumberError: panError,
+          panFullNameError: nameError,
+          panDobError: dobError,
+        ),
+      );
+      return;
+    }
+
+    // 🔥 Correct: open fetching overlay
+    emit(
+      state.copyWith(
+        isLoading: true,
+        clearErrors: true,
+        currentOverlay: EligibilityOverlayType.fetchingPortfolio,
+      ),
+    );
+
+    // 🔥 Correct: call API
+    add(FetchStep2Data());
+
+    // ❌ DO NOT add any overlay logic here.
+    return;
+  }
+
+  if (!proceed) return;
+
+  // STEP > 1: rest of flow
+  switch (state.pageIndex) {
+    case 0:
+      emit(
+        state.copyWith(
+          pageIndex: 1,
+          majorStep: 1,
+          clearErrors: true,
+        ),
+      );
+      break;
+
+    case 2:
+      // 🔥 If INSURANCE → Submit Upload Docs & Move to Success
+      if (state.formData.investmentType == InvestmentType.insurancePolicy) {
         emit(
           state.copyWith(
-            generalErrorMessage: 'Please select an investment type.',
-          ),
-        );
-        proceed = false;
-      }
-    } if (state.pageIndex == 1 && state.formData.investmentType == InvestmentType.insurancePolicy) {
-  emit(state.copyWith(
-    pageIndex: 2,  // goes to Insurance Upload page
-    majorStep: 1,
-    clearErrors: true,
-  ));
-  return;
-}else if (state.pageIndex == 1) {
-      final pan = state.formData.panNumber;
-      final name = state.formData.panFullName;
-      final dob = state.formData.panDob;
-
-      String? panError, nameError, dobError;
-
-      if (pan == null || pan.isEmpty) {
-        panError = 'PAN number is required.';
-        proceed = false;
-      } else if (pan.length != 10) {
-        panError = 'Please enter a valid 10-digit PAN.';
-        proceed = false;
-      }
-
-      if (name == null || name.isEmpty) {
-        nameError = 'Name is required.';
-        proceed = false;
-      }
-
-      if (dob == null || dob.isEmpty) {
-        dobError = 'Date of Birth is required.';
-        proceed = false;
-      }
-
-      if (!proceed) {
-        emit(
-          state.copyWith(
-            panNumberError: panError,
-            panFullNameError: nameError,
-            panDobError: dobError,
+            pageIndex: 5, // Your Success Screen index
+            majorStep: 4,
+            clearErrors: true,
           ),
         );
         return;
       }
 
-      // 🔥 Correct: open fetching overlay
+      // 🔥 Otherwise normal MF / Shares lender validation (for now)
+      if (state.selectedLenderId == null) {
+        emit(
+          state.copyWith(
+            generalErrorMessage: 'Please select a lender to continue.',
+          ),
+        );
+        return;
+      }
       emit(
         state.copyWith(
-          isLoading: true,
+          pageIndex: 4,
+          majorStep: 3,
           clearErrors: true,
-          currentOverlay: EligibilityOverlayType.fetchingPortfolio,
+          clearSelectedLender: true,
         ),
       );
+      break;
 
-      // 🔥 Correct: call API
-      add(FetchStep2Data());
+    case 3:
+      emit(
+        state.copyWith(
+          pageIndex: 4,
+          majorStep: 3,
+          clearErrors: true,
+        ),
+      );
+      break;
 
-      // ❌ DO NOT add any overlay logic here.
-      return;
-    }
+    case 4:
+      emit(
+        state.copyWith(
+          pageIndex: 5,
+          majorStep: 4,
+          clearErrors: true,
+        ),
+      );
+      break;
 
-    if (!proceed) return;
+    case 5:
+      emit(state.copyWith(isLoading: true));
+      print('Form submitted: ${state.formData}');
+      await Future.delayed(const Duration(seconds: 2));
+      emit(state.copyWith(isLoading: false));
+      break;
 
-    switch (state.pageIndex) {
-      case 0:
-        emit(state.copyWith(pageIndex: 1, majorStep: 1, clearErrors: true));
-        break;
-
-    case 2:
-  // 🔥 If INSURANCE → Submit Upload Docs & Move to Success
-  if (state.formData.investmentType == InvestmentType.insurancePolicy) {
-    emit(state.copyWith(
-      pageIndex: 5,   // Your Success Screen index
-      majorStep: 4,
-      clearErrors: true,
-    ));
-    return;
+    default:
+      emit(state.copyWith(clearErrors: true));
   }
-
-  // 🔥 Otherwise normal MF lender validation
-  if (state.selectedLenderId == null) {
-    emit(state.copyWith(
-      generalErrorMessage: 'Please select a lender to continue.',
-    ));
-    return;
-  }
-  emit(
-    state.copyWith(
-      pageIndex: 4,
-      majorStep: 3,
-      clearErrors: true,
-      clearSelectedLender: true,
-    ),
-  );
-  break;
-      case 3:
-        emit(state.copyWith(pageIndex: 4, majorStep: 3, clearErrors: true));
-        break;
-
-      case 4:
-        emit(state.copyWith(pageIndex: 5, majorStep: 4, clearErrors: true));
-        break;
-
-      case 5:
-        emit(state.copyWith(isLoading: true));
-        print('Form submitted: ${state.formData}');
-        await Future.delayed(const Duration(seconds: 2));
-        emit(state.copyWith(isLoading: false));
-        break;
-
-      default:
-        emit(state.copyWith(clearErrors: true));
-    }
-  }
+}
 
   void _onPreviousStepPressed(
     PreviousStepPressed event,
