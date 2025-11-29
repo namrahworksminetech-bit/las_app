@@ -250,21 +250,20 @@ int _backPressCount = 0;
                         text: state.isLoading
                             ? 'Submitting'.tr
                             : (state.majorStep == 4 ? 'Submit'.tr : 'Confirm&Continue'.tr),
-                   onPressed: state.isLoading
+                  onPressed: state.isLoading || state.isSubmittingInsurance
     ? null
     : () {
-        final inInsuranceFlow = state.formData.investmentType == InvestmentType.insurancePolicy;
+        final inInsuranceFlow =
+            state.formData.investmentType == InvestmentType.insurancePolicy;
 
         if (inInsuranceFlow && state.pageIndex == 2) {
           print("🔥 SUBMIT INSURANCE CALLED");
           context.read<EligibilityBloc>().add(SubmitInsuranceDetails());
-          return; // <--- IMPORTANT stop pushing further
+          return; // ⛔ stops page skip
         }
 
-        // Otherwise continue normal
         context.read<EligibilityBloc>().add(NextStepPressed());
       },
-
 
                         type: ButtonType.primaryWhite,
                         suffixIcon: state.isLoading

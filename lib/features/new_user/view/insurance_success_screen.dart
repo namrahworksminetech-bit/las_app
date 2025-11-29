@@ -27,7 +27,7 @@ class InsuranceSuccessScreen extends StatelessWidget {
           child: Column(
             children: [
 
-              const SizedBox(height: 60),
+              const SizedBox(height: 180),
 
               /// Success Icon
               Container(
@@ -62,7 +62,7 @@ class InsuranceSuccessScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
 
-              const SizedBox(height: 60),
+              const SizedBox(height: 180),
 
               /// CTA Button
               SizedBox(

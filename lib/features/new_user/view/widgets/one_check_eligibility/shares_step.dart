@@ -56,7 +56,7 @@ class _StepSharesDetailsPageState extends State<StepSharesDetailsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              /// ================= DROPDOWN =================
+       
               CDropdown(
                 label: "Select Your Broker",
                 value: broker,
@@ -66,7 +66,7 @@ class _StepSharesDetailsPageState extends State<StepSharesDetailsPage> {
 
               const SizedBox(height: 18),
 
-              /// ================= DP ID =================
+    
               CInput(
                 labelText: "Depository Participant ID",
                 controller: dpIdController,
