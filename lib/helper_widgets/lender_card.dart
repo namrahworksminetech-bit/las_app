@@ -230,8 +230,9 @@ class _LenderCardState extends State<LenderCard> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                  color: Colors.black, 
                     borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: const Color(0xFF1A1A1A))
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: widget.lender.logoAsset.isNotEmpty

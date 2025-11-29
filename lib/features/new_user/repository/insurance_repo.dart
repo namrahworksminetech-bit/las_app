@@ -126,14 +126,14 @@ Future<Result<bool>> submitInsurance({
         "company_code": insurerCode,
         "name": name,
         "dob": dob,
-        "mobile_number": mobileToSend,     // ⬅ ALWAYS sending value now
+        "mobile_number": mobileToSend,     
         "policy_number": policyNumber,
         "unit_statement_path": unitFileKey,
         "policy_document_path": policyFileKey,
       },
       options: Options(
         headers: {
-          if (token != null) 'Authorization': 'Bearer $token',   // like RTA repo
+          if (token != null) 'Authorization': 'Bearer $token',  
         },
       ),
     );

@@ -261,14 +261,17 @@ Future<void> _onSubmitInsuranceDetails(
   SubmitInsuranceDetails event,
   Emitter<EligibilityState> emit,
 ) async {
-  print("🚀 Inside SubmitInsuranceDetails Handler");
+  print("🚀 SUBMIT INSURANCE CLICKED");
 
   if (state.unitKey == null || state.policyKey == null) {
     emit(state.copyWith(insuranceError: "Upload both documents first"));
     return;
   }
 
-  emit(state.copyWith(isSubmittingInsurance: true));
+  emit(state.copyWith(
+    isSubmittingInsurance: true,
+    insuranceError: null,
+  ));
 
   final res = await _insuranceRepo.submitInsurance(
     insurerCode: state.insurerCode!,
@@ -281,14 +284,14 @@ Future<void> _onSubmitInsuranceDetails(
 
   res.when(
     success: (_) {
-      print("🎉 INSURANCE SUBMITTED SUCCESSFULLY");
+      print("🎉 INSURANCE POLICY SUBMITTED");
       emit(state.copyWith(
         isSubmittingInsurance: false,
         insuranceSuccess: true,
       ));
     },
     failure: (err) {
-      print("❌ SUBMIT FAILED: $err");
+      print("❌ SUBMIT FAILED → $err");
       emit(state.copyWith(
         isSubmittingInsurance: false,
         insuranceError: err,
