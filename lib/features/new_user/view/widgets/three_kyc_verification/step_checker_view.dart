@@ -604,13 +604,12 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
         steps = [true, true, true, true, true];
         break;
       default:
-        // If backend returns an index or different string, you can parse it here
+       
         break;
     }
 
     context.read<EligibilityBloc>().add(UpdateKycStepsAll(steps));
 
-    // Force UI update for every status change
     _forceUpdateUI();
 
     // Clear loading state when all steps are completed
