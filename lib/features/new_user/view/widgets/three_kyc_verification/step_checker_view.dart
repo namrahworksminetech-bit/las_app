@@ -604,7 +604,6 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
         steps = [true, true, true, true, true];
         break;
       default:
-       
         break;
     }
 
@@ -831,33 +830,58 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
                     Gaps.hMd,
 
                     // ===== Back Button =====
-                   GestureDetector(
-  onTap: () {
-    // stop timers / polling and clear UI flags
-    _statusTimer?.cancel();
-    try {
-      _digioRepo.stopPolling();
-    } catch (_) {}
-    setState(() {
-      _isPolling = false;
-      _isWebViewOpen = false;
-      _currentOpenStep = null;
-      _loadingStepIndex = null;
-    });
                     GestureDetector(
                       onTap: () {
+                        // stop timers / polling and clear UI flags
                         _statusTimer?.cancel();
                         try {
-                          _digioRepo.stopPollingWithLoader(context);
+                          _digioRepo.stopPolling();
                         } catch (_) {}
                         setState(() {
                           _isPolling = false;
                           _isWebViewOpen = false;
                           _currentOpenStep = null;
+                          _loadingStepIndex = null;
                         });
+                        GestureDetector(
+                          onTap: () {
+                            _statusTimer?.cancel();
+                            try {
+                              _digioRepo.stopPollingWithLoader(context);
+                            } catch (_) {}
+                            setState(() {
+                              _isPolling = false;
+                              _isWebViewOpen = false;
+                              _currentOpenStep = null;
+                            });
 
-                        // schedule safe push to lender selection
-                        _safePushToLenderSelection();
+                            // schedule safe push to lender selection
+                            _safePushToLenderSelection();
+                          },
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.arrow_back,
+                                color: AppColors.white,
+                                size: 20,
+                              ),
+                              Gaps.wSm,
+                              CText(
+                                'goBack'.tr,
+                                style: AppTypography.bodyWhite,
+                              ),
+                            ],
+                          ),
+                        );
+
+                        // navigate to Dashboard and remove previous routes
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (!mounted) return;
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(builder: (_) => const Home()),
+                            (route) => false,
+                          );
+                        });
                       },
                       child: Row(
                         children: [
@@ -870,29 +894,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
                           CText('goBack'.tr, style: AppTypography.bodyWhite),
                         ],
                       ),
-                    );
-
-    // navigate to Dashboard and remove previous routes
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const Home()),
-        (route) => false,
-      );
-    });
-  },
-  child: Row(
-    children: [
-      const Icon(
-        Icons.arrow_back,
-        color: AppColors.white,
-        size: 20,
-      ),
-      Gaps.wSm,
-      CText('goBack'.tr, style: AppTypography.bodyWhite),
-    ],
-  ),
-),
+                    ),
                     Gaps.hXl,
 
                     // ===== Header Text =====

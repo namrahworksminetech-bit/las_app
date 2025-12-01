@@ -25,6 +25,7 @@ import 'package:las_app/features/new_user/view/succcess_pledge_view.dart';
 import 'package:las_app/features/new_user/view/widgets/four_pledge_funds/pledge_funds_otp_screen.dart';
 import 'package:las_app/features/new_user/view/widgets/three_kyc_verification/step_checker_view.dart';
 import 'package:las_app/helper_widgets/auth_utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -102,6 +103,8 @@ class _DashboardState extends State<Dashboard> {
 
       if (result is Success<Map<String, dynamic>>) {
         final Map<String, dynamic> json = result.value;
+        final prefs = await SharedPreferences.getInstance();
+        prefs.remove('docId$reqId');
         final status = json['status']?.toString().toLowerCase();
         final message =
             json['message']?.toString() ?? 'Application cancelled successfully';
