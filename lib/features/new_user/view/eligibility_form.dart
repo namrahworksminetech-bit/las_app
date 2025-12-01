@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 import 'package:las_app/common_widgets/c_button.dart';
-import 'package:las_app/common_widgets/c_snackbar.dart';
 import 'package:las_app/common_widgets/c_text.dart';
+import 'package:las_app/core/network/api_client.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
+import 'package:las_app/features/new_user/repository/lenders_data_repo.dart';
+import 'package:las_app/features/new_user/repository/pan_veirfy_repo.dart';
+import 'package:las_app/features/new_user/view/insurance_success_screen.dart';
+import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/insurance_step_one.dart';
+import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/insurance_step_two.dart';
+import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/shares_step.dart';
 import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/step_fund_type.dart';
 import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/step_pan.dart';
 import 'package:las_app/helper_widgets/fetched_overlay.dart';
@@ -15,15 +21,22 @@ import 'package:percent_indicator/percent_indicator.dart';
 import '../bloc/eligibility_bloc.dart';
 
 class EligibilityScreen extends StatefulWidget {
-  const EligibilityScreen({super.key});
+  
+  final bool startWithMfFetch;
+
+  const EligibilityScreen({super.key, this.startWithMfFetch = false});
 
   @override
   State<EligibilityScreen> createState() => _EligibilityScreenState();
 }
 
+
 class _EligibilityScreenState extends State<EligibilityScreen> {
   final PageController _pageController = PageController();
   PersistentBottomSheetController? _bottomSheetController;
+  bool _isOverlayOpen = false;
+
+int _backPressCount = 0;
 
   @override
   void dispose() {
@@ -32,37 +45,75 @@ class _EligibilityScreenState extends State<EligibilityScreen> {
   }
 
   void _showOverlay(BuildContext context, EligibilityOverlayType type) {
-    _bottomSheetController?.close();
+    if (_isOverlayOpen) return; // prevent multiple opens
 
-    Widget content;
-    if (type == EligibilityOverlayType.fetchingPortfolio) {
-      content = const PortfolioFetchingOverlay();
-    } else if (type == EligibilityOverlayType.eligibilityResult) {
-      content = const EligibilityResultOverlay();
-    } else {
-      return;
-    }
+    _isOverlayOpen = true;
 
-    _bottomSheetController = showBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext bc) => content,
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final scaffoldState = Scaffold.maybeOf(context);
+      if (scaffoldState == null || !scaffoldState.mounted) {
+        debugPrint("⚠️ Scaffold not ready, skipping overlay");
+        _isOverlayOpen = false;
+        return;
+      }
+
+      Widget content;
+      if (type == EligibilityOverlayType.fetchingPortfolio) {
+        content = PortfolioFetchingOverlay();
+      } else if (type == EligibilityOverlayType.eligibilityResult) {
+        content = const EligibilityResultOverlay();
+      } else {
+        _isOverlayOpen = false;
+        return;
+      }
+
+      _bottomSheetController = scaffoldState.showBottomSheet(
+        (_) => content,
+        backgroundColor: Colors.transparent,
+      );
+
+      _bottomSheetController?.closed.whenComplete(() {
+        if (mounted) {
+          setState(() {
+            _isOverlayOpen = false;
+          });
+        } else {
+          _isOverlayOpen = false;
+        }
+      });
+    });
   }
 
-  @override
+   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => EligibilityBloc(),
+      create: (context) {
+        final bloc = EligibilityBloc(
+          repository: PanRepository(ApiClient()),
+          lenderRepository: LenderRepository(ApiClient()),
+          apiClient: ApiClient(),
+        );
+
+        if (widget.startWithMfFetch) {
+          // schedule immediately after creation so the bloc is ready
+          Future.microtask(() {
+            try {
+              bloc.add(const StartFetchingFromLogin());
+            } catch (e) {
+              print('Failed to dispatch StartFetchingFromLogin: $e');
+            }
+          });
+        }
+
+        return bloc;
+      },
       child: Scaffold(
         backgroundColor: AppColors.black,
         body: BlocConsumer<EligibilityBloc, EligibilityState>(
           listener: (context, state) {
-            if (state.generalErrorMessage != null) {
-              CSnackBar.show(context, state.generalErrorMessage!, isError: true);
-              context.read<EligibilityBloc>().add(ErrorMessageCleared());
-            }
-
+            // animate page when bloc pageIndex changes
             if (state.pageIndex != (_pageController.page?.round() ?? 0)) {
               _pageController.animateToPage(
                 state.pageIndex,
@@ -71,28 +122,59 @@ class _EligibilityScreenState extends State<EligibilityScreen> {
               );
             }
 
+            // overlay handling
             if (state.currentOverlay != EligibilityOverlayType.none) {
               _showOverlay(context, state.currentOverlay);
             } else {
-              _bottomSheetController?.close();
-              _bottomSheetController = null;
+              if (_isOverlayOpen) {
+                _bottomSheetController?.close();
+                _bottomSheetController = null;
+                setState(() => _isOverlayOpen = false);
+              }
             }
           },
-          builder: (context, state) {
-            final List<Widget> allStepPages = [
-              const Step1InvestmentPage(),
-              const Step1PanPage(),
-            Center(child: CText('Step 2.1', style: AppTypography.bodyWhite)),
-              Center(child: CText('Step 2.2', style: AppTypography.bodyWhite)),
-              Center(child: CText('Step 3.1', style: AppTypography.bodyWhite)),
-              Center(child: CText('Step 4.1', style: AppTypography.bodyWhite)),
-            ];
+         builder: (context, state) {
+  Widget step1Page;
+  Widget step2Page;
 
-            return SafeArea(
-              child: Column(
-                children: [
+  if (state.formData.investmentType == InvestmentType.insurancePolicy) {
+    // Insurance flow
+    step1Page = const StepInsuranceDetailsPage();   // index 1
+    step2Page = const StepInsuranceUploadPage();    // index 2
+  } else if (state.formData.investmentType == InvestmentType.shares) {
+    // Shares flow
+    step1Page = const StepSharesDetailsPage();      // index 1
+    step2Page = Center(child: CText("Step 2.1"));   // TODO: replace with actual next step for shares
+  } else {
+    // Mutual fund (default) flow
+    step1Page = const Step1PanPage();               // index 1
+    step2Page = Center(child: CText("Step 2.1"));   // existing MF flow step
+  }
+
+  final List<Widget> allStepPages = [
+    const Step1InvestmentPage(), // index 0
+
+    step1Page,                   // index 1: depends on type
+    step2Page,                   // index 2: depends on type
+
+    Center(child: CText("Step 2.2")),  // index 3
+    Center(child: CText("Step 3.1")),  // index 4
+    Center(child: CText("Step 4.1")),  // index 5
+  ];
+
+  // 🔹 decide when to show the global CTA + footer
+  final bool isInsuranceFlow =
+      state.formData.investmentType == InvestmentType.insurancePolicy;
+
+  // hide on insurance pages 1 & 2
+  final bool hideGlobalCtaOnThisPage =
+      isInsuranceFlow && (state.pageIndex == 1 || state.pageIndex == 2);
+
+  return SafeArea(
+    child: Column(
+      children: [
                   if (state.majorStep == 1) ...[
-                    Gaps.hXl, 
+                    Gaps.hXl,
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24.0),
                       child: Row(
@@ -109,7 +191,7 @@ class _EligibilityScreenState extends State<EligibilityScreen> {
                     ),
                   ],
 
-                  Gaps.hXl, 
+                  Gaps.hXl,
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
                     child: Row(
@@ -129,7 +211,7 @@ class _EligibilityScreenState extends State<EligibilityScreen> {
                           backgroundColor: AppColors.bSecondaryColor,
                           circularStrokeCap: CircularStrokeCap.round,
                         ),
-                        Gaps.wMd, 
+                        Gaps.wMd,
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -140,7 +222,7 @@ class _EligibilityScreenState extends State<EligibilityScreen> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            Gaps.hXs, 
+                            Gaps.hXs,
                             CText(
                               'NextLenderSelection'.tr,
                               style: AppTypography.body.copyWith(
@@ -167,16 +249,30 @@ class _EligibilityScreenState extends State<EligibilityScreen> {
                       child: CButton(
                         text: state.isLoading
                             ? 'Submitting'.tr
-                            : (state.majorStep == 4
-                                ? 'Submit'.tr
-                                : 'Confirm&Continue'.tr),
-                        onPressed: state.isLoading
-                            ? () {}
-                            : () => context.read<EligibilityBloc>().add(NextStepPressed()),
+                            : (state.majorStep == 4 ? 'Submit'.tr : 'Confirm&Continue'.tr),
+                  onPressed: state.isLoading || state.isSubmittingInsurance
+    ? null
+    : () {
+        final inInsuranceFlow =
+            state.formData.investmentType == InvestmentType.insurancePolicy;
+
+        if (inInsuranceFlow && state.pageIndex == 2) {
+          print("🔥 SUBMIT INSURANCE CALLED");
+          context.read<EligibilityBloc>().add(SubmitInsuranceDetails());
+          return; // ⛔ stops page skip
+        }
+
+        context.read<EligibilityBloc>().add(NextStepPressed());
+      },
+
                         type: ButtonType.primaryWhite,
                         suffixIcon: state.isLoading
                             ? null
-                            : const Icon(Icons.arrow_forward, color: AppColors.black, size: 18),
+                            : const Icon(
+                                Icons.arrow_forward,
+                                color: AppColors.black,
+                                size: 18,
+                              ),
                       ),
                     ),
                     Padding(
@@ -190,7 +286,7 @@ class _EligibilityScreenState extends State<EligibilityScreen> {
                               color: AppColors.bSecondaryColor,
                             ),
                           ),
-                          Gaps.wXs, 
+                          Gaps.wXs,
                           Image.asset(
                             'assets/images/value_enable_logo.png',
                             height: 20,

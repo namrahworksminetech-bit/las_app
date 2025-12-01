@@ -1,9 +1,20 @@
+// loan_success_screen.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_it/get_it.dart';
+import 'package:flutter/services.dart';
+
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/common_widgets/c_text.dart';
+import 'package:las_app/common_widgets/webview_screen.dart'; 
+
+
+import 'package:las_app/core/app_state_provider.dart';
+import 'package:las_app/features/home/view_home.dart';
+import 'package:las_app/features/new_user/repository/video_kyc_repo.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class LoanSuccessScreen extends StatefulWidget {
   const LoanSuccessScreen({super.key});
@@ -17,6 +28,8 @@ class _LoanSuccessScreenState extends State<LoanSuccessScreen>
   late AnimationController _tickController;
   late AnimationController _confettiController;
   late Animation<double> _scaleAnimation;
+
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -46,6 +59,61 @@ class _LoanSuccessScreenState extends State<LoanSuccessScreen>
     _tickController.dispose();
     _confettiController.dispose();
     super.dispose();
+  }
+
+Future<void> _startVideoKyc() async {
+  if (_isLoading) return;
+
+  final appState = GetIt.instance<AppStateProvider>();
+  final reqId = appState.reqId;
+  if (reqId == null || reqId.isEmpty) {
+    Get.snackbar('Error', 'reqId not available');
+    return;
+  }
+
+  setState(() => _isLoading = true);
+  Get.snackbar('Please wait', 'Starting Video KYC...');
+
+  try {
+    final repo = VideoKycRepository();
+    final urlString = await repo.startVcipApplication(reqId: reqId);
+
+    if (urlString.isEmpty) {
+      Get.snackbar('KYC Failed', 'No URL returned from server');
+      return;
+    }
+
+    final uri = Uri.tryParse(urlString);
+    if (uri == null) {
+      Get.snackbar('KYC Failed', 'Invalid URL returned');
+      return;
+    }
+
+    // Try to open externally (default: external application / browser)
+   final launched = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication, // <-- FIXED HERE
+    );
+    if (!launched) {
+      // Fallback: try in-app webview (optional) or show error
+      Get.snackbar('KYC Failed', 'Could not open link in external browser.');
+    } else {
+      // Optionally show a success snackbar or wait for the user to complete KYC in external browser
+      Get.snackbar('KYC', 'Opened in external browser');
+    }
+  } catch (e) {
+    Get.snackbar('Video KYC Failed', e.toString());
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
+  }
+}
+
+  void _goToDashboard() {
+  Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(builder: (context) => Home()),
+    (route) => false,   // remove all previous routes
+  );
   }
 
   @override
@@ -93,7 +161,8 @@ class _LoanSuccessScreenState extends State<LoanSuccessScreen>
 
               const Spacer(),
 
-              /// ✅ Button
+            
+
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -104,9 +173,7 @@ class _LoanSuccessScreenState extends State<LoanSuccessScreen>
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  onPressed: () {
-                    // TODO: Navigate to dashboard
-                  },
+                  onPressed: _goToDashboard,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -122,6 +189,51 @@ class _LoanSuccessScreenState extends State<LoanSuccessScreen>
                       ),
                     ],
                   ),
+                ),
+              ),
+
+              const SizedBox(height: Gaps.md),
+
+              // Start Video KYC button (shows spinner when loading)
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.bPrimaryColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: _isLoading ? null : _startVideoKyc,
+                  child: _isLoading
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.2,
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(AppColors.white),
+                              ),
+                            ),
+                            const SizedBox(width: Gaps.sm),
+                            CText(
+                              "startingKyc".tr,
+                              style: AppTypography.buttonPrimary.copyWith(
+                                color: AppColors.white,
+                              ),
+                            ),
+                          ],
+                        )
+                      : CText(
+                          "Start Video KYC",
+                          style: AppTypography.buttonPrimary.copyWith(
+                            color: AppColors.white,
+                          ),
+                        ),
                 ),
               ),
 
