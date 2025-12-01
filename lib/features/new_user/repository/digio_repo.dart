@@ -163,13 +163,13 @@ class DigioRepository {
             cleanDocumentId = KycHelper.extractDocumentId(
               workflowResult.toString(),
             );
+            // await prefs.setString("docId$reqId", cleanDocumentId);
           }
         } on PlatformException {
           workflowResult = 'Failed to get platform version.';
         }
       }
 
-      // Check if workflowResult contains "KYC process completed" message
       if (cleanDocumentId != null && workflowResult != null) {
         String workflowStr = workflowResult.toString();
         if (workflowStr.contains('"message":"KYC process completed"')) {
