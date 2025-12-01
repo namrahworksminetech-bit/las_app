@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -36,12 +37,24 @@ import 'package:las_app/common_widgets/webview_screen.dart';
 import '../../../core/network/api_client.dart';
 import '../repository/kyc_repo.dart';
 
+=======
+import 'package:equatable/equatable.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:las_app/app.dart';
+import 'package:las_app/core/app_state_provider.dart';
+import 'package:las_app/core/results/result.dart';
+import 'package:las_app/features/new_user/repository/lenders_data_repo.dart';
+import 'package:las_app/features/new_user/repository/pan_veirfy_repo.dart';
+import 'package:las_app/models/pan_verification/pan_otp_response_model.dart';
+import 'package:las_app/models/pan_verification/pan_verify_response_model.dart';
+>>>>>>> 9c76ba7 (changes committed)
 part 'eligibility_event.dart';
 part 'eligibility_state.dart';
 
 class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
   final PanRepository repository;
   final LenderRepository lenderRepository;
+<<<<<<< HEAD
   final KycRepo _kycRepository;
   final RtaOtpRepository _rtaOtpRepository;
   final DigioRepository _digioRepository;
@@ -79,10 +92,20 @@ on<UploadHoldingFile>(_onUploadHoldingFile);
 on<SubmitShareDetails>(_onSubmitShareDetails);
 
 
+=======
+  EligibilityBloc({required this.repository,required this.lenderRepository})
+    : super(const EligibilityState()) {
+    on<InvestmentTypeUpdated>(_onInvestmentTypeUpdated);
+
+    on<PanNumberUpdated>(_onPanNumberUpdated);
+    on<PanFullNameUpdated>(_onPanFullNameUpdated);
+    on<PanDobUpdated>(_onPanDobUpdated);
+>>>>>>> 9c76ba7 (changes committed)
     on<VerifyPanPressed>(_onVerifyPanPressed);
     on<SendPanOtpPressed>(_onSendPanOtpPressed);
     on<VerifyPanOtpPressed>(_onVerifyPanOtpPressed);
     on<EligibilitySnackbarCleared>(_onSnackbarCleared);
+<<<<<<< HEAD
     on<AutoSelectAllFunds>(_onAutoSelectAllFunds);
     on<JumpToPage>(_onJumpToPage);
     on<StartFetchingFromLogin>(_onStartFetchingFromLogin);
@@ -91,6 +114,8 @@ on<SubmitShareDetails>(_onSubmitShareDetails);
 
 
 
+=======
+>>>>>>> 9c76ba7 (changes committed)
 
     on<FetchStep2Data>(_onFetchStep2Data);
     on<LenderSelected>(_onLenderSelected);
@@ -109,7 +134,11 @@ on<SubmitShareDetails>(_onSubmitShareDetails);
     on<ConfirmFundSelection>(_onConfirmFundSelection);
     on<ToggleKycStep>(_onToggleKycStep);
 
+<<<<<<< HEAD
     ///pledging otp
+=======
+//pledging otp
+>>>>>>> 9c76ba7 (changes committed)
     on<OtpChanged>(_onOtpChanged);
     on<SubmitOtp>(_onSubmitOtp);
     on<ResendOtp>(_onResendOtp);
@@ -130,6 +159,7 @@ on<SubmitShareDetails>(_onSubmitShareDetails);
 
 
   }
+<<<<<<< HEAD
 /* =========================================================
                       INSURANCE FLOW BLoC
    ========================================================= */
@@ -501,6 +531,10 @@ Future<void> _onSubmitShareDetails(
   }
 
   ///kyc
+=======
+
+  //kyc 
+>>>>>>> 9c76ba7 (changes committed)
   void _onToggleKycStep(ToggleKycStep event, Emitter<EligibilityState> emit) {
     final updated = List<bool>.from(state.kycStepChecks);
     updated[event.index] = !updated[event.index];
@@ -514,6 +548,11 @@ Future<void> _onSubmitShareDetails(
     emit(state.copyWith(clearSnackbar: true));
   }
 
+<<<<<<< HEAD
+=======
+
+//pledge funds
+>>>>>>> 9c76ba7 (changes committed)
   void _onOtpChanged(OtpChanged event, Emitter<EligibilityState> emit) {
     emit(
       state.copyWith(
@@ -673,7 +712,12 @@ Future<void> _onSubmitShareDetails(
     );
   }
 
+<<<<<<< HEAD
   // pan
+=======
+
+// pan
+>>>>>>> 9c76ba7 (changes committed)
   void _onPanNumberUpdated(
     PanNumberUpdated event,
     Emitter<EligibilityState> emit,
@@ -707,6 +751,7 @@ Future<void> _onSubmitShareDetails(
     );
   }
 
+<<<<<<< HEAD
   Future<void> _onVerifyPanPressed(
     VerifyPanPressed event,
     Emitter<EligibilityState> emit,
@@ -792,6 +837,82 @@ Future<void> _onSubmitShareDetails(
     SendPanOtpPressed event,
     Emitter<EligibilityState> emit,
   ) async {
+=======
+Future<void> _onVerifyPanPressed(
+  VerifyPanPressed event,
+  Emitter<EligibilityState> emit,
+) async {
+  emit(state.copyWith(
+    panStatus: PanVerificationStatus.verifying,
+    generalErrorMessage: null,
+  ));
+ final reqId = getIt<AppStateProvider>().reqId;
+
+if (reqId == null || reqId.isEmpty) {
+  emit(state.copyWith(
+    panStatus: PanVerificationStatus.failed,
+    generalErrorMessage: 'Missing reqId. Please login again.',
+  ));
+  return;
+}
+
+final result = await repository.verifyPan(
+  reqId: reqId, // ✅ safe now
+  pan: event.pan,
+  dob: event.dob,
+  name: event.name,
+  email: event.email,
+);
+
+  await result.when(
+    success: (panResponse) async {
+      final reqId = panResponse.reqId;
+
+      if (reqId == null) {
+        emit(state.copyWith(
+          panStatus: PanVerificationStatus.failed,
+          generalErrorMessage: 'Missing reqId in response.',
+        ));
+        return;
+      }
+
+      // ✅ Save reqId globally
+      getIt<AppStateProvider>().setReqId(reqId);
+
+      // ✅ Now generate OTP
+      final otpResult = await repository.generateOtp();
+
+      otpResult.when(
+        success: (otpResponse) {
+          emit(state.copyWith(
+            panStatus: PanVerificationStatus.verified,
+            otpStatus: PanOtpStatus.sent,
+            generalErrorMessage:
+                otpResponse.message ?? 'OTP sent successfully.',
+          ));
+        },
+        failure: (error) {
+          emit(state.copyWith(
+            otpStatus: PanOtpStatus.failed,
+            generalErrorMessage: error,
+          ));
+        },
+      );
+    },
+    failure: (error) {
+      emit(state.copyWith(
+        panStatus: PanVerificationStatus.failed,
+        generalErrorMessage: error,
+      ));
+    },
+  );
+}
+
+  Future<void> _onSendPanOtpPressed(
+    SendPanOtpPressed event,
+    Emitter<EligibilityState> emit,
+  ) async {
+>>>>>>> 9c76ba7 (changes committed)
     emit(state.copyWith(isLoading: true, otpStatus: PanOtpStatus.sending));
 
     try {
@@ -843,6 +964,7 @@ Future<void> _onSubmitShareDetails(
           isLoading: false,
           otpStatus: PanOtpStatus.failed,
           snackbarMessage: 'Something went wrong. Please try again.',
+<<<<<<< HEAD
         ),
       );
     }
@@ -1001,10 +1123,117 @@ Future<void> _onSubmitShareDetails(
         state.copyWith(
           isStep2Loading: false,
           generalErrorMessage: 'Something went wrong. Please try again.',
+=======
+>>>>>>> 9c76ba7 (changes committed)
         ),
       );
     }
   }
+
+  Future<void> _onVerifyPanOtpPressed(
+    VerifyPanOtpPressed event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    emit(state.copyWith(isLoading: true));
+
+    final result = await repository.verifyOtp(otp: event.otp);
+
+    emit(state.copyWith(isLoading: false));
+
+    if (result is Success<PanVerifyResponseModel>) {
+      final data = result.value;
+
+      emit(
+        state.copyWith(
+          snackbarMessage: data.message ?? 'OTP verified successfully!',
+          otpStatus: PanOtpStatus.verified,
+        ),
+      );
+    } else if (result is Failure<PanVerifyResponseModel>) {
+      emit(
+        state.copyWith(
+          snackbarMessage: result.message ?? 'OTP verification failed.',
+          otpStatus: PanOtpStatus.failed,
+        ),
+      );
+    } else {
+      emit(
+        state.copyWith(
+          snackbarMessage: 'Unexpected error during OTP verification.',
+          otpStatus: PanOtpStatus.failed,
+        ),
+      );
+    }
+  }
+
+
+//fetch funds data
+Future<void> _onFetchStep2Data(
+  FetchStep2Data event,
+  Emitter<EligibilityState> emit,
+) async {
+  if (state.isLoading || state.isPortfolioRefreshing) return;
+
+  emit(state.copyWith(isLoading: true, generalErrorMessage: null));
+
+  try {
+    final reqId = getIt<AppStateProvider>().reqId;
+    if (reqId == null) {
+      emit(state.copyWith(
+        isLoading: false,
+        generalErrorMessage: "Missing request ID. Please restart the process.",
+      ));
+      return;
+    }
+
+    final result = await lenderRepository.fetchLendersAndPortfolio(reqId: reqId);
+
+    await result.when(
+      success: (mfResponse) async {
+       final lenders = mfResponse.lenders.map((l) {
+  return Lender(
+    id: l.id.toString(),
+    name: l.name ?? '-',
+    logoAsset: l.logo ?? '',
+    interestRate: l.loanInterest ?? 0.0,
+    loanAmount: l.loanAmount ?? 0.0,
+    pledgeableMFs: l.eligibleFundsCount ?? 0,
+    tag: '',
+  );
+}).toList();
+
+        // Compute aggregated portfolio data (optional)
+        final totalEligiblePortfolio = lenders.fold<double>(
+          0.0,
+          (sum, l) => sum + (l.loanAmount),
+        );
+
+        final portfolio = PortfolioData(
+          totalValue: totalEligiblePortfolio,
+          eligibleCreditLimit: totalEligiblePortfolio,
+          pledgeableFunds: totalEligiblePortfolio,
+        );
+
+        emit(state.copyWith(
+          isLoading: false,
+          lenders: lenders,
+          portfolioData: portfolio,
+        ));
+      },
+      failure: (error) {
+        emit(state.copyWith(
+          isLoading: false,
+          generalErrorMessage: error,
+        ));
+      },
+    );
+  } catch (e) {
+    emit(state.copyWith(
+      isLoading: false,
+      generalErrorMessage: "Failed to fetch lender data.",
+    ));
+  }
+}
 
   void _onLenderSelected(LenderSelected event, Emitter<EligibilityState> emit) {
     final newSelectedId = (state.selectedLenderId == event.lenderId)
@@ -1982,6 +2211,7 @@ Future<void> _onConfirmFundSelection(
     add(FetchStep2Data());
   }
 
+<<<<<<< HEAD
   //steps pressed
   //steps pressed
  Future<void> _onNextStepPressed(
@@ -2062,6 +2292,77 @@ Future<void> _onConfirmFundSelection(
           panDobError: dobError,
         ),
       );
+=======
+//steps pressed
+  Future<void> _onNextStepPressed(
+    NextStepPressed event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    bool proceed = true;
+
+    if (state.pageIndex == 0) {
+      if (state.formData.investmentType == InvestmentType.none) {
+        emit(
+          state.copyWith(
+            generalErrorMessage: 'Please select an investment type.',
+          ),
+        );
+        proceed = false;
+      }
+    } else if (state.pageIndex == 1) {
+      final pan = state.formData.panNumber;
+      final name = state.formData.panFullName;
+      final dob = state.formData.panDob;
+
+      String? panError, nameError, dobError;
+
+      if (pan == null || pan.isEmpty) {
+        panError = 'PAN number is required.';
+        proceed = false;
+      } else if (pan.length != 10) {
+        panError = 'Please enter a valid 10-digit PAN.';
+        proceed = false;
+      }
+
+      if (name == null || name.isEmpty) {
+        nameError = 'Name is required.';
+        proceed = false;
+      }
+
+      if (dob == null || dob.isEmpty) {
+        dobError = 'Date of Birth is required.';
+        proceed = false;
+      }
+
+      if (!proceed) {
+        emit(
+          state.copyWith(
+            panNumberError: panError,
+            panFullNameError: nameError,
+            panDobError: dobError,
+          ),
+        );
+      } else {
+        emit(
+          state.copyWith(
+            isLoading: true,
+            clearErrors: true,
+            currentOverlay: EligibilityOverlayType.fetchingPortfolio,
+          ),
+        );
+
+        await Future.delayed(const Duration(seconds: 10));
+
+        bool panIsEligible = true;
+
+          emit(
+            state.copyWith(
+              isLoading: false,
+              currentOverlay: EligibilityOverlayType.eligibilityResult,
+            ),
+          );
+      }
+>>>>>>> 9c76ba7 (changes committed)
       return;
     }
 
@@ -2147,6 +2448,7 @@ Future<void> _onConfirmFundSelection(
       );
       break;
 
+<<<<<<< HEAD
     case 5:
       emit(state.copyWith(isLoading: true));
       print('Form submitted: ${state.formData}');
@@ -2156,6 +2458,38 @@ Future<void> _onConfirmFundSelection(
 
     default:
       emit(state.copyWith(clearErrors: true));
+=======
+      case 2:
+        emit(
+          state.copyWith(
+            pageIndex: 4,
+            majorStep: 3,
+            clearErrors: true,
+            clearSelectedLender: true,
+          ),
+        );
+        break;
+
+      case 3:
+        emit(state.copyWith(pageIndex: 4, majorStep: 3, clearErrors: true));
+        break;
+
+      case 4:
+        emit(state.copyWith(pageIndex: 5, majorStep: 4, clearErrors: true));
+        break;
+
+      case 5:
+        emit(state.copyWith(isLoading: true));
+        print('Form submitted: ${state.formData}');
+        await Future.delayed(const Duration(seconds: 2));
+        emit(state.copyWith(isLoading: false));
+        break;
+
+      default:
+        emit(state.copyWith(clearErrors: true));
+        break;
+    }
+>>>>>>> 9c76ba7 (changes committed)
   }
 }
 

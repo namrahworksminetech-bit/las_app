@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 import 'package:las_app/models/funds/lender_eligible_funds_model.dart';
 
+=======
+>>>>>>> 9c76ba7 (changes committed)
 class LenderItem {
   final int id;
   final String? name;
@@ -7,7 +10,10 @@ class LenderItem {
   final double? loanInterest;
   final double? loanAmount;
   final int? eligibleFundsCount;
+<<<<<<< HEAD
   final List<EligibleFund>? eligibleFunds;
+=======
+>>>>>>> 9c76ba7 (changes committed)
 
   LenderItem({
     required this.id,
@@ -16,6 +22,7 @@ class LenderItem {
     this.loanInterest,
     this.loanAmount,
     this.eligibleFundsCount,
+<<<<<<< HEAD
     this.eligibleFunds,
   });
 
@@ -67,4 +74,18 @@ class LenderItem {
     'eligible_funds':
         eligibleFunds?.map((e) => e.toJson()).toList() ?? [], // ✅ Added
   };
+=======
+  });
+
+  factory LenderItem.fromJson(Map<String, dynamic> json) {
+    return LenderItem(
+      id: json['id'] ?? 0,
+      name: json['name'],
+      logo: json['logo'],
+      loanInterest: (json['loan_interest'] ?? json['roi'] ?? 0).toDouble(),
+      loanAmount: (json['loan_amount'] ?? json['eligible_limit'] ?? 0).toDouble(),
+      eligibleFundsCount: (json['eligible_funds_count'] ?? 0).toInt(),
+    );
+  }
+>>>>>>> 9c76ba7 (changes committed)
 }

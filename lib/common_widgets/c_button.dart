@@ -59,8 +59,15 @@ class CButton extends StatelessWidget {
     final style = ElevatedButton.styleFrom(
       backgroundColor: backgroundColor,
       foregroundColor: foregroundColor,
+<<<<<<< HEAD
       padding: const EdgeInsets.symmetric(vertical: 18),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+=======
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(5),
+      ),
+>>>>>>> 9c76ba7 (changes committed)
       elevation: 0,
       side: side,
     );
@@ -72,7 +79,11 @@ class CButton extends StatelessWidget {
         style: style,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
+<<<<<<< HEAD
           mainAxisSize: MainAxisSize.max,
+=======
+          mainAxisSize: MainAxisSize.min,
+>>>>>>> 9c76ba7 (changes committed)
           children: [
             if (isLoading)
               SizedBox(
@@ -84,6 +95,7 @@ class CButton extends StatelessWidget {
                 ),
               )
             else
+<<<<<<< HEAD
               Flexible(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 3),
@@ -96,6 +108,13 @@ class CButton extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+=======
+              Text(
+                text,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+>>>>>>> 9c76ba7 (changes committed)
                 ),
               ),
             if (suffixIcon != null && !isLoading) ...[

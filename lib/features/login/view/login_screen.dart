@@ -45,15 +45,25 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
+<<<<<<< HEAD
 
     _emailController.text = '';
     _mobileController.text = '';
     _otpController.text = '';
+=======
+    // Prefilled for testing
+    _emailController.text = 'namrah@gmail.com';
+    _mobileController.text = '9876543210';
+    _otpController.text = '123456';
+>>>>>>> 9c76ba7 (changes committed)
   }
 
   @override
   void dispose() {
+<<<<<<< HEAD
     _loadingTimer?.cancel();
+=======
+>>>>>>> 9c76ba7 (changes committed)
     _emailController.dispose();
     _mobileController.dispose();
     _otpController.dispose();
@@ -72,7 +82,11 @@ class _LoginScreenState extends State<LoginScreen> {
             previous.viewStatus != current.viewStatus ||
             previous.isLoading != current.isLoading,
         listener: (context, state) {
+<<<<<<< HEAD
           // ✅ Snackbar messages from bloc
+=======
+          // ✅ Snackbar
+>>>>>>> 9c76ba7 (changes committed)
           if (state.snackbarMessage != null &&
               state.snackbarMessage!.isNotEmpty) {
             CSnackBar.show(
@@ -88,6 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
             context.read<LoginBloc>().add(LoginSnackbarCleared());
           }
 
+<<<<<<< HEAD
           // --- Handle loading timeout lifecycle ---
           // If loading started, start timer. If loading stopped, cancel timer and reset flag.
           final bloc = context.read<LoginBloc>();
@@ -107,6 +122,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   isError: true,
                 );
               }
+=======
+          // ✅ Navigate after OTP verification success
+          if (state.token != null && state.token!.isNotEmpty) {
+            Future.delayed(const Duration(milliseconds: 500), () {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => const EligibilityScreen(),
+                ),
+              );
+>>>>>>> 9c76ba7 (changes committed)
             });
           } else {
             // loading finished — cancel timer and reset force flag (so loader can show next time)
@@ -195,6 +220,7 @@ class _LoginScreenState extends State<LoginScreen> {
         builder: (context, state) {
           final bloc = context.read<LoginBloc>();
           final bool isOtpView = state.viewStatus == LoginViewStatus.otpSent;
+<<<<<<< HEAD
           final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
           /// OTP FILED AUTO SCROLL
@@ -207,6 +233,8 @@ class _LoginScreenState extends State<LoginScreen> {
               );
             }
           });
+=======
+>>>>>>> 9c76ba7 (changes committed)
 
           return Scaffold(
             backgroundColor: AppColors.black,
@@ -237,6 +265,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       /// ---------- Form Section ----------
                       Expanded(
                         child: SingleChildScrollView(
+<<<<<<< HEAD
                           controller: _scrollController,
                           padding: EdgeInsets.fromLTRB(
                             24,
@@ -244,14 +273,23 @@ class _LoginScreenState extends State<LoginScreen> {
                             24,
                             bottomInset + 150, // ✅ Push content above keyboard
                           ),
+=======
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 24.0),
+>>>>>>> 9c76ba7 (changes committed)
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               CText(
                                 'EnterDetailsBelow'.tr,
+<<<<<<< HEAD
                                 style: AppTypography.h3.copyWith(
                                   color: AppColors.white,
                                 ),
+=======
+                                style: AppTypography.h1
+                                    .copyWith(color: AppColors.white),
+>>>>>>> 9c76ba7 (changes committed)
                               ),
                               Gaps.hXxl,
 
@@ -259,6 +297,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               CInput(
                                 labelText: 'EmailAddress'.tr,
                                 controller: _emailController,
+<<<<<<< HEAD
                                 enabled: !isOtpView,
                                 keyboardType: TextInputType.emailAddress,
                                 hintText: 'enterEmail'.tr,
@@ -266,6 +305,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                   Icons.email_outlined,
                                   color: AppColors.white,
                                   size: 16,
+=======
+                            
+                                keyboardType: TextInputType.emailAddress,
+                                suffixIcon: const Icon(
+                                  Icons.email_outlined,
+                                  color: AppColors.white,
+                                  size: 20,
+>>>>>>> 9c76ba7 (changes committed)
                                 ),
                               ),
                               Gaps.hXl,
@@ -275,6 +322,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 labelText: 'MobileNumber'.tr,
                                 controller: _mobileController,
                                 errorText: state.mobileError,
+<<<<<<< HEAD
                                 hintText: 'enterMobileNumber'.tr,
                                 keyboardType: TextInputType.phone,
                                 prefixText: '+91 ',
@@ -296,6 +344,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                   FilteringTextInputFormatter
                                       .digitsOnly, // ✅ Only numbers allowed
                                 ],
+=======
+                                keyboardType: TextInputType.phone,
+                                prefixText: '+91 ',
+                                suffixIcon: const Icon(
+                                  Icons.phone_outlined,
+                                  color: AppColors.white,
+                                  size: 20,
+                                ),
+>>>>>>> 9c76ba7 (changes committed)
                               ),
                               Gaps.hXl,
 
@@ -318,6 +375,92 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
+<<<<<<< HEAD
+=======
+
+                      /// ---------- Buttons ----------
+                      Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          children: [
+                            if (!isOtpView) ...[
+                              CButton(
+                                text: 'SendOTP'.tr,
+                                onPressed: () {
+                                  bloc.add(
+                                    LoginSendOtpPressed(
+                                      mobile: _mobileController.text.trim(),
+                                      
+                                    ),
+                                  );
+                                },
+                                type: ButtonType.primaryWhite,
+                                suffixIcon: const Icon(
+                                  Icons.arrow_forward,
+                                  color: AppColors.black,
+                                  size: 18,
+                                ),
+                              ),
+                            ] else ...[
+                              CButton(
+                                text: 'Continue'.tr,
+                                onPressed: () {
+                                  if (state.otpRef == null ||
+                                      state.otpRef!.isEmpty) {
+                                    CSnackBar.show(
+                                      context,
+                                      'Missing OTP reference. Please resend OTP.',
+                                      isError: true,
+                                    );
+                                    return;
+                                  }
+
+                                  bloc.add(
+                                    LoginVerifyOtpPressed(
+                                      mobile: _mobileController.text.trim(),
+                                      otpRef: state.otpRef!,
+                                      otp: _otpController.text.trim(),
+                                    ),
+                                  );
+                                },
+                                type: ButtonType.primaryWhite,
+                                suffixIcon: const Icon(
+                                  Icons.arrow_forward,
+                                  color: AppColors.black,
+                                  size: 18,
+                                ),
+                              ),
+                              Gaps.hXl,
+                              Center(
+                                child: RichText(
+                                  text: TextSpan(
+                                    text: "NoCode?".tr,
+                                    style: const TextStyle(
+                                      color: AppColors.bSecondaryColor,
+                                      fontSize: 14,
+                                    ),
+                                    children: [
+                                      TextSpan(
+                                        text: 'ResendOTP'.tr,
+                                        style: const TextStyle(
+                                          color: AppColors.bPrimaryColor,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        recognizer: TapGestureRecognizer()
+                                          ..onTap = () {
+                                            bloc.add(
+                                                const LoginResendOtpPressed());
+                                          },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+>>>>>>> 9c76ba7 (changes committed)
                     ],
                   ),
 

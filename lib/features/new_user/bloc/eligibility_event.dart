@@ -228,6 +228,10 @@ class OtpChanged extends EligibilityEvent {
   List<Object?> get props => [otp];
 }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 9c76ba7 (changes committed)
 class VerifyPanPressed extends EligibilityEvent {
   final String pan;
   final String dob;
@@ -235,6 +239,10 @@ class VerifyPanPressed extends EligibilityEvent {
   final String email;
 
   VerifyPanPressed({
+<<<<<<< HEAD
+=======
+    
+>>>>>>> 9c76ba7 (changes committed)
     required this.pan,
     required this.dob,
     required this.name,
@@ -242,6 +250,10 @@ class VerifyPanPressed extends EligibilityEvent {
   });
 }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 9c76ba7 (changes committed)
 class SendPanOtpPressed extends EligibilityEvent {
   // no args required — repo will use AppStateProvider.reqId
   const SendPanOtpPressed();
@@ -249,6 +261,7 @@ class SendPanOtpPressed extends EligibilityEvent {
   @override
   List<Object?> get props => [];
 }
+<<<<<<< HEAD
 
 /// Step 3
 class VerifyPanOtpPressed extends EligibilityEvent {
@@ -258,6 +271,17 @@ class VerifyPanOtpPressed extends EligibilityEvent {
 
   @override
   List<Object?> get props => [otp];
+=======
+/// Step 3
+class VerifyPanOtpPressed extends EligibilityEvent {
+
+  final String otp;
+
+  const VerifyPanOtpPressed({ required this.otp});
+
+  @override
+  List<Object?> get props => [ otp];
+>>>>>>> 9c76ba7 (changes committed)
 }
 
 /// Snackbar clear

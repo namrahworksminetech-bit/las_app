@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import 'package:las_app/models/funds/funds_detail_model.dart';
 import 'package:las_app/models/funds/lender_model.dart';
 import 'package:las_app/models/funds/pledgeable_model.dart';
@@ -21,11 +22,26 @@ class MfDetailsResponse {
     this.pledgeableAmount,
     this.nonPledgeableAmount,
     this.dematAmount,
+=======
+import 'package:las_app/models/funds/lender_model.dart';
+
+class MfDetailsResponse {
+
+  final List<LenderItem> lenders;
+  final double? pledgeableAmount;
+  final double? eligiblePortfolio;
+  final double? maxEligibleLimit;
+
+  MfDetailsResponse({
+    required this.lenders,
+    this.pledgeableAmount,
+>>>>>>> 9c76ba7 (changes committed)
     this.eligiblePortfolio,
     this.maxEligibleLimit,
   });
 
   factory MfDetailsResponse.fromJson(Map<String, dynamic> json) {
+<<<<<<< HEAD
     final data =
         (json['data'] is Map<String, dynamic>) ? json['data'] : json;
 
@@ -82,4 +98,22 @@ class MfDetailsResponse {
         'eligible_portfolio': eligiblePortfolio,
         'max_eligible_limit': maxEligibleLimit,
       };
+=======
+    final data = json['data'] ?? json;
+
+    final lendersData = (data['eligible_lenders'] as List<dynamic>?)
+            ?.map((e) => LenderItem.fromJson(e))
+            .toList() ??
+        [];
+
+    return MfDetailsResponse(
+      lenders: lendersData,
+      pledgeableAmount: (data['pledgeableAmount'] ?? 0).toDouble(),
+      eligiblePortfolio: (data['eligible_portfolio'] ?? 0).toDouble(),
+      maxEligibleLimit: (data['max_eligible_limit'] ?? 0).toDouble(),
+    );
+    
+  }
+
+>>>>>>> 9c76ba7 (changes committed)
 }

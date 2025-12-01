@@ -55,7 +55,11 @@ class LoginRepository {
       final response = await _apiClient.post(
         '/customer/login',
         data: {
+<<<<<<< HEAD
           'phone_number': '+91$phoneNumber',
+=======
+          'phone_number': '+91${phoneNumber}',
+>>>>>>> 9c76ba7 (changes committed)
           'otp_ref': otpRef,
           'otp': otp,
         },
@@ -68,6 +72,10 @@ class LoginRepository {
           receiveTimeout: const Duration(minutes: 1),
         ),
       );
+print('VERIFYING OTP WITH:');
+print('  phone: ${phoneNumber}');
+print('  otpRef: ${otpRef}');
+print('  otp: ${otp}');
 
       print('VERIFYING OTP WITH:');
       print('  phone: $phoneNumber');

@@ -34,6 +34,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           "subtitle": 'welcome2_subtitle'.tr,
           "title": 'welcome2_title'.tr,
         },
+<<<<<<< HEAD
+=======
+        
+>>>>>>> 9c76ba7 (changes committed)
       ];
 
   @override

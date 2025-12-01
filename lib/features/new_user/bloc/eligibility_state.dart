@@ -1,6 +1,10 @@
 part of 'eligibility_bloc.dart';
 
 enum InvestmentType { insurancePolicy, mutualFund, shares, none }
+enum PanVerificationStatus { initial, verifying, verified, failed }
+enum PanOtpStatus { initial, sending, sent, verified, failed }
+
+enum EligibilityOverlayType { none, fetchingPortfolio, eligibilityResult }
 
 enum PanVerificationStatus { initial, verifying, verified, failed }
 
@@ -15,6 +19,29 @@ enum LenderSelectionView {
   fundSelection,
 }
 
+<<<<<<< HEAD
+=======
+
+class PledgeableFund extends Equatable {
+  final String id;
+  final String name;
+  final double value;
+  final int units;
+  final double perUnitValue;
+
+  const PledgeableFund({
+    required this.id,
+    required this.name,
+    required this.value,
+    required this.units,
+    required this.perUnitValue,
+  });
+
+  @override
+  List<Object?> get props => [id];
+}
+
+>>>>>>> 9c76ba7 (changes committed)
 class Lender extends Equatable {
   final String id;
   final String name;
@@ -88,7 +115,6 @@ class EligibilityFormData extends Equatable {
   @override
   List<Object?> get props => [investmentType, panNumber, panFullName, panDob];
 }
-
 class EligibilityState extends Equatable {
   const EligibilityState({
     this.majorStep = 1,
@@ -193,6 +219,7 @@ class EligibilityState extends Equatable {
   // Core fields
   final int majorStep;
   final int pageIndex;
+<<<<<<< HEAD
   final bool isStep2Loading;
   final bool redirectToKycAfterFetch;
   final Map<String, double> editedFundAmounts;
@@ -202,9 +229,12 @@ class EligibilityState extends Equatable {
   final bool isEditingLoan;
   final PledgeMfResponse? pledgeMfResponse;
 
+=======
+>>>>>>> 9c76ba7 (changes committed)
   final EligibilityFormData formData;
   final MfDetailsResponse? mfDetailsResponse;
 
+<<<<<<< HEAD
   // New: lender-specific edit results: lenderId -> true/false/null
   final Map<String, bool?> editLoanResult;
   final String? pledgeStatus;
@@ -212,11 +242,16 @@ class EligibilityState extends Equatable {
   final String? lastSavedLenderId;
   final String? lastSaveMessage;
   // Verification / UI state
+=======
+>>>>>>> 9c76ba7 (changes committed)
   final PanVerificationStatus panStatus;
   final PanOtpStatus otpStatus;
   final String? snackbarMessage;
 
+<<<<<<< HEAD
   // Errors
+=======
+>>>>>>> 9c76ba7 (changes committed)
   final String? generalErrorMessage;
   final String? panNumberError;
   final String? panFullNameError;
@@ -299,6 +334,7 @@ class EligibilityState extends Equatable {
     String? panNumberError,
     String? panFullNameError,
     String? panDobError,
+<<<<<<< HEAD
     Map<String, double>? editedFundAmounts,
     PanVerificationStatus? panStatus,
 
@@ -309,6 +345,9 @@ class EligibilityState extends Equatable {
     bool? shouldNavigateToKyc,
     PledgeMfResponse? pledgeMfResponse,
     bool clearSnackbar = false,
+=======
+    bool clearErrors = false,
+>>>>>>> 9c76ba7 (changes committed)
     EligibilityOverlayType? currentOverlay,
     LenderSelectionView? lenderSelectionView,
     String? pledgeStatus,
@@ -337,6 +376,7 @@ class EligibilityState extends Equatable {
     bool? isSubmitting,
     bool? otpError,
     bool? otpResent,
+<<<<<<< HEAD
     String? kycUrl,
     bool? kycLoading,
     String? kycError,
@@ -361,6 +401,12 @@ class EligibilityState extends Equatable {
     bool? isPolicyUploading,
     bool? isInsuranceSubmitting,
 
+=======
+    PanVerificationStatus? panStatus,
+    PanOtpStatus? otpStatus,
+    String? snackbarMessage,
+    bool clearSnackbar = false,
+>>>>>>> 9c76ba7 (changes committed)
   }) {
     return EligibilityState(
 
@@ -381,6 +427,7 @@ class EligibilityState extends Equatable {
       majorStep: majorStep ?? this.majorStep,
       pageIndex: pageIndex ?? this.pageIndex,
       formData: formData ?? this.formData,
+<<<<<<< HEAD
       isSavingLoan: isSavingLoan ?? this.isSavingLoan,
       pledgeStatus: pledgeStatus ?? this.pledgeStatus,
       savingLenderId: savingLenderId ?? this.savingLenderId,
@@ -409,14 +456,30 @@ class EligibilityState extends Equatable {
           ? null
           : (snackbarMessage ?? this.snackbarMessage),
       isLoading: isLoading ?? this.isLoading,
+=======
+      isLoading: isLoading ?? this.isLoading,
+      generalErrorMessage:
+          clearErrors ? null : generalErrorMessage ?? this.generalErrorMessage,
+      panNumberError:
+          clearErrors ? null : panNumberError ?? this.panNumberError,
+      panFullNameError:
+          clearErrors ? null : panFullNameError ?? this.panFullNameError,
+      panDobError: clearErrors ? null : panDobError ?? this.panDobError,
+>>>>>>> 9c76ba7 (changes committed)
       currentOverlay: currentOverlay ?? this.currentOverlay,
       lenderSelectionView: lenderSelectionView ?? this.lenderSelectionView,
       lastSavedLenderId: lastSavedLenderId ?? this.lastSavedLenderId,
       lastSaveMessage: lastSaveMessage ?? this.lastSaveMessage,
       lenders: lenders ?? this.lenders,
+<<<<<<< HEAD
       selectedLenderId: clearSelectedLender
           ? null
           : (selectedLenderId ?? this.selectedLenderId),
+=======
+      selectedLenderId:
+          clearSelectedLender ? null : selectedLenderId ?? this.selectedLenderId,
+      portfolioData: portfolioData ?? this.portfolioData,
+>>>>>>> 9c76ba7 (changes committed)
       isPortfolioRefreshing:
           isPortfolioRefreshing ?? this.isPortfolioRefreshing,
       editedLoanAmounts: editedLoanAmounts ?? this.editedLoanAmounts,
@@ -432,6 +495,7 @@ class EligibilityState extends Equatable {
       isSubmitting: isSubmitting ?? this.isSubmitting,
       otpError: otpError ?? this.otpError,
       otpResent: otpResent ?? this.otpResent,
+<<<<<<< HEAD
       kycUrl: kycUrl ?? this.kycUrl,
       kycLoading: kycLoading ?? this.kycLoading,
       loadingLenderId: loadingLenderId ?? this.loadingLenderId,
@@ -455,6 +519,12 @@ class EligibilityState extends Equatable {
         isPolicyUploading: isPolicyUploading ?? this.isPolicyUploading,
         isInsuranceSubmitting: isInsuranceSubmitting ?? this.isInsuranceSubmitting,
        
+=======
+      panStatus: panStatus ?? this.panStatus,
+      otpStatus: otpStatus ?? this.otpStatus,
+      snackbarMessage:
+          clearSnackbar ? null : snackbarMessage ?? this.snackbarMessage,
+>>>>>>> 9c76ba7 (changes committed)
     );
   }
 
@@ -471,6 +541,7 @@ class EligibilityState extends Equatable {
   // 🔹 Equatable props
   @override
   List<Object?> get props => [
+<<<<<<< HEAD
     majorStep,
     isStep2Loading,
     editedFundAmounts,
@@ -548,4 +619,32 @@ class EligibilityState extends Equatable {
 
     
   ];
+=======
+        majorStep,
+        pageIndex,
+        formData,
+        isLoading,
+        generalErrorMessage,
+        panNumberError,
+        panFullNameError,
+        panDobError,
+        currentOverlay,
+        lenderSelectionView,
+        lenders,
+        selectedLenderId,
+        portfolioData,
+        isPortfolioRefreshing,
+        editedLoanAmounts,
+        pledgeableFunds,
+        selectedFundIds,
+        kycStepChecks,
+        otp,
+        isSubmitting,
+        otpError,
+        otpResent,
+        panStatus,
+        otpStatus,
+        snackbarMessage,
+      ];
+>>>>>>> 9c76ba7 (changes committed)
 }

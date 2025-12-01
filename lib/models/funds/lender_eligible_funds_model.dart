@@ -3,7 +3,11 @@ class EligibleFund {
   final String fundCode;
   final String unitsPledge;
   final String folioNo;
+<<<<<<< HEAD
  
+=======
+
+>>>>>>> 9c76ba7 (changes committed)
   EligibleFund({
     required this.fundName,
     required this.fundCode,
@@ -19,6 +23,7 @@ class EligibleFund {
       folioNo: json['folio_no'] ?? '',
     );
   }
+<<<<<<< HEAD
     Map<String, dynamic> toJson() => {
         'fund_name': fundName,
         'fund_code': fundCode,
@@ -28,3 +33,6 @@ class EligibleFund {
 }
 
   
+=======
+}
+>>>>>>> 9c76ba7 (changes committed)

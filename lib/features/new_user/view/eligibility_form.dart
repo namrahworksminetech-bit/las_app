@@ -9,10 +9,13 @@ import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/features/new_user/repository/lenders_data_repo.dart';
 import 'package:las_app/features/new_user/repository/pan_veirfy_repo.dart';
+<<<<<<< HEAD
 import 'package:las_app/features/new_user/view/insurance_success_screen.dart';
 import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/insurance_step_one.dart';
 import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/insurance_step_two.dart';
 import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/shares_step.dart';
+=======
+>>>>>>> 9c76ba7 (changes committed)
 import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/step_fund_type.dart';
 import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/step_pan.dart';
 import 'package:las_app/helper_widgets/fetched_overlay.dart';
@@ -89,6 +92,7 @@ int _backPressCount = 0;
    @override
   Widget build(BuildContext context) {
     return BlocProvider(
+<<<<<<< HEAD
       create: (context) {
         final bloc = EligibilityBloc(
           repository: PanRepository(ApiClient()),
@@ -109,6 +113,9 @@ int _backPressCount = 0;
 
         return bloc;
       },
+=======
+      create: (context) => EligibilityBloc(repository: PanRepository(ApiClient()),lenderRepository: LenderRepository(ApiClient())),
+>>>>>>> 9c76ba7 (changes committed)
       child: Scaffold(
         backgroundColor: AppColors.black,
         body: BlocConsumer<EligibilityBloc, EligibilityState>(

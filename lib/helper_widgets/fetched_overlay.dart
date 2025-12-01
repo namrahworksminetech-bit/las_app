@@ -93,6 +93,7 @@ class EligibilityResultOverlay extends StatelessWidget {
 
           // Continue button
           CButton(
+<<<<<<< HEAD
             text: 'seeLoanOffers'.tr,
             type: ButtonType.secondaryBlack,
             suffixIcon: const Icon(
@@ -186,7 +187,33 @@ class EligibilityResultOverlay extends StatelessWidget {
   }
 },
           ),
+=======
+  text: 'seeLoanOffers'.tr,
+  onPressed: () {
+    final eligibilityBloc = context.read<EligibilityBloc>();
+>>>>>>> 9c76ba7 (changes committed)
 
+    // 🔹 Correct: Fetch lender list + portfolio data here
+    eligibilityBloc.add(FetchStep2Data());
+
+    // 🔹 Navigate to lender selection screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BlocProvider.value(
+          value: eligibilityBloc,
+          child: const LenderSelectionScreen(),
+        ),
+      ),
+    );
+  },
+  type: ButtonType.secondaryBlack,
+  suffixIcon: const Icon(
+    Icons.arrow_forward,
+    color: AppColors.black,
+    size: 18,
+  ),
+),
           Gaps.hMd,
         ],
       ),
