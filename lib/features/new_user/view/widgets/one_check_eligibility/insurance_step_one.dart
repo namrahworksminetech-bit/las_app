@@ -4,7 +4,7 @@ import 'package:las_app/common_widgets/c_button.dart';
 import 'package:las_app/common_widgets/c_drop_down.dart';
 import 'package:las_app/common_widgets/c_input.dart';
 import 'package:las_app/common_widgets/c_text.dart';
-import 'package:las_app/common_widgets/drop_dwon.dart';
+import 'package:las_app/common_widgets/drop_down.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';

@@ -99,7 +99,7 @@ final Map<String, String> enUS = {
 
   "fillBasicInfo": "Fill your basic info",
   "aadharPanVerification": "Aadhar and PAN verification",
-  "linkAccountMandate": "Link account & set mandate",
+  "linkAccountMandate": "Link account",
   "loanAgreementSigning": "Loan agreement signing",
   "kycVerification": "KYC Verification",
   "nextPledgeFunds": "Next: Pledge Funds",
