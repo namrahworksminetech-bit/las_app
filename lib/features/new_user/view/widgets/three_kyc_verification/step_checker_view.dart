@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -697,17 +698,24 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
       return;
     }
 
-    // If step 2 logic remains same
-    if (stepIndex == 2 && allowedStatuses.contains(_lastStatus)) {
-      print(
-        '🎯 Step $stepIndex clicked with allowed status - calling Digio API',
-      );
-      await Future.delayed(const Duration(milliseconds: 500));
-      _callDigioAPI();
-      if (!_hasStartedKyc) {
-        _hasStartedKyc = true;
-        _connectWebSocket();
+    // Step 2 - Link account set mandate
+    if (stepIndex == 2) {
+      print('🎯 Step 2 clicked - Link account set mandate');
+
+      // For web platform, skip Digio and directly call KYC API
+      if (kIsWeb) {
+        print('🌐 Web platform detected - calling KYC API directly');
+        _startKycForStep(2);
+      } else {
+        print('📱 Mobile platform - calling Digio API');
+        await Future.delayed(const Duration(milliseconds: 500));
+        _callDigioAPI();
+        if (!_hasStartedKyc) {
+          _hasStartedKyc = true;
+          _connectWebSocket();
+        }
       }
+
       setState(() {
         _loadingStepIndex = 2;
       });
