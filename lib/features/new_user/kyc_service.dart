@@ -17,12 +17,9 @@ class KycRepository {
     try {
       print('🚀 Starting KYC for step: $stepName');
 
-      // Get location
-      final location = await LocationService.getCurrentLocation();
-      if (location == null) {
-        print('❌ Failed to get location');
-        return;
-      }
+      // Get mandatory location - forces user to enable location service
+      final location = await LocationService.getCurrentLocationMandatory(context);
+      print('✅ Location obtained: ${location.latitude}, ${location.longitude}');
 
       // Get KYC repository instance
       final kycRepo = KycRepo(GetIt.instance<ApiClient>());
