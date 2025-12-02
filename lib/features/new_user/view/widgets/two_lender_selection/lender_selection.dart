@@ -79,15 +79,31 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
     }
 
     return WillPopScope(
-      onWillPop: () async {
-        // show confirm dialog and if confirmed navigate to Dashboard
-        final confirm = await _showExitConfirmDialog();
-        if (confirm) {
-          _navigateToDashboard();
-        }
-        // always block default pop because we handled navigation
-        return false;
-      },
+  onWillPop: () async {
+  final bloc = context.read<EligibilityBloc>();
+  final view = bloc.state.lenderSelectionView;
+
+  // CASE 1: In Fund Selection → go back to Lender List
+  if (view == LenderSelectionView.fundSelection) {
+    bloc.add(const SetLenderSelectionView(LenderSelectionView.lenderList));
+    return false;
+  }
+
+  // CASE 2: In Breakdown or Pledgeable → go back to Lender List
+  if (view == LenderSelectionView.portfolioBreakdown ||
+      view == LenderSelectionView.pledgeableDetail) {
+    bloc.add(const SetLenderSelectionView(LenderSelectionView.lenderList));
+    return false;
+  }
+
+  // CASE 3: Already in lender list → show exit dialog
+  final confirm = await _showExitConfirmDialog();
+  if (confirm) {
+    _navigateToDashboard();
+  }
+
+  return false;
+},
       child: Scaffold(
         backgroundColor: AppColors.black,
         body: SafeArea(
@@ -172,22 +188,29 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
                                 children: [
                                   // Robust Go Back:
                                   GestureDetector(
-                                    onTap: () async {
-                                      // Show confirm dialog; if confirmed navigate to Dashboard
-                                      final confirm = await _showExitConfirmDialog();
-                                      if (confirm) {
-                                        _navigateToDashboard();
-                                      } else {
-                                        // If user cancelled, keep them in current view but also
-                                        // ensure we stay on lender list subview (safe default).
-                                        try {
-                                          context.read<EligibilityBloc>().add(
-                                              const SetLenderSelectionView(
-                                                  LenderSelectionView
-                                                      .lenderList));
-                                        } catch (_) {}
-                                      }
-                                    },
+                                  onTap: () {
+  final bloc = context.read<EligibilityBloc>();
+  final view = bloc.state.lenderSelectionView;
+
+  // CASE 1: In Fund Selection → back to lender list
+  if (view == LenderSelectionView.fundSelection) {
+    bloc.add(const SetLenderSelectionView(LenderSelectionView.lenderList));
+    return;
+  }
+
+  // CASE 2: In Breakdown / Pledgeable → back to lender list
+  if (view == LenderSelectionView.portfolioBreakdown ||
+      view == LenderSelectionView.pledgeableDetail) {
+    bloc.add(const SetLenderSelectionView(LenderSelectionView.lenderList));
+    return;
+  }
+
+  // CASE 3: Already at Lender List → ask to exit
+  _showExitConfirmDialog().then((confirm) {
+    if (confirm) _navigateToDashboard();
+  });
+},
+
                                     child: Row(
                                       children: [
                                         const Icon(

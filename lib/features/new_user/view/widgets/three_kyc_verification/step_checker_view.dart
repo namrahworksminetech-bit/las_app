@@ -5,7 +5,6 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
-import 'package:las_app/features/dashboard/view_dashboard.dart';
 import 'package:las_app/features/home/view_home.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:las_app/common_widgets/c_button.dart';
@@ -94,7 +93,6 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
     });
   }
 
-  /// Safely push the LenderSelectionScreen and update bloc state (defers to next frame).
   void _safePushToLenderSelection() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
