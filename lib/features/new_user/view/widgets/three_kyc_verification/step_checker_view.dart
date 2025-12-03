@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
 import 'package:las_app/features/home/view_home.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../../core/utils/web_tab_manager.dart';
 import 'package:las_app/common_widgets/c_button.dart';
 import 'package:las_app/common_widgets/c_text.dart';
 import 'package:las_app/core/theme/app_colors.dart';
@@ -230,31 +231,36 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
       'completed',
     };
 
-    if (!_isWebViewOpen) {
-      // even if webview isn't open, we still may need to auto-start next KYC step based on status
-      if (status == 'penny_drop_done') {
-        // after penny-drop done, start KYC for step index 3 (kfs agreement) once
-        _startKycForStep(3);
-      } else if (status == 'kfs_agreement_done') {
-        // start the final step (index 4) once
-        _startKycForStep(4);
-      }
-      return;
-    }
+    debugPrint(
+      '🔍 _maybeCloseWebViewForStatus called with status: $status, _isWebViewOpen: $_isWebViewOpen',
+    );
 
+    // For Android: Always try to close webview for terminal statuses, regardless of _isWebViewOpen flag
     if (closeStatuses.contains(status)) {
-      // clear state now to avoid multiple nav attempts
+      debugPrint(
+        '🔔 Terminal status detected: $status - attempting to close webview',
+      );
+
+      // Clear webview state
       setState(() {
         _isWebViewOpen = false;
         _currentOpenStep = null;
       });
 
-      debugPrint('🔔 Scheduling automatic WebView close for status: $status');
+      // Try to pop webview if it exists
+      if (Navigator.canPop(context)) {
+        debugPrint('📱 Android: Closing WebView for status: $status');
+        _safePop();
+      }
 
-      // close open webview safely and navigate back to app
-      _safePop();
-
-      // After certain statuses we also want to auto-start the next step:
+      // Auto-start next steps based on status
+      if (status == 'penny_drop_done') {
+        _startKycForStep(3);
+      } else if (status == 'kfs_agreement_done') {
+        _startKycForStep(4);
+      }
+    } else if (!_isWebViewOpen) {
+      // even if webview isn't open, we still may need to auto-start next KYC step based on status
       if (status == 'penny_drop_done') {
         _startKycForStep(3);
       } else if (status == 'kfs_agreement_done') {
@@ -302,7 +308,6 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
             _callPledgeMfApi();
 
             _updateStepsBasedOnStatus(status);
-
             // This will close webview when needed AND auto-start subsequent steps where appropriate
             _maybeCloseWebViewForStatus(status);
 
@@ -329,7 +334,15 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
             }
 
             // For the final 'completed' status: ensure webview closed and stop polling
-            if (status == 'completed') {
+            if (status == 'completed' || status == 'mandate_done' || status == 'final_step_done') {
+              // Close WebView window for web platform
+              if (kIsWeb) {
+                WebTabManager.closeWebViewWindow();
+              }
+
+              // Disconnect WebSocket on final step completion
+              _pledgeRepo.disconnectWebSocketOnFinalStep();
+
               // mark steps completed & stop polling
               _statusTimer?.cancel();
               setState(() {
@@ -746,9 +759,9 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _statusTimer?.cancel();
-    setState(() {
-      _isPolling = false;
-    });
+    // Disconnect WebSocket when disposing screen
+    _pledgeRepo.disconnectWebSocketOnScreenExit();
+    _isPolling = false;
     try {
       _digioRepo.stopPollingWithLoader(context);
     } catch (_) {}
@@ -773,6 +786,8 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
         try {
           _digioRepo.stopPollingWithLoader(context);
         } catch (_) {}
+        // Disconnect WebSocket when leaving screen
+        _pledgeRepo.disconnectWebSocketOnScreenExit();
         setState(() {
           _isPolling = false;
           _isWebViewOpen = false;
@@ -843,42 +858,14 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
                         try {
                           _digioRepo.stopPolling();
                         } catch (_) {}
+                        // Disconnect WebSocket when leaving screen
+                        _pledgeRepo.disconnectWebSocketOnScreenExit();
                         setState(() {
                           _isPolling = false;
                           _isWebViewOpen = false;
                           _currentOpenStep = null;
                           _loadingStepIndex = null;
                         });
-                        GestureDetector(
-                          onTap: () {
-                            _statusTimer?.cancel();
-                            try {
-                              _digioRepo.stopPollingWithLoader(context);
-                            } catch (_) {}
-                            setState(() {
-                              _isPolling = false;
-                              _isWebViewOpen = false;
-                              _currentOpenStep = null;
-                            });
-
-                            // schedule safe push to lender selection
-                            _safePushToLenderSelection();
-                          },
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.arrow_back,
-                                color: AppColors.white,
-                                size: 20,
-                              ),
-                              Gaps.wSm,
-                              CText(
-                                'goBack'.tr,
-                                style: AppTypography.bodyWhite,
-                              ),
-                            ],
-                          ),
-                        );
 
                         // navigate to Dashboard and remove previous routes
                         WidgetsBinding.instance.addPostFrameCallback((_) {

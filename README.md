@@ -19,3 +19,5 @@ samples, guidance on mobile development, and a full API reference.
 AOBPC3943B
 
 003943
+
+https://uat-las.valuenable.in/#/LoginScreenCustDashboard
