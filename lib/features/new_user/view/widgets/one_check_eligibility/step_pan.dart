@@ -56,6 +56,11 @@ class _Step1PanPageState extends State<Step1PanPage> {
 
     super.dispose();
   }
+  bool _isValidPan(String pan) {
+  final regex = RegExp(r'^[A-Z]{5}[0-9]{4}[A-Z]$');
+  return regex.hasMatch(pan.toUpperCase());
+}
+
 
   Future<void> _selectDate(BuildContext context) async {
     FocusScope.of(context).unfocus();
@@ -77,7 +82,11 @@ class _Step1PanPageState extends State<Step1PanPage> {
   void _onButtonPressed(EligibilityState state) {
     FocusManager.instance.primaryFocus?.unfocus();
     final bloc = context.read<EligibilityBloc>();
-
+ final pan = _panController.text.trim().toUpperCase();
+  if (!_isValidPan(pan)) {
+    CSnackBar.show(context, "Please enter a valid PAN number (e.g., ABCDE1234F)");
+    return;
+  }
     // 🔹 Step 1: Verify PAN
     if (state.otpStatus == PanOtpStatus.initial ||
         state.otpStatus == PanOtpStatus.failed) {

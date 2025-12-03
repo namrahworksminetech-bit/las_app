@@ -226,6 +226,17 @@ class FundSelectionView extends StatelessWidget {
     );
   }
 
+  void _goBackToLenderSelection(BuildContext context) {
+  final bloc = context.read<EligibilityBloc>();
+
+  // update bloc state (pageIndex = 2)
+  bloc.add(const JumpToPage(2));
+
+  // pop back to previous screen (Lender Selection)
+  Navigator.of(context).pop();
+}
+
+
   @override
   Widget build(BuildContext context) {
     final bloc = context.read<EligibilityBloc>();
