@@ -486,10 +486,13 @@ class _DashboardState extends State<Dashboard> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                '₹${v?.availableCreditLimit?.toIndianFormat()}',
+                '₹${v?.availableCreditLimit?.toIndianFormat() ?? 0}',
                 style: AppTypography.semiTxt.copyWith(fontSize: 40),
               ),
               IconButton(
+                style: IconButton.styleFrom(
+                  backgroundColor: Color(0x1CFFFFFF),
+                ),
                 onPressed: () {},
                 icon: Icon(Icons.navigate_next_sharp),
               ),
@@ -510,7 +513,7 @@ class _DashboardState extends State<Dashboard> {
                       ),
                     ),
                     Text(
-                      '₹${v?.withdrawn?.toIndianFormat()}',
+                      '₹${v?.withdrawn?.toIndianFormat() ?? 0}',
                       style: AppTypography.semiTxt.copyWith(fontSize: 18),
                     ),
                   ],
@@ -528,7 +531,7 @@ class _DashboardState extends State<Dashboard> {
                       ),
                     ),
                     Text(
-                      '₹${v?.availableAmount?.toIndianFormat()}',
+                      '₹${v?.availableAmount?.toIndianFormat() ?? 0}',
                       style: AppTypography.semiTxt.copyWith(fontSize: 18),
                     ),
                   ],

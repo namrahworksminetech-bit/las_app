@@ -246,7 +246,7 @@ class _PortfolioState extends State<Portfolio> {
           ),
           Gaps.hXs,
           Text(
-            '₹${v?.availableAmount?.toIndianFormat()}',
+            '₹${v?.availableAmount?.toIndianFormat() ?? 0}',
             style: AppTypography.semiTxt.copyWith(fontSize: 40),
           ),
           Gaps.hMd,
@@ -262,7 +262,7 @@ class _PortfolioState extends State<Portfolio> {
                   ),
                 ),
               Gaps.wMd,
-              Text('₹${v?.availableCreditLimit?.toIndianFormat()}'),
+              Text('₹${v?.availableCreditLimit?.toIndianFormat() ?? 0}'),
             ],
           ),
           Gaps.hXxl,
@@ -296,7 +296,7 @@ class _PortfolioState extends State<Portfolio> {
                     ),
                   ),
                   Text(
-                    '${v?.interestRate}%',
+                    '${v?.interestRate ?? 0}%',
                     style: AppTypography.semiTxt.copyWith(fontSize: 18),
                   ),
                 ],
@@ -312,7 +312,7 @@ class _PortfolioState extends State<Portfolio> {
                     ),
                   ),
                   Text(
-                    '₹${v?.withdrawn}',
+                    '₹${v?.withdrawn ?? 0}',
                     style: AppTypography.semiTxt.copyWith(fontSize: 18),
                   ),
                 ],
@@ -439,11 +439,9 @@ class _PortfolioState extends State<Portfolio> {
   }
 
   Widget repayLayout(BuildContext ctx) {
-     final reqId = GetIt.I<AppStateProvider>().reqId ?? '';
+    final reqId = GetIt.I<AppStateProvider>().reqId ?? '';
     return FutureBuilder(
-      future: PortfolioRepository().repayment({
-        'reqId': reqId,
-      }),
+      future: PortfolioRepository().repayment({'reqId': reqId}),
       builder: (context, snapData) {
         var v = (snapData.data?.data?.isNotEmpty ?? false)
             ? (snapData.data?.data?.first ?? RepayModel())
@@ -469,6 +467,18 @@ class _PortfolioState extends State<Portfolio> {
                 ),
               ),
               Gaps.hMd,
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppColors.kPrimaryColor),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(children: [
+                  Container(
+                    height: 40,
+                    child: Text('Principle Amount'),
+                  )
+                ]),
+              ),
               // Container(
               //   decoration: BoxDecoration(
               //     borderRadius: BorderRadiusGeometry.circular(4),
@@ -676,7 +686,7 @@ class _PortfolioState extends State<Portfolio> {
   }
 
   Widget withdrawLayout() {
-       final reqId = GetIt.I<AppStateProvider>().reqId ?? '';
+    final reqId = GetIt.I<AppStateProvider>().reqId ?? '';
     return BlocProvider(
       create: (context) => PortfolioBloc(),
       child: BlocBuilder<PortfolioBloc, PortfolioState>(
@@ -737,7 +747,7 @@ class _PortfolioState extends State<Portfolio> {
                                     ),
                                   ),
                                   Text(
-                                    '₹${v?.availableAmount?.toIndianFormat()}',
+                                    '₹${v?.availableAmount?.toIndianFormat() ?? 0}',
                                     style: AppTypography.regularTxt.copyWith(
                                       color: Colors.black,
                                       fontSize: 14,
