@@ -19,16 +19,19 @@ class LoginVerifyOtpPressed extends LoginEvent {
   final String mobile;
   final String otpRef;
   final String otp;
+  final String email;
 
   const LoginVerifyOtpPressed({
     required this.mobile,
     required this.otpRef,
     required this.otp,
+    required this.email,
   });
 
   @override
-  List<Object?> get props => [mobile, otpRef, otp];
+  List<Object?> get props => [mobile, otpRef, otp, email];
 }
+
 
 class LoginResendOtpPressed extends LoginEvent {
   const LoginResendOtpPressed();

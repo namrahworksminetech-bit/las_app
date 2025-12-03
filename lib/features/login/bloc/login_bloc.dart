@@ -84,7 +84,13 @@ Future<void> _onVerifyOtpPressed(
     final appState = getIt<AppStateProvider>();
     appState.setToken(response.token!);
     appState.setMobileNumber(event.mobile);
-    final prefs = await SharedPreferences.getInstance();
+      final prefs = await SharedPreferences.getInstance();
+  await prefs.setString("mobile_number", event.mobile);
+
+
+  appState.setEmail(event.email);
+  await prefs.setString("email", event.email);
+   
 await prefs.setString("mobile_number", event.mobile);
 
 

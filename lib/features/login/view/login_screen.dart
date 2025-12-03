@@ -365,6 +365,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     mobile: _mobileController.text.trim(),
                                     otpRef: state.otpRef!,
                                     otp: _otpController.text.trim(),
+                                      email: _emailController.text.trim(),
                                   ),
                                 );
                               },
