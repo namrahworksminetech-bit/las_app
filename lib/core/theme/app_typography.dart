@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
 class AppTypography {
-  static const _base = TextStyle(fontFamily: 'Roboto', color: AppColors.white);
+  static const _base = TextStyle(fontFamily: 'Poppins', color: AppColors.white);
    static TextStyle get h0 =>
       _base.copyWith(fontSize: 34, fontWeight: FontWeight.w700);
 

@@ -78,18 +78,18 @@ class DashboardRepository {
         throw Exception('Missing auth token');
       }
 
-      // final response = await ApiClient().post(
-      //   '/customer-portal/user-dashboard',
-      //   data: {'req_id': reqId},
-      //   options: Options(
-      //     headers: {
-      //       'Authorization': 'Bearer $token',
-      //       'Content-Type': 'application/json',
-      //     },
-      //   ),
-      // );
+      final response = await ApiClient().post(
+        '/customer-portal/user-dashboard',
+        data: {'req_id': reqId},
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
 
-      // return DashboardResult.fromJson(response.data);
+      return DashboardResult.fromJson(response.data);
 
       /// TEMPORARY MOCK DATA (UNCHANGED)
       return DashboardResult.fromJson({
