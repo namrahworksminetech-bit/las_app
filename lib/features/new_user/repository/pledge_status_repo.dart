@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:las_app/core/app_state_provider.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../core/results/result.dart';
 import '../../../core/network/api_client.dart';
 
@@ -18,64 +20,153 @@ class WebSocketService {
   Timer? _pingTimer;
   Timer? _reconnectTimer;
   Timer? _statusTimer;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  bool _isConnected = false;
+  String? _lastToken;
+  bool _shouldStayConnected = true;
 
   Stream<Map<String, dynamic>>? get stream => _controller?.stream;
 
   Future<void> connect(String token) async {
+    print('----------------------');
+    print('🔰 STARTING WEBSOCKET CONNECT METHOD');
+    print('----------------------');
+
+    _lastToken = token;
+    _shouldStayConnected = true;
+    
+    // Start connectivity monitoring
+    _startConnectivityMonitoring();
+
     try {
-      print(
-        '🔗 Connecting to WebSocket with token: ${token.substring(0, 10)}...',
-      );
+      print('🔐 Received Token (first 10 chars): ${token.substring(0, 10)}...');
+      print('🔧 Preparing WebSocket URL...');
+
       final uri = Uri.parse(
         'wss://socket-dev.valuenable.in?token=$token&module=las',
       );
-      print('🔗 WebSocket URI: $uri');
 
+      print('🌐 Final WebSocket URI: $uri');
+
+      print('📡 Creating WebSocketChannel...');
       _channel = WebSocketChannel.connect(uri);
-      _controller = StreamController<Map<String, dynamic>>.broadcast();
+
+      print('📦 Creating StreamController...');
+      _controller ??= StreamController<Map<String, dynamic>>.broadcast();
+
+      print('👂 Setting up socket listeners...');
 
       _channel!.stream.listen(
         (data) {
-          print('📡 Raw WebSocket data received: $data');
+          print('Received raw socket data: $data');
+          _isConnected = true;
+
           try {
-            final response = json.decode(data) as Map<String, dynamic>;
-            print('📝 Decoded WebSocket data: $response');
-            _controller?.add(response);
+            final decoded = json.decode(data);
+            print(' Decoded JSON: $decoded');
+
+            if (decoded is Map<String, dynamic>) {
+              print('📨 Adding decoded JSON to stream...');
+              _controller?.add(decoded);
+            } else {
+              print('⚠️ Decoded data is not Map<String, dynamic>');
+            }
           } catch (e) {
-            print('❌ WebSocket decode error: $e');
+            print('❌ Failed to decode JSON: $e');
           }
         },
         onError: (error) {
-          print('❌ WebSocket error: $error');
+          print('❌ SOCKET ERROR: $error');
+          _isConnected = false;
+          _handleReconnection();
         },
         onDone: () {
-          print('🔌 WebSocket connection closed');
+          print('🔌 WEBSOCKET CLOSED by server / connection ended.');
+          _isConnected = false;
+          _handleReconnection();
         },
+        cancelOnError: false,
       );
 
-      await Future.delayed(const Duration(milliseconds: 500));
-      print('✅ WebSocket connection established successfully');
+      _isConnected = true;
+      print('✅ WebSocket connection ready');
+
+      print('🎉 WebSocket CONNECT function completed successfully.');
     } catch (e) {
-      print('❌ WebSocket connection failed: $e');
+      print('❌ FINAL CATCH → WebSocket connection failed: $e');
+      _isConnected = false;
+      _handleReconnection();
+      rethrow;
     }
+
+    print('----------------------');
+    print('🏁 END OF CONNECT METHOD');
+    print('----------------------');
   }
 
   void disconnect() {
+    print('🔌 Disconnecting WebSocket...');
+    _shouldStayConnected = false;
+    _isConnected = false;
     _channel?.sink.close();
     _controller?.close();
+    _controller = null;
     _pingTimer?.cancel();
     _reconnectTimer?.cancel();
     _statusTimer?.cancel();
+    _connectivitySubscription?.cancel();
+    _lastToken = null;
+  }
+
+  void disconnectOnScreenExit() {
+    print('🚪 Disconnecting WebSocket on screen exit...');
+    disconnect();
+  }
+
+  void disconnectOnFinalStepComplete() {
+    print('✅ Disconnecting WebSocket on final step completion...');
+    disconnect();
+  }
+
+  void _startConnectivityMonitoring() {
+    _connectivitySubscription?.cancel();
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
+      final hasConnection = results.any((result) => 
+        result == ConnectivityResult.mobile || 
+        result == ConnectivityResult.wifi ||
+        result == ConnectivityResult.ethernet
+      );
+      
+      if (hasConnection && !_isConnected && _shouldStayConnected && _lastToken != null) {
+        print('🌐 Internet reconnected, attempting WebSocket reconnection...');
+        _handleReconnection();
+      } else if (!hasConnection) {
+        print('📵 Internet disconnected');
+        _isConnected = false;
+      }
+    });
+  }
+
+  void _handleReconnection() {
+    if (!_shouldStayConnected || _lastToken == null) return;
+    
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(const Duration(seconds: 3), () {
+      if (_shouldStayConnected && _lastToken != null && !_isConnected) {
+        print('🔄 Attempting to reconnect WebSocket...');
+        connect(_lastToken!);
+      }
+    });
   }
 }
 
 class PledgeStatusRepository {
-  
   final ApiClient _apiClient;
 
   final AppStateProvider appState = GetIt.instance<AppStateProvider>();
 
-  PledgeStatusRepository([ApiClient? apiClient]) : _apiClient = apiClient ?? GetIt.instance<ApiClient>();
+  PledgeStatusRepository([ApiClient? apiClient])
+    : _apiClient = apiClient ?? GetIt.instance<ApiClient>();
 
   Stream<Map<String, dynamic>> listenForKycStatus() {
     return WebSocketService.instance.stream ?? const Stream.empty();
@@ -87,6 +178,14 @@ class PledgeStatusRepository {
 
   void disconnectWebSocket() {
     WebSocketService.instance.disconnect();
+  }
+
+  void disconnectWebSocketOnScreenExit() {
+    WebSocketService.instance.disconnectOnScreenExit();
+  }
+
+  void disconnectWebSocketOnFinalStep() {
+    WebSocketService.instance.disconnectOnFinalStepComplete();
   }
 
   Future<Result<Map<String, dynamic>>> checkSocketStatus({
@@ -109,13 +208,8 @@ class PledgeStatusRepository {
         completer.complete(Success(response));
       });
 
-      return await completer.future.timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          subscription?.cancel();
-          return const Failure('Request timeout');
-        },
-      );
+      // No timeout - keep connection alive until manually disconnected
+      return await completer.future;
     } catch (e) {
       return Failure('Error: $e');
     }
@@ -126,9 +220,10 @@ class PledgeStatusRepository {
     String? type,
     required String authToken,
   }) async {
-    
     try {
-      debugPrint('📡 checkPledgeMfStatus calling POST /customer/pledge-mf with reqId=$reqId');
+      debugPrint(
+        '📡 checkPledgeMfStatus calling POST /customer/pledge-mf with reqId=$reqId',
+      );
 
       final response = await _apiClient.post(
         '/customer/pledge-mf',
@@ -148,7 +243,8 @@ class PledgeStatusRepository {
       // If server returned JSON with a message, prefer that
       String? serverMessage;
       try {
-        if (respData is Map && respData['message'] != null) serverMessage = respData['message'].toString();
+        if (respData is Map && respData['message'] != null)
+          serverMessage = respData['message'].toString();
       } catch (_) {}
 
       if (statusCode == 200 || statusCode == 201) {
@@ -162,17 +258,20 @@ class PledgeStatusRepository {
       }
 
       return Failure(
-          'Failed to check pledge status (HTTP ${statusCode ?? "null"}). ${serverMessage ?? ""}');
+        'Failed to check pledge status (HTTP ${statusCode ?? "null"}). ${serverMessage ?? ""}',
+      );
     } on DioException catch (e) {
-      debugPrint('⛔ DioException in checkPledgeMfStatus: type=${e.type}, response=${e.response?.data}');
-      final msg = e.response?.data?['message'] ?? e.message ?? 'Network error occurred.';
+      debugPrint(
+        '⛔ DioException in checkPledgeMfStatus: type=${e.type}, response=${e.response?.data}',
+      );
+      final msg =
+          e.response?.data?['message'] ??
+          e.message ??
+          'Network error occurred.';
       return Failure(msg);
     } catch (e, st) {
       debugPrint('⛔ Unexpected error in checkPledgeMfStatus: $e\n$st');
       return Failure('Error: $e');
     }
   }
-
-
-
 }

@@ -10,6 +10,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/injection_container.dart';
 import '../core/network/api_client.dart';
+import '../core/utils/web_tab_manager.dart';
 import 'package:universal_html/html.dart' as html;
 
 class WebViewScreen extends StatefulWidget {
@@ -80,12 +81,21 @@ class _WebViewScreenState extends State<WebViewScreen> {
 
   void _openUrlInNewTab(String url) async {
     if (kIsWeb) {
-      // Force new Chrome browser window
-      html.window.open(
+      // Store window reference for closing later
+      final newWindow = html.window.open(
         url,
         '_blank',
         'width=1200,height=800,scrollbars=yes,resizable=yes',
       );
+
+      // Store reference in WebTabManager
+      if (newWindow != null) {
+        WebTabManager.setWebViewWindow(newWindow);
+      }
+      // Future.delayed(Duration(seconds: 20)).then((value) {
+      //   WebTabManager.closeWebViewWindow();
+      //   print("auto_close---------------");
+      // });
       Get.back();
     }
   }
