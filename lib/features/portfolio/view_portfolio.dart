@@ -467,18 +467,18 @@ class _PortfolioState extends State<Portfolio> {
                 ),
               ),
               Gaps.hMd,
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.kPrimaryColor),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(children: [
-                  Container(
-                    height: 40,
-                    child: Text('Principle Amount'),
-                  )
-                ]),
-              ),
+              // Container(
+              //   decoration: BoxDecoration(
+              //     border: Border.all(color: AppColors.kPrimaryColor),
+              //     borderRadius: BorderRadius.circular(8),
+              //   ),
+              //   child: Row(children: [
+              //     Container(
+              //       height: 40,
+              //       child: Text('Principle Amount'),
+              //     )
+              //   ]),
+              // ),
               // Container(
               //   decoration: BoxDecoration(
               //     borderRadius: BorderRadiusGeometry.circular(4),
