@@ -19,7 +19,6 @@ class WebSocketService {
   StreamController<Map<String, dynamic>>? _controller;
   Timer? _pingTimer;
   Timer? _reconnectTimer;
-  StreamSubscription? _internalListener;
   Timer? _statusTimer;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   bool _isConnected = false;
@@ -27,16 +26,6 @@ class WebSocketService {
   bool _shouldStayConnected = true;
 
   Stream<Map<String, dynamic>>? get stream => _controller?.stream;
-  void _ensureInternalListener() {
-    if (_controller == null) return;
-
-    if (_internalListener == null) {
-      print("🎧 Setting UP permanent internal listener...");
-      _internalListener = _controller!.stream.listen((event) {
-        print("🎧 INTERNAL LISTENER: Controller ALWAYS ACTIVE");
-      }, onError: (e) => print("❌ Internal listener error: $e"));
-    }
-  }
 
   Future<void> connect(String token) async {
     print('----------------------');
@@ -45,7 +34,7 @@ class WebSocketService {
 
     _lastToken = token;
     _shouldStayConnected = true;
-
+    
     // Start connectivity monitoring
     _startConnectivityMonitoring();
 
@@ -54,7 +43,7 @@ class WebSocketService {
       print('🔧 Preparing WebSocket URL...');
 
       final uri = Uri.parse(
-        'wss://socket-uat.valuenable.in?token=$token&module=las',
+        'wss://socket-dev.valuenable.in?token=$token&module=las',
       );
 
       print('🌐 Final WebSocket URI: $uri');
@@ -62,15 +51,10 @@ class WebSocketService {
       print('📡 Creating WebSocketChannel...');
       _channel = WebSocketChannel.connect(uri);
 
-      if (_controller == null || _controller!.isClosed) {
-        print("✨ Creating NEW StreamController");
-        _controller = StreamController<Map<String, dynamic>>.broadcast();
-      } else {
-        print("♻️ Reusing existing StreamController");
-      }
+      print('📦 Creating StreamController...');
+      _controller ??= StreamController<Map<String, dynamic>>.broadcast();
 
-      //  ALWAYS attach internal listener so controller NEVER goes empty
-      _ensureInternalListener();
+      print('👂 Setting up socket listeners...');
 
       _channel!.stream.listen(
         (data) {
@@ -146,20 +130,14 @@ class WebSocketService {
 
   void _startConnectivityMonitoring() {
     _connectivitySubscription?.cancel();
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
-      List<ConnectivityResult> results,
-    ) {
-      final hasConnection = results.any(
-        (result) =>
-            result == ConnectivityResult.mobile ||
-            result == ConnectivityResult.wifi ||
-            result == ConnectivityResult.ethernet,
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
+      final hasConnection = results.any((result) => 
+        result == ConnectivityResult.mobile || 
+        result == ConnectivityResult.wifi ||
+        result == ConnectivityResult.ethernet
       );
-
-      if (hasConnection &&
-          !_isConnected &&
-          _shouldStayConnected &&
-          _lastToken != null) {
+      
+      if (hasConnection && !_isConnected && _shouldStayConnected && _lastToken != null) {
         print('🌐 Internet reconnected, attempting WebSocket reconnection...');
         _handleReconnection();
       } else if (!hasConnection) {
@@ -171,7 +149,7 @@ class WebSocketService {
 
   void _handleReconnection() {
     if (!_shouldStayConnected || _lastToken == null) return;
-
+    
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(const Duration(seconds: 3), () {
       if (_shouldStayConnected && _lastToken != null && !_isConnected) {

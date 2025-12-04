@@ -14,7 +14,7 @@ class LoginRepository {
     try {
       final response = await _apiClient.post(
         '/customer/send-otp',
-        data: {'phone_number': "+91$phoneNumber"},
+        data: {'phone_number': phoneNumber},
         options: Options(
           sendTimeout: const Duration(minutes: 1),
           receiveTimeout: const Duration(minutes: 1),
@@ -24,9 +24,7 @@ class LoginRepository {
       if (response.statusCode == 200) {
         return OtpResponseModel.fromJson(response.data);
       } else {
-        return OtpResponseModel.error(
-          'Unexpected status: ${response.statusCode}',
-        );
+        return OtpResponseModel.error('Unexpected status: ${response.statusCode}');
       }
     } on DioException catch (e) {
       // TIMEOUT CHECK
@@ -41,8 +39,7 @@ class LoginRepository {
       }
 
       return OtpResponseModel.error(
-        e.response?.data['message'] ?? 'Network error: ${e.message}',
-      );
+          e.response?.data['message'] ?? 'Network error: ${e.message}');
     } catch (e) {
       return OtpResponseModel.error('Unexpected error: $e');
     }
