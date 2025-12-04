@@ -5,7 +5,7 @@ extension StringExt on String {
       isEmpty ? this : this[0].toUpperCase() + substring(1);
 
   String toIndianFormat() {
-        double number = double.tryParse(this) ?? 0;
+    double number = double.tryParse(this) ?? 0;
     String formattedNumber = number.toStringAsFixed(2);
 
     List<String> parts = formattedNumber.split('.');

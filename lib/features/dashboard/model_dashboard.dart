@@ -74,7 +74,7 @@ class DashboardModel {
     name: json["name"],
     availableCreditLimit: json["available_credit_limit"],
     withdrawn: json["withdrawn"],
-        interestRate: json["interest_rate"],
+    interestRate: json["interest_rate"],
     mfPledges: json["mf_pledges"],
     accountNumber: json["account_Number"],
     accountIfsc: json["account_ifsc"],
