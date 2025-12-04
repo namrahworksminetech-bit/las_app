@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
+import 'package:get_it/get_it.dart';
 import 'package:las_app/common_widgets/c_button.dart';
 import 'package:las_app/common_widgets/c_input.dart';
 import 'package:las_app/common_widgets/c_snackbar.dart';
 import 'package:las_app/common_widgets/c_text.dart';
+import 'package:las_app/core/app_state_provider.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
@@ -95,7 +97,8 @@ class _Step1PanPageState extends State<Step1PanPage> {
           pan: _panController.text.trim(),
           dob: _dobController.text.trim(),
           name: _nameController.text.trim(),
-          email: 'manish@valuenable.in', // Replace dynamically if needed
+         email: GetIt.instance<AppStateProvider>().email ?? "",
+
         ),
       );
       return;

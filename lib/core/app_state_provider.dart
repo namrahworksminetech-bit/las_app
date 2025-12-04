@@ -12,6 +12,13 @@ class AppStateProvider extends ChangeNotifier {
   String? get name => _name;
   String? get lenderCode => _lenderCode;
   String? get mobileNumber => _mobileNumber;
+String? _email;
+String? get email => _email;
+
+void setEmail(String email) {
+  _email = email;
+  notifyListeners();
+}
 
   void setToken(String token) {
     _token = token;

@@ -354,7 +354,7 @@ class FundSelectionView extends StatelessWidget {
                                           width: 40,
                                           height: 40,
                                           decoration: BoxDecoration(
-                                            color: Colors.white,
+                                            color: Colors.black,
                                             borderRadius: BorderRadius.circular(
                                               4,
                                             ),
