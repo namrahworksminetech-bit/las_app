@@ -997,21 +997,20 @@ class _KycVerificationScreenState extends State<KycVerificationScreen>
                                                     : null,
                                               ),
                                               Gaps.wMd,
-                                              CText(
-                                                steps[index],
-                                                style: AppTypography.bodyWhite
-                                                    .copyWith(
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                      color: isVisible
-                                                          ? AppColors.white
-                                                          : AppColors
-                                                                .bSecondaryColor
-                                                                .withOpacity(
-                                                                  0.5,
-                                                                ),
-                                                    ),
-                                              ),
+                                          Expanded(
+  child: CText(
+    steps[index],
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
+    style: AppTypography.bodyWhite.copyWith(
+      fontWeight: FontWeight.w500,
+      color: isVisible
+          ? AppColors.white
+          : AppColors.bSecondaryColor.withOpacity(0.5),
+    ),
+  ),
+),
+
                                             ],
                                           ),
                                           isLoading

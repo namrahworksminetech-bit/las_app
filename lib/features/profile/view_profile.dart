@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
+import 'package:las_app/core/app_state_provider.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_typography.dart';
+import 'package:las_app/features/login/view/login_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/assets.dart';
@@ -16,6 +20,31 @@ class Profile extends StatefulWidget {
 
 class _ProfileState extends State<Profile> {
   ProfileBloc? bloc;
+  Future<void> _logoutUser(BuildContext context) async {
+  final prefs = await SharedPreferences.getInstance();
+
+  // Clear SharedPreferences
+  await prefs.remove("api_token");
+  await prefs.remove("api_refresh_token");
+  await prefs.remove("req_id");
+  await prefs.remove("user_name");
+  await prefs.remove("mobile_number");
+
+  // Clear global state
+  GetIt.instance<AppStateProvider>().clear();
+
+  // Navigate using pushReplacement
+  if (context.mounted) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LoginScreen(), // <-- your login screen widget
+      ),
+    );
+  }
+}
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +99,7 @@ class _ProfileState extends State<Profile> {
                       children: [
                         Text('Email', style: AppTypography.regularTxt),
                         Text(
-                          'himanshpandey99@gmail.com',
+                       GetIt.instance<AppStateProvider>().email ?? "",
                           style: AppTypography.regularTxt,
                         ),
                       ],
@@ -173,19 +202,25 @@ class _ProfileState extends State<Profile> {
                   ],
                 ),
               ),
-              Container(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Color(0x75565656))),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Logout', style: AppTypography.regularTxt),
-                    Ast.svg.ic_logout.load(),
-                  ],
-                ),
-              ),
+             GestureDetector(
+  onTap: () async {
+    await _logoutUser(context);
+  },
+  child: Container(
+    padding: EdgeInsets.symmetric(vertical: 16),
+    decoration: BoxDecoration(
+      border: Border(bottom: BorderSide(color: Color(0x75565656))),
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text('Logout', style: AppTypography.regularTxt),
+        Ast.svg.ic_logout.load(),
+      ],
+    ),
+  ),
+),
+
             ],
           ),
         ),

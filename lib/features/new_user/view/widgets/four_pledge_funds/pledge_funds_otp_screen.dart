@@ -14,6 +14,7 @@ import 'package:las_app/core/network/api_client.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
+import 'package:las_app/features/home/view_home.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
 import 'package:las_app/features/new_user/repository/pledge_status_repo.dart';
 import 'package:las_app/features/new_user/repository/rta_repo.dart';
@@ -265,6 +266,31 @@ class _PledgeFundsOtpScreenState extends State<PledgeFundsOtpScreen> {
       if (mounted) setState(() {});
     }
   }
+Future<bool> _showExitConfirmDialog() async {
+  final res = await showDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text("Exit Application?"),
+        content: const Text(
+          "Are you sure you want to exit this step and go back to the Dashboard?",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text("Confirm"),
+          ),
+        ],
+      );
+    },
+  );
+  return res ?? false;
+}
 
   @override
   Widget build(BuildContext context) {
@@ -315,17 +341,28 @@ class _PledgeFundsOtpScreenState extends State<PledgeFundsOtpScreen> {
               Gaps.hXl,
               const Divider(thickness: 1.5, color: AppColors.bSecondaryColor),
               Gaps.hMd,
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Row(
-                  children: [
-                    const Icon(Icons.arrow_back, color: AppColors.white, size: 20),
-                    Gaps.wXs,
-                    CText('goBack'.tr,
-                        style: AppTypography.bodySmall.copyWith(color: AppColors.white)),
-                  ],
-                ),
-              ),
+             GestureDetector(
+  onTap: () async {
+    final shouldExit = await _showExitConfirmDialog();
+    if (shouldExit) {
+      if (!mounted) return;
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => Home()),
+        (route) => false,
+      );
+    }
+  },
+  child: Row(
+    children: [
+      const Icon(Icons.arrow_back, color: AppColors.white, size: 20),
+      Gaps.wXs,
+      CText('goBack'.tr,
+          style: AppTypography.bodySmall.copyWith(color: AppColors.white)),
+    ],
+  ),
+),
+
               Gaps.hXs,
               CText('otpSentMessage'.tr,
                   style: AppTypography.bodyMedium.copyWith(
