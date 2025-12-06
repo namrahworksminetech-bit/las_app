@@ -2,11 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:las_app/core/app_state_provider.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import '../../../core/injection_container.dart';
 import '../../../core/results/result.dart';
 import '../../../core/network/api_client.dart';
 
@@ -17,10 +19,7 @@ class WebSocketService {
 
   WebSocketChannel? _channel;
   StreamController<Map<String, dynamic>>? _controller;
-  Timer? _pingTimer;
   Timer? _reconnectTimer;
-  Timer? _statusTimer;
-  StreamSubscription? _internalListener;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   bool _isConnected = false;
   String? _lastToken;
@@ -28,29 +27,9 @@ class WebSocketService {
 
   Stream<Map<String, dynamic>>? get stream => _controller?.stream;
 
-  void _ensureInternalListener() {
-    print("🔍 _ensureInternalListener called");
-    print("🔍 Controller exists: ${_controller != null}");
-    print("🔍 Internal listener exists: ${_internalListener != null}");
 
-    if (_controller == null) {
-      print("❌ Controller is null, returning");
-      return;
-    }
 
-    // Cancel existing listener first
-    _internalListener?.cancel();
-    _internalListener = null;
-
-    print("🎧 Setting UP permanent internal listener...");
-    _internalListener = _controller!.stream.listen((event) {
-      print("🎧 INTERNAL LISTENER: Controller ALWAYS ACTIVE");
-    }, onError: (e) => print("❌ Internal listener error: $e"));
-
-    print("✅ Internal listener setup complete");
-  }
-
-  Future<void> connect(String token) async {
+  Future<void> connect(String token, [BuildContext? context]) async {
     print('----------------------');
     print('🔰 STARTING WEBSOCKET CONNECT METHOD');
     print('----------------------');
@@ -82,7 +61,6 @@ class WebSocketService {
       }
 
       print('👂 Setting up socket listeners...');
-
       _channel!.stream.listen(
         (data) {
           print('Received raw socket data: $data');
@@ -93,13 +71,25 @@ class WebSocketService {
             print(' Decoded JSON: $decoded');
 
             if (decoded is Map<String, dynamic>) {
-              print('📨 Adding decoded JSON to stream...');
+              final status = decoded['status'];
+              print("Parsed status: $status");
+
+              if (context != null && context.mounted) {
+                if (status == 'completed' ||
+                    status == 'mandate_done' ||
+                    status == 'final_step_done' ||
+                    status == 'kfs_agreement_done') {
+                  Navigator.pop(context);
+                }
+              }
+              // _controller?.sink.add(decoded);
               _controller?.add(decoded);
             } else {
               print('⚠️ Decoded data is not Map<String, dynamic>');
             }
-          } catch (e) {
+          } catch (e, stack) {
             print('❌ Failed to decode JSON: $e');
+            print("stack ===${stack}");
           }
         },
         onError: (error) {
@@ -138,9 +128,7 @@ class WebSocketService {
     _channel?.sink.close();
     _controller?.close();
     _controller = null;
-    _pingTimer?.cancel();
     _reconnectTimer?.cancel();
-    _statusTimer?.cancel();
     _connectivitySubscription?.cancel();
     _lastToken = null;
   }
@@ -221,32 +209,7 @@ class PledgeStatusRepository {
     WebSocketService.instance.disconnectOnFinalStepComplete();
   }
 
-  Future<Result<Map<String, dynamic>>> checkSocketStatus({
-    required String reqId,
-    required String authToken,
-  }) async {
-    try {
-      print('🚀 Starting checkPledgeStatus with reqId: $reqId');
-      await WebSocketService.instance.connect(authToken);
 
-      final completer = Completer<Result<Map<String, dynamic>>>();
-      StreamSubscription? subscription;
-
-      subscription = WebSocketService.instance.stream?.listen((response) {
-        print('📨 Received WebSocket response: $response');
-        print('🔍 Response type: ${response.runtimeType}');
-        print('🔍 Response keys: ${response.keys}');
-
-        subscription?.cancel();
-        completer.complete(Success(response));
-      });
-
-      // No timeout - keep connection alive until manually disconnected
-      return await completer.future;
-    } catch (e) {
-      return Failure('Error: $e');
-    }
-  }
 
   Future<Result<Map<String, dynamic>>> checkPledgeMfStatus({
     required String reqId,

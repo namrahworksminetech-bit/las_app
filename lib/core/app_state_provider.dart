@@ -2,23 +2,25 @@ import 'package:flutter/foundation.dart';
 
 class AppStateProvider extends ChangeNotifier {
   String? _token;
+
   String? _reqId;
   String? _name;
   String? _lenderCode;
   String? _mobileNumber;
 
   String? get token => _token;
+
   String? get reqId => _reqId;
   String? get name => _name;
   String? get lenderCode => _lenderCode;
   String? get mobileNumber => _mobileNumber;
-String? _email;
-String? get email => _email;
+  String? _email;
+  String? get email => _email;
 
-void setEmail(String email) {
-  _email = email;
-  notifyListeners();
-}
+  void setEmail(String email) {
+    _email = email;
+    notifyListeners();
+  }
 
   void setToken(String token) {
     _token = token;
@@ -41,7 +43,7 @@ void setEmail(String email) {
   }
 
   void setMobileNumber(String mobileNumber) {
-      print("📲 AppStateProvider → Mobile Saved: $mobileNumber"); // ← ADD THIS
+    print("📲 AppStateProvider → Mobile Saved: $mobileNumber"); // ← ADD THIS
 
     _mobileNumber = mobileNumber;
     notifyListeners();

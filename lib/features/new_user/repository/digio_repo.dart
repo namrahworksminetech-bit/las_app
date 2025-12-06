@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
+import 'package:las_app/common_widgets/webview_screen.dart';
 import 'package:las_app/core/app_state_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
@@ -13,7 +14,6 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/results/result.dart';
 import 'package:flutter/material.dart';
-import '../view/webview_screen.dart';
 import 'package:get/get.dart';
 import '../../../common_widgets/webview_screen.dart' as CommonWebView;
 import '../../../common_widgets/c_snackbar.dart';
@@ -23,7 +23,6 @@ class DigioRepository {
   final ApiClient _apiClient;
   Timer? _pollingTimer;
   bool _isPollingActive = false;
-  static VoidCallback? hideLoaderCallback;
 
   // in-memory cache to avoid duplicate concurrent penny-drop calls
   final Map<String, bool> _pennydropDoneCache = {};
@@ -67,13 +66,13 @@ class DigioRepository {
         print('✅ API Response: ${response.data}');
         final data = response.data['data'];
         if (data != null) {
-          print('📋 Customer ID: ${data['customer_identifier']}');
+          print(
+            '📋 Customer ID: ${data['customer_identifier'] ?? data['customer_id']}',
+          );
           print('📋 ID: ${data['id']}');
           print('📋 Access Token: ${data['access_token']}');
           print('📋 Environment: ${data['environment']}');
-
-          data['req_id'] = reqId; // Add req_id to data
-          await startKycWorkflow(data, context);
+          // ❌ REMOVED: Automatic startKycWorkflow call to prevent duplicate SDK launch
         }
         return Success(response.data);
       } else {
@@ -81,10 +80,10 @@ class DigioRepository {
       }
     } on DioException catch (e) {
       print("⏰ Dio timeout or error: ${e.type}");
-      final msg =
-          e.response?.data?['message'] ??
-          e.message ??
-          'Network error occurred.';
+      final errorMsg = e.response?.data is Map
+          ? e.response?.data['message']?.toString()
+          : null;
+      final msg = errorMsg ?? e.message ?? 'Network error occurred.';
 
       if (context != null && context.mounted) {
         CSnackBar.show(context, msg, isError: true);
@@ -142,8 +141,9 @@ class DigioRepository {
           });
 
           final id = digioDetails["id"]?.toString();
-          final customerIdentifier = digioDetails["customer_identifier"]
-              ?.toString();
+          final customerIdentifier =
+              digioDetails["customer_identifier"]?.toString() ??
+              digioDetails["customer_id"]?.toString();
           final accessToken = digioDetails["access_token"]?.toString();
 
           if (id == null || customerIdentifier == null || accessToken == null) {
@@ -236,9 +236,7 @@ class DigioRepository {
 
         if (data != null && data['link'] != null) {
           final link = data['link'] as String;
-          // Hide loader when webview opens
           onWebViewOpen?.call();
-          hideLoaderCallback?.call();
           // Opening the link in webview as before
           Get.to(
             () => CommonWebView.WebViewScreen(
@@ -285,18 +283,6 @@ class DigioRepository {
     stopPolling();
     _isPollingActive = true;
 
-    // Show loader in KycVerificationScreen
-    if (context != null) {
-      final state = context.findAncestorStateOfType<State>();
-      if (state != null && state.mounted) {
-        try {
-          (state as dynamic).setState(() {
-            (state as dynamic)._loadingStepIndex = 2;
-          });
-        } catch (e) {}
-      }
-    }
-
     // Read reqId & persistent flag first to avoid unnecessary calls
     final prefs = await SharedPreferences.getInstance();
     final appState = GetIt.instance<AppStateProvider>();
@@ -319,24 +305,12 @@ class DigioRepository {
         return;
       }
 
-      // Check again persisted flag to guard against race conditions
       if (reqId != null) {
         final alreadyNow = prefs.getBool('pennydrop_done_$reqId') ?? false;
         if (alreadyNow) {
           print(
             '🔁 Pennydrop persisted true during polling for reqId=$reqId — stopping.',
           );
-          // Hide loader
-          if (context != null) {
-            final state = context.findAncestorStateOfType<State>();
-            if (state != null && state.mounted) {
-              try {
-                (state as dynamic).setState(() {
-                  (state as dynamic)._loadingStepIndex = null;
-                });
-              } catch (e) {}
-            }
-          }
           stopPolling();
           return;
         }
@@ -361,22 +335,9 @@ class DigioRepository {
 
       if (success) {
         print('----pennydrop success -> stopping polling');
-        // Hide loader using callback
-        hideLoaderCallback?.call();
         stopPolling();
       } else {
         print('----pennydrop not successful yet, continue polling');
-        // Keep loader visible during continuous polling
-        if (context != null) {
-          final state = context.findAncestorStateOfType<State>();
-          if (state != null && state.mounted) {
-            try {
-              (state as dynamic).setState(() {
-                (state as dynamic)._loadingStepIndex = 2;
-              });
-            } catch (e) {}
-          }
-        }
       }
     });
   }
@@ -385,21 +346,6 @@ class DigioRepository {
     _pollingTimer?.cancel();
     _pollingTimer = null;
     _isPollingActive = false;
-  }
-
-  void stopPollingWithLoader(BuildContext? context) {
-    // Hide loader when stopping
-    if (context != null) {
-      final state = context.findAncestorStateOfType<State>();
-      if (state != null && state.mounted) {
-        try {
-          (state as dynamic).setState(() {
-            (state as dynamic)._loadingStepIndex = null;
-          });
-        } catch (e) {}
-      }
-    }
-    stopPolling();
   }
 
   static void openWebView(BuildContext context, String url) {

@@ -332,7 +332,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           if (!isOtpView) ...[
                             CButton(
                               text: 'SendOTP'.tr,
-                              onPressed: () {
+                              onPressed: state.isLoading ? null : () {
                                 bloc.add(
                                   LoginSendOtpPressed(
                                     mobile: _mobileController.text.trim(),
@@ -395,7 +395,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                       recognizer: TapGestureRecognizer()
                                         ..onTap = () {
                                           bloc.add(
-                                            const LoginResendOtpPressed(),
+                                            LoginResendOtpPressed(
+                                              mobile: _mobileController.text.trim(),
+                                            ),
                                           );
                                         },
                                     ),

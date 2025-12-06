@@ -38,8 +38,8 @@ class LoginRepository {
         return OtpResponseModel.error('Forbidden');
       }
 
-      return OtpResponseModel.error(
-          e.response?.data['message'] ?? 'Network error: ${e.message}');
+      final errorMsg = e.response?.data is Map ? e.response?.data['message']?.toString() : null;
+      return OtpResponseModel.error(errorMsg ?? 'Network error: ${e.message}');
     } catch (e) {
       return OtpResponseModel.error('Unexpected error: $e');
     }
@@ -84,9 +84,8 @@ class LoginRepository {
         return VerifyOtpResponse.error('Server down, please try again later');
       }
 
-      return VerifyOtpResponse.error(
-        e.response?.data['message'] ?? e.message ?? 'Network error',
-      );
+      final errorMsg = e.response?.data is Map ? e.response?.data['message']?.toString() : null;
+      return VerifyOtpResponse.error(errorMsg ?? e.message ?? 'Network error');
     } catch (e) {
       return VerifyOtpResponse.error('Unexpected error: $e');
     }

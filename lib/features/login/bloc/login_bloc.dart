@@ -345,16 +345,31 @@ await prefs.setString("mobile_number", event.mobile);
   //   }
   // }
 
-  /// 🔹 Resend OTP (no API call, just UI feedback)
+  /// 🔹 Resend OTP
   Future<void> _onResendOtpPressed(
     LoginResendOtpPressed event,
     Emitter<LoginState> emit,
   ) async {
-    emit(
-      state.copyWith(
-        snackbarMessage: 'A new OTP has been sent to your registered number.',
-      ),
-    );
+    emit(state.copyWith(isLoading: true));
+
+    final response = await repository.sendOtp(event.mobile);
+
+    emit(state.copyWith(isLoading: false));
+
+    if (response.success) {
+      emit(
+        state.copyWith(
+          otpRef: response.otpRef,
+          snackbarMessage: response.message ?? 'OTP resent successfully!',
+        ),
+      );
+    } else {
+      emit(
+        state.copyWith(
+          snackbarMessage: response.message ?? 'Failed to resend OTP.',
+        ),
+      );
+    }
   }
 
   /// 🔹 Clear Snackbar Message

@@ -167,7 +167,10 @@ class EligibilityState extends Equatable {
     this.isUploadingUnit = false,
     this.isUploadingPolicy = false,
     this.isSubmittingInsurance = false,
-  
+    this.kycSteps = const [],
+    this.currentKycStatus,
+    this.hasTriggeredDigio = false,
+    this.currentStepName,
   });
 
     final List<Map<String, dynamic>> insurers;     // dropdown list
@@ -273,6 +276,10 @@ class EligibilityState extends Equatable {
   final bool isRtaOtpVerifying;
   final String? rtaOtpError;
   final String? userMobileNumber;
+  final List<String> kycSteps;
+  final String? currentKycStatus;
+  final bool hasTriggeredDigio;
+  final String? currentStepName;
 
   EligibilityState copyWith({
 
@@ -344,6 +351,10 @@ class EligibilityState extends Equatable {
     bool? isRtaOtpVerifying,
     String? rtaOtpError,
     String? userMobileNumber,
+    List<String>? kycSteps,
+    String? currentKycStatus,
+    bool? hasTriggeredDigio,
+    String? currentStepName,
     bool clearErrors = false,
 
         bool? isShareUploading,
@@ -441,6 +452,10 @@ class EligibilityState extends Equatable {
       isRtaOtpVerifying: isRtaOtpVerifying ?? this.isRtaOtpVerifying,
       rtaOtpError: rtaOtpError ?? this.rtaOtpError,
       userMobileNumber: userMobileNumber ?? this.userMobileNumber,
+      kycSteps: kycSteps ?? this.kycSteps,
+      currentKycStatus: currentKycStatus ?? this.currentKycStatus,
+      hasTriggeredDigio: hasTriggeredDigio ?? this.hasTriggeredDigio,
+      currentStepName: currentStepName ?? this.currentStepName,
          isShareUploading: isShareUploading ?? this.isShareUploading,
       isShareSubmitting: isShareSubmitting ?? this.isShareSubmitting,
       shareUploadPath: clearErrors ? null : (shareUploadPath ?? this.shareUploadPath),
@@ -539,7 +554,10 @@ class EligibilityState extends Equatable {
     isRtaOtpVerifying,
     rtaOtpError,
     userMobileNumber,
-
+    kycSteps,
+    currentKycStatus,
+    hasTriggeredDigio,
+    currentStepName,
         isShareUploading,
     isShareSubmitting,
     shareUploadPath,

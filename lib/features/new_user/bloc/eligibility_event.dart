@@ -389,3 +389,29 @@ class DigioKycFailed extends EligibilityEvent {
   @override
   List<Object> get props => [error];
 }
+
+class CheckPledgeStatus extends EligibilityEvent {
+  const CheckPledgeStatus();
+}
+
+class RequestLocationAndStartKyc extends EligibilityEvent {
+  final BuildContext context;
+
+  const RequestLocationAndStartKyc({required this.context});
+
+  @override
+  List<Object> get props => [];
+}
+
+class KycStepTapped extends EligibilityEvent {
+  final int stepIndex;
+  final BuildContext context;
+
+  const KycStepTapped({
+    required this.stepIndex,
+    required this.context,
+  });
+
+  @override
+  List<Object> get props => [stepIndex];
+}

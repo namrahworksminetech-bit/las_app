@@ -8,21 +8,25 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../core/injection_container.dart';
 import '../core/network/api_client.dart';
 import '../core/utils/web_tab_manager.dart';
+import '../features/new_user/bloc/eligibility_bloc.dart';
 import 'package:universal_html/html.dart' as html;
 
 class WebViewScreen extends StatefulWidget {
   final String url;
   final String? title;
   final VoidCallback? onKycComplete;
+  final EligibilityBloc? bloc;
 
   const WebViewScreen({
     Key? key,
     required this.url,
     this.title,
     this.onKycComplete,
+    this.bloc,
   }) : super(key: key);
 
   @override
@@ -35,10 +39,19 @@ class _WebViewScreenState extends State<WebViewScreen> {
   Timer? _pollTimer;
   final ApiClient _apiClient = getIt<ApiClient>();
   static const platform = MethodChannel('webview_permissions');
+  StreamSubscription? _closeSubscription;
 
   @override
   void initState() {
     super.initState();
+
+    // Listen to bloc's close stream
+    if (widget.bloc != null) {
+      _closeSubscription = widget.bloc!.webViewCloseStream.listen((_) {
+        debugPrint('🚪 WebView closing - signal from bloc');
+        if (mounted) Get.back();
+      });
+    }
 
     // For web platform, open URL in new tab and close current screen
     if (kIsWeb) {
@@ -118,6 +131,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
   @override
   void dispose() {
     _pollTimer?.cancel();
+    _closeSubscription?.cancel();
     super.dispose();
   }
 
@@ -136,9 +150,9 @@ class _WebViewScreenState extends State<WebViewScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    return WillPopScope(
-      onWillPop: _onWillPop,
-      child: Scaffold(
+    final content = WillPopScope(
+        onWillPop: _onWillPop,
+        child: Scaffold(
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.close),
@@ -168,5 +182,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
         ),
       ),
     );
+    
+    return content;
   }
 }

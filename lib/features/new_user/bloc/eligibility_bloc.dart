@@ -6,6 +6,7 @@ import 'package:equatable/equatable.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
 import 'package:las_app/app.dart';
@@ -18,6 +19,7 @@ import 'package:las_app/features/new_user/repository/rta_otp_repo.dart';
 import 'package:las_app/features/new_user/repository/digio_repo.dart';
 import 'package:las_app/features/new_user/digio_service.dart';
 import 'package:las_app/features/new_user/repository/shares_repo.dart';
+import 'package:las_app/features/new_user/repository/pledge_status_repo.dart';
 import 'package:las_app/helper_widgets/fund_utils.dart';
 import 'package:las_app/models/funds/funds_detail_model.dart';
 import 'package:las_app/models/funds/pledge_mf_response.dart';
@@ -47,37 +49,39 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
   final DigioRepository _digioRepository;
   final DigioService _digioService = getIt<DigioService>();
 
-final SharesRepository _sharesRepository = SharesRepository();
+  final SharesRepository _sharesRepository = SharesRepository();
+  StreamSubscription? _socketSubscription;
+  
+  final _webViewCloseController = StreamController<bool>.broadcast();
+  Stream<bool> get webViewCloseStream => _webViewCloseController.stream;
 
-
-String? shareFileKey;    // store uploaded file path
-bool isShareUploading = false;
+  String? shareFileKey; // store uploaded file path
+  bool isShareUploading = false;
   EligibilityBloc({
     required this.repository,
     required this.lenderRepository,
     required ApiClient apiClient,
   }) : _kycRepository = KycRepo(apiClient),
        _rtaOtpRepository = RtaOtpRepository(apiClient),
-       
+
        _digioRepository = DigioRepository(apiClient),
        super(const EligibilityState()) {
     _loadEligibilitySeenFlag();
     on<InvestmentTypeUpdated>(_onInvestmentTypeUpdated);
 
     // ================= INSURANCE EVENTS =================
-on<FetchInsurers>(_onFetchInsurers);
-on<SaveInsuranceForm>(_onSaveInsuranceForm);
-on<UploadUnitStatement>(_onUploadUnitStatement);
-on<UploadPolicyBond>(_onUploadPolicyBond);
-on<SubmitInsuranceDetails>(_onSubmitInsuranceDetails);
+    on<FetchInsurers>(_onFetchInsurers);
+    on<SaveInsuranceForm>(_onSaveInsuranceForm);
+    on<UploadUnitStatement>(_onUploadUnitStatement);
+    on<UploadPolicyBond>(_onUploadPolicyBond);
+    on<SubmitInsuranceDetails>(_onSubmitInsuranceDetails);
 
     on<PanNumberUpdated>(_onPanNumberUpdated);
     on<PanFullNameUpdated>(_onPanFullNameUpdated);
     on<PanDobUpdated>(_onPanDobUpdated);
     on<AcknowledgeKycNavigation>(_onAcknowledgeKycNavigation);
-on<UploadHoldingFile>(_onUploadHoldingFile);
-on<SubmitShareDetails>(_onSubmitShareDetails);
-
+    on<UploadHoldingFile>(_onUploadHoldingFile);
+    on<SubmitShareDetails>(_onSubmitShareDetails);
 
     on<VerifyPanPressed>(_onVerifyPanPressed);
     on<SendPanOtpPressed>(_onSendPanOtpPressed);
@@ -86,11 +90,6 @@ on<SubmitShareDetails>(_onSubmitShareDetails);
     on<AutoSelectAllFunds>(_onAutoSelectAllFunds);
     on<JumpToPage>(_onJumpToPage);
     on<StartFetchingFromLogin>(_onStartFetchingFromLogin);
-
-   
-
-
-
 
     on<FetchStep2Data>(_onFetchStep2Data);
     on<LenderSelected>(_onLenderSelected);
@@ -127,179 +126,166 @@ on<SubmitShareDetails>(_onSubmitShareDetails);
     on<StartDigioKyc>(_onStartDigioKyc);
     on<DigioKycCompleted>(_onDigioKycCompleted);
     on<DigioKycFailed>(_onDigioKycFailed);
-
-
+    on<CheckPledgeStatus>(_onCheckPledgeStatus);
+    on<RequestLocationAndStartKyc>(_onRequestLocationAndStartKyc);
+    on<KycStepTapped>(_onKycStepTapped);
   }
-/* =========================================================
+  /* =========================================================
                       INSURANCE FLOW BLoC
    ========================================================= */
-final InsuranceRepository _insuranceRepo = GetIt.instance<InsuranceRepository>();
+  final InsuranceRepository _insuranceRepo =
+      GetIt.instance<InsuranceRepository>();
 
+  /// ========== 1️⃣ Fetch Insurer List ==============
+  Future<void> _onFetchInsurers(
+    FetchInsurers event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    emit(state.copyWith(isFetchingInsurers: true, insuranceError: null));
 
-/// ========== 1️⃣ Fetch Insurer List ==============
-Future<void> _onFetchInsurers(
-  FetchInsurers event,
-  Emitter<EligibilityState> emit,
-) async {
-  emit(state.copyWith(isFetchingInsurers: true, insuranceError: null));
+    final result = await _insuranceRepo.getInsurers();
 
-  final result = await _insuranceRepo.getInsurers();
-
-  result.when(
-    success: (companies) {
-      emit(state.copyWith(
-        insurers: companies,         // List<Map<String, dynamic>>
-        isFetchingInsurers: false,
-      ));
-    },
-    failure: (err) {
-      emit(state.copyWith(
-        isFetchingInsurers: false,
-        insuranceError: err,
-      ));
-    },
-  );
-}
-
-/// ========== 2️⃣ Save Step-1 Data =================
-Future<void> _onSaveInsuranceForm(
-  SaveInsuranceForm event,
-  Emitter<EligibilityState> emit,
-) async {
-  emit(state.copyWith(
-    insurerCode: event.insurerCode,
-    insurancePolicyNo: event.policyNumber,
-    insuranceName: event.name,
-    insuranceDob: event.dob,
-  ));
-}
-
-/// ========== 3️⃣ Upload UNIT-STATEMENT =============
-Future<void> _onUploadUnitStatement(
-  UploadUnitStatement event,
-  Emitter<EligibilityState> emit,
-) async {
-  emit(state.copyWith(isUploadingUnit: true, insuranceError: null));
-
-  /// 1️⃣ FIRST — get pre-signed URL
-  final urlRes = await _insuranceRepo.getUploadUrl(event.fileType);
-
-  String? urlError;
-  urlRes.when(
-    success: (_) {},
-    failure: (err) => urlError = err,
-  );
-
-  if (urlError != null) {
-    emit(state.copyWith(isUploadingUnit: false, insuranceError: urlError));
-    return;
+    result.when(
+      success: (companies) {
+        emit(
+          state.copyWith(
+            insurers: companies, // List<Map<String, dynamic>>
+            isFetchingInsurers: false,
+          ),
+        );
+      },
+      failure: (err) {
+        emit(state.copyWith(isFetchingInsurers: false, insuranceError: err));
+      },
+    );
   }
 
-  /// 2️⃣ Upload file to S3
-  final uploadRes = await _insuranceRepo.uploadFile(
-    bytes: event.fileBytes,
-    fileType: event.fileType,
-    mimeType: event.mimeType,
-  );
-
-  uploadRes.when(
-    success: (key) {
-      emit(state.copyWith(
-        isUploadingUnit: false,
-        unitKey: key, //store path
-      ));
-    },
-    failure: (err) {
-      emit(state.copyWith(isUploadingUnit: false, insuranceError: err));
-    },
-  );
-}
-
-/// ========== 4️⃣ Upload POLICY-DOCUMENT ===========
-Future<void> _onUploadPolicyBond(
-  UploadPolicyBond event,
-  Emitter<EligibilityState> emit,
-) async {
-  emit(state.copyWith(isUploadingPolicy: true, insuranceError: null));
-
-  /// 1️⃣ Get Pre-Signed URL
-  final urlRes = await _insuranceRepo.getUploadUrl(event.fileType);
-
-  String? urlError;
-  urlRes.when(
-    success: (_) {},
-    failure: (err) => urlError = err,
-  );
-
-  if (urlError != null) {
-    emit(state.copyWith(isUploadingPolicy: false, insuranceError: urlError));
-    return;
+  /// ========== 2️⃣ Save Step-1 Data =================
+  Future<void> _onSaveInsuranceForm(
+    SaveInsuranceForm event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        insurerCode: event.insurerCode,
+        insurancePolicyNo: event.policyNumber,
+        insuranceName: event.name,
+        insuranceDob: event.dob,
+      ),
+    );
   }
 
-  /// 2️⃣ Upload File
-  final uploadRes = await _insuranceRepo.uploadFile(
-    bytes: event.fileBytes,
-    mimeType: event.mimeType,
-    fileType: event.fileType,
-  );
+  /// ========== 3️⃣ Upload UNIT-STATEMENT =============
+  Future<void> _onUploadUnitStatement(
+    UploadUnitStatement event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    emit(state.copyWith(isUploadingUnit: true, insuranceError: null));
 
-  uploadRes.when(
-    success: (key) {
-      emit(state.copyWith(
-        isUploadingPolicy: false,
-        policyKey: key,
-      ));
-    },
-    failure: (err) {
-      emit(state.copyWith(isUploadingPolicy: false, insuranceError: err));
-    },
-  );
-}
+    /// 1️⃣ FIRST — get pre-signed URL
+    final urlRes = await _insuranceRepo.getUploadUrl(event.fileType);
 
-/// ========== 5️⃣ FINAL SUBMIT API ================
-Future<void> _onSubmitInsuranceDetails(
-  SubmitInsuranceDetails event,
-  Emitter<EligibilityState> emit,
-) async {
-  print("🚀 SUBMIT INSURANCE CLICKED");
+    String? urlError;
+    urlRes.when(success: (_) {}, failure: (err) => urlError = err);
 
-  if (state.unitKey == null || state.policyKey == null) {
-    emit(state.copyWith(insuranceError: "Upload both documents first"));
-    return;
+    if (urlError != null) {
+      emit(state.copyWith(isUploadingUnit: false, insuranceError: urlError));
+      return;
+    }
+
+    /// 2️⃣ Upload file to S3
+    final uploadRes = await _insuranceRepo.uploadFile(
+      bytes: event.fileBytes,
+      fileType: event.fileType,
+      mimeType: event.mimeType,
+    );
+
+    uploadRes.when(
+      success: (key) {
+        emit(
+          state.copyWith(
+            isUploadingUnit: false,
+            unitKey: key, //store path
+          ),
+        );
+      },
+      failure: (err) {
+        emit(state.copyWith(isUploadingUnit: false, insuranceError: err));
+      },
+    );
   }
 
-  emit(state.copyWith(
-    isSubmittingInsurance: true,
-    insuranceError: null,
-  ));
+  /// ========== 4️⃣ Upload POLICY-DOCUMENT ===========
+  Future<void> _onUploadPolicyBond(
+    UploadPolicyBond event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    emit(state.copyWith(isUploadingPolicy: true, insuranceError: null));
 
-  final res = await _insuranceRepo.submitInsurance(
-    insurerCode: state.insurerCode!,
-    policyNumber: state.insurancePolicyNo!,
-    name: state.insuranceName!,
-    dob: state.insuranceDob!,
-    unitFileKey: state.unitKey!,
-    policyFileKey: state.policyKey!,
-  );
+    /// 1️⃣ Get Pre-Signed URL
+    final urlRes = await _insuranceRepo.getUploadUrl(event.fileType);
 
-  res.when(
-    success: (_) {
-      print("🎉 INSURANCE POLICY SUBMITTED");
-      emit(state.copyWith(
-        isSubmittingInsurance: false,
-        insuranceSuccess: true,
-      ));
-    },
-    failure: (err) {
-      print("❌ SUBMIT FAILED → $err");
-      emit(state.copyWith(
-        isSubmittingInsurance: false,
-        insuranceError: err,
-      ));
-    },
-  );
-}
+    String? urlError;
+    urlRes.when(success: (_) {}, failure: (err) => urlError = err);
 
+    if (urlError != null) {
+      emit(state.copyWith(isUploadingPolicy: false, insuranceError: urlError));
+      return;
+    }
+
+    /// 2️⃣ Upload File
+    final uploadRes = await _insuranceRepo.uploadFile(
+      bytes: event.fileBytes,
+      mimeType: event.mimeType,
+      fileType: event.fileType,
+    );
+
+    uploadRes.when(
+      success: (key) {
+        emit(state.copyWith(isUploadingPolicy: false, policyKey: key));
+      },
+      failure: (err) {
+        emit(state.copyWith(isUploadingPolicy: false, insuranceError: err));
+      },
+    );
+  }
+
+  /// ========== 5️⃣ FINAL SUBMIT API ================
+  Future<void> _onSubmitInsuranceDetails(
+    SubmitInsuranceDetails event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    print("🚀 SUBMIT INSURANCE CLICKED");
+
+    if (state.unitKey == null || state.policyKey == null) {
+      emit(state.copyWith(insuranceError: "Upload both documents first"));
+      return;
+    }
+
+    emit(state.copyWith(isSubmittingInsurance: true, insuranceError: null));
+
+    final res = await _insuranceRepo.submitInsurance(
+      insurerCode: state.insurerCode!,
+      policyNumber: state.insurancePolicyNo!,
+      name: state.insuranceName!,
+      dob: state.insuranceDob!,
+      unitFileKey: state.unitKey!,
+      policyFileKey: state.policyKey!,
+    );
+
+    res.when(
+      success: (_) {
+        print("🎉 INSURANCE POLICY SUBMITTED");
+        emit(
+          state.copyWith(isSubmittingInsurance: false, insuranceSuccess: true),
+        );
+      },
+      failure: (err) {
+        print("❌ SUBMIT FAILED → $err");
+        emit(state.copyWith(isSubmittingInsurance: false, insuranceError: err));
+      },
+    );
+  }
 
   void _onSetLenderSelectionView(
     SetLenderSelectionView event,
@@ -320,88 +306,82 @@ Future<void> _onSubmitInsuranceDetails(
     emit(state.copyWith(editedFundAmounts: newMap));
   }
 
+  Future<void> _onUploadHoldingFile(
+    UploadHoldingFile event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    emit(state.copyWith(isShareUploading: true, shareError: null));
 
+    // 1️⃣ Get pre-signed URL & key
+    final urlResult = await _sharesRepository.getUploadUrl(event.fileType);
 
-Future<void> _onUploadHoldingFile(
-  UploadHoldingFile event,
-  Emitter<EligibilityState> emit,
-) async {
-  emit(state.copyWith(isShareUploading: true, shareError: null));
+    String? urlError;
+    urlResult.when(success: (_) {}, failure: (err) => urlError = err);
 
-  // 1️⃣ Get pre-signed URL & key
-  final urlResult = await _sharesRepository.getUploadUrl(event.fileType);
+    if (urlError != null) {
+      emit(state.copyWith(isShareUploading: false, shareError: urlError));
+      return;
+    }
 
-  String? urlError;
-  urlResult.when(
-    success: (_) {},
-    failure: (err) => urlError = err,
-  );
+    print("🔗 uploadUrl obtained → calling PUT upload..");
 
-  if (urlError != null) {
-    emit(state.copyWith(isShareUploading: false, shareError: urlError));
-    return;
+    // 2️⃣ Upload file to S3
+    final uploadResult = await _sharesRepository.uploadFile(
+      documentType: event.fileType,
+      mimeType: event.mimeType,
+      bytes: event.fileBytes,
+    );
+
+    uploadResult.when(
+      success: (_) {
+        final uploadedKey = _sharesRepository.uploadKey; // 🔑 FINAL KEY
+        print("🔥 FINAL STORED KEY IN BLOC → $uploadedKey");
+
+        emit(
+          state.copyWith(
+            isShareUploading: false,
+            shareUploadPath: uploadedKey, // ✅ store it in Bloc state
+          ),
+        );
+      },
+      failure: (err) {
+        emit(state.copyWith(isShareUploading: false, shareError: err));
+      },
+    );
   }
 
-  print("🔗 uploadUrl obtained → calling PUT upload..");
+  Future<void> _onSubmitShareDetails(
+    SubmitShareDetails event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    // Guard: make sure file is uploaded
+    if (state.shareUploadPath == null) {
+      emit(
+        state.copyWith(
+          shareError:
+              "Please upload your Demat Holding Statement before continuing.",
+        ),
+      );
+      return;
+    }
 
-  // 2️⃣ Upload file to S3
-  final uploadResult = await _sharesRepository.uploadFile(
-    documentType: event.fileType,
-    mimeType: event.mimeType,
-    bytes: event.fileBytes,
-  );
+    emit(state.copyWith(isShareSubmitting: true, shareError: null));
 
-  uploadResult.when(
-    success: (_) {
-      final uploadedKey = _sharesRepository.uploadKey; // 🔑 FINAL KEY
-      print("🔥 FINAL STORED KEY IN BLOC → $uploadedKey");
+    final result = await _sharesRepository.submitShare(
+      broker: event.broker,
+      dpId: event.dpId,
+      holdingKey: state.shareUploadPath!, // ✅ pass key directly
+    );
 
-      emit(state.copyWith(
-        isShareUploading: false,
-        shareUploadPath: uploadedKey, // ✅ store it in Bloc state
-      ));
-    },
-    failure: (err) {
-      emit(state.copyWith(isShareUploading: false, shareError: err));
-    },
-  );
-}
-
-Future<void> _onSubmitShareDetails(
-  SubmitShareDetails event,
-  Emitter<EligibilityState> emit,
-) async {
-  // Guard: make sure file is uploaded
-  if (state.shareUploadPath == null) {
-    emit(state.copyWith(
-      shareError: "Please upload your Demat Holding Statement before continuing.",
-    ));
-    return;
+    result.when(
+      success: (_) {
+        emit(state.copyWith(isShareSubmitting: false, shareSuccess: true));
+      },
+      failure: (err) {
+        emit(state.copyWith(isShareSubmitting: false, shareError: err));
+      },
+    );
   }
-
-  emit(state.copyWith(isShareSubmitting: true, shareError: null));
-
-  final result = await _sharesRepository.submitShare(
-    broker: event.broker,
-    dpId: event.dpId,
-    holdingKey: state.shareUploadPath!, // ✅ pass key directly
-  );
-
-  result.when(
-    success: (_) {
-      emit(state.copyWith(
-        isShareSubmitting: false,
-        shareSuccess: true,
-      ));
-    },
-    failure: (err) {
-      emit(state.copyWith(
-        isShareSubmitting: false,
-        shareError: err,
-      ));
-    },
-  );
-}
 
   // Replace your existing handler with this in EligibilityBloc
   void _onJumpToPage(JumpToPage event, Emitter<EligibilityState> emit) {
@@ -1072,178 +1052,187 @@ Future<void> _onSubmitShareDetails(
     );
   }
 
-Future<void> _onConfirmFundSelection(
-  ConfirmFundSelection event,
-  Emitter<EligibilityState> emit,
-) async {
-  print('🧩 ConfirmFundSelection START');
-  emit(state.copyWith(isLoading: true, generalErrorMessage: null));
+  Future<void> _onConfirmFundSelection(
+    ConfirmFundSelection event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    print('🧩 ConfirmFundSelection START');
+    emit(state.copyWith(isLoading: true, generalErrorMessage: null));
 
-  try {
-    final lenderId = state.selectedLenderId ?? '';
-    final reqId = getIt<AppStateProvider>().reqId ?? '';
-    print('📋 reqId: $reqId, selectedLenderId: $lenderId');
+    try {
+      final lenderId = state.selectedLenderId ?? '';
+      final reqId = getIt<AppStateProvider>().reqId ?? '';
+      print('📋 reqId: $reqId, selectedLenderId: $lenderId');
 
-    if (reqId.isEmpty) {
-      emit(
-        state.copyWith(
-          isLoading: false,
-          generalErrorMessage: 'Missing reqId. Please restart the process.',
-        ),
-      );
-      return;
-    }
-
-    // Base loan amount (if this is purely loan-edit without fund add/remove)
-    final baseLoanAmount =
-        state.editedLoanAmounts[lenderId] ?? state.selectedLender?.loanAmount ?? 0.0;
-
-    // Defensive: drop any empty fund codes from current selection
-    final previousFunds = state.previousSelectedFundIds;
-    final currentFundsRaw = state.selectedFundIds;
-    final currentFunds = currentFundsRaw.where((s) => s.trim().isNotEmpty).toSet();
-    if (currentFundsRaw.length != currentFunds.length) {
-      debugPrint('⚠️ Removed empty/blank fund codes from selection');
-    }
-
-    // helpers & results
-    final List<String> isinAdd = [];
-    final List<String> isinRemove = [];
-    final List<String> isinModify = []; // ALWAYS keep empty per backend rule
-    final List<String> skipped = [];
-
-    PledgeableFund? findFund(String code) =>
-        state.pledgeableFunds.firstWhereOrNull((p) => p.fundCode == code);
-
-    // Build add list: fundCode:folioNo
-    for (final code in currentFunds.difference(previousFunds)) {
-      if (code.trim().isEmpty) {
-        debugPrint('⚠️ Skipping add entry for blank code');
-        skipped.add('add:$code');
-        continue;
-      }
-      final f = findFund(code);
-      final folio = f?.folioNo ?? '';
-      if (folio.isEmpty) {
-        debugPrint('⚠️ Skipping add entry for $code - folio missing');
-        skipped.add('add:$code');
-        continue;
-      }
-      isinAdd.add('$code:$folio');
-    }
-
-    // Build remove list: fundCode:folioNo
-    for (final code in previousFunds.difference(currentFunds)) {
-      if (code.trim().isEmpty) {
-        debugPrint('⚠️ Skipping remove entry for blank code');
-        skipped.add('remove:$code');
-        continue;
-      }
-      final f = findFund(code);
-      final folio = f?.folioNo ?? '';
-      if (folio.isEmpty) {
-        debugPrint('⚠️ Skipping remove entry for $code - folio missing');
-        skipped.add('remove:$code');
-        continue;
-      }
-      isinRemove.add('$code:$folio');
-    }
-
-    // Extra safety: filter out any malformed colon entries (guards against ":5544587")
-    bool looksValidIsinPair(String s) {
-      if (!s.contains(':')) return false;
-      final parts = s.split(':');
-      if (parts.length != 2) return false;
-      final isin = parts[0].trim();
-      final folio = parts[1].trim();
-      if (isin.isEmpty || folio.isEmpty) return false;
-      if (!RegExp(r'^[A-Z0-9]+$').hasMatch(isin)) return false;
-      return true;
-    }
-
-    final filteredIsinAdd = isinAdd.where(looksValidIsinPair).toList();
-    final filteredIsinRemove = isinRemove.where(looksValidIsinPair).toList();
-    if (filteredIsinAdd.length != isinAdd.length || filteredIsinRemove.length != isinRemove.length) {
-      debugPrint('⚠️ Removed malformed ISIN entries from lists');
-    }
-
-    debugPrint('📤 ISIN_ADD (${filteredIsinAdd.length}): $filteredIsinAdd');
-    debugPrint('📤 ISIN_REMOVE (${filteredIsinRemove.length}): $filteredIsinRemove');
-    debugPrint('📤 ISIN_MODIFY (always empty): $isinModify');
-    if (skipped.isNotEmpty) debugPrint('⚠️ Skipped entries: $skipped');
-
-    // Determine loan_amount to send as nullable double:
-    // - when add/remove present -> send null
-    // - otherwise -> send actual baseLoanAmount
-    double? loanAmountToSend;
-    if (filteredIsinAdd.isNotEmpty || filteredIsinRemove.isNotEmpty) {
-      loanAmountToSend = null;
-      debugPrint('⚠️ Add/remove detected -> sending loan_amount = null');
-    } else {
-      loanAmountToSend = baseLoanAmount;
-      debugPrint('ℹ️ No add/remove -> sending loan_amount = $loanAmountToSend');
-    }
-
-    // Final body preview for debugging
-    final bodyPreview = {
-      'req_id': reqId,
-      'loan_amount': loanAmountToSend,
-      'lender_id': lenderId,
-      'isin_add': filteredIsinAdd,
-      'isin_remove': filteredIsinRemove,
-      'isin_modify': isinModify,
-    };
-    debugPrint('📦 Final request body preview: $bodyPreview');
-
-    // Call repository (new method with named args)
-    final result = await lenderRepository.editLoanAmount(
-      reqId: reqId,
-      loanAmount: loanAmountToSend,
-      lenderId: lenderId,
-      isinAdd: filteredIsinAdd,
-      isinRemove: filteredIsinRemove,
-      isinModify: isinModify,
-    );
-
-    // Handle Result<MfDetailsResponse>
-    await result.when(
-      success: (updatedData) async {
-        debugPrint('✅ editLoanAmount success, updating state');
-
-        // Map lenders from response into UI model Lender
-        final updatedLenders = updatedData.lenders.map((l) {
-          return Lender(
-            id: l.id.toString(),
-            name: l.name ?? '-',
-            logoAsset: l.logo ?? '',
-            interestRate: l.loanInterest ?? 0.0,
-            loanAmount: l.loanAmount ?? 0.0,
-            pledgeableMFs: l.eligibleFundsCount ?? 0,
-            tag: '',
-          );
-        }).toList();
-
+      if (reqId.isEmpty) {
         emit(
           state.copyWith(
-            mfDetailsResponse: updatedData,
-            pledgeableFunds: updatedData.pledgeableFunds,
-            lenders: updatedLenders,
             isLoading: false,
-            shouldNavigateToKyc: true,
-            generalErrorMessage: null,
+            generalErrorMessage: 'Missing reqId. Please restart the process.',
           ),
         );
-      },
-      failure: (error) {
-        debugPrint('❌ editLoanAmount failed: $error');
-        emit(state.copyWith(isLoading: false, generalErrorMessage: error));
-      },
-    );
-  } catch (e, st) {
-    debugPrint('💥 Unexpected exception in _onConfirmFundSelection: $e\n$st');
-    emit(state.copyWith(isLoading: false, generalErrorMessage: e.toString()));
+        return;
+      }
+
+      // Base loan amount (if this is purely loan-edit without fund add/remove)
+      final baseLoanAmount =
+          state.editedLoanAmounts[lenderId] ??
+          state.selectedLender?.loanAmount ??
+          0.0;
+
+      // Defensive: drop any empty fund codes from current selection
+      final previousFunds = state.previousSelectedFundIds;
+      final currentFundsRaw = state.selectedFundIds;
+      final currentFunds = currentFundsRaw
+          .where((s) => s.trim().isNotEmpty)
+          .toSet();
+      if (currentFundsRaw.length != currentFunds.length) {
+        debugPrint('⚠️ Removed empty/blank fund codes from selection');
+      }
+
+      // helpers & results
+      final List<String> isinAdd = [];
+      final List<String> isinRemove = [];
+      final List<String> isinModify = []; // ALWAYS keep empty per backend rule
+      final List<String> skipped = [];
+
+      PledgeableFund? findFund(String code) =>
+          state.pledgeableFunds.firstWhereOrNull((p) => p.fundCode == code);
+
+      // Build add list: fundCode:folioNo
+      for (final code in currentFunds.difference(previousFunds)) {
+        if (code.trim().isEmpty) {
+          debugPrint('⚠️ Skipping add entry for blank code');
+          skipped.add('add:$code');
+          continue;
+        }
+        final f = findFund(code);
+        final folio = f?.folioNo ?? '';
+        if (folio.isEmpty) {
+          debugPrint('⚠️ Skipping add entry for $code - folio missing');
+          skipped.add('add:$code');
+          continue;
+        }
+        isinAdd.add('$code:$folio');
+      }
+
+      // Build remove list: fundCode:folioNo
+      for (final code in previousFunds.difference(currentFunds)) {
+        if (code.trim().isEmpty) {
+          debugPrint('⚠️ Skipping remove entry for blank code');
+          skipped.add('remove:$code');
+          continue;
+        }
+        final f = findFund(code);
+        final folio = f?.folioNo ?? '';
+        if (folio.isEmpty) {
+          debugPrint('⚠️ Skipping remove entry for $code - folio missing');
+          skipped.add('remove:$code');
+          continue;
+        }
+        isinRemove.add('$code:$folio');
+      }
+
+      // Extra safety: filter out any malformed colon entries (guards against ":5544587")
+      bool looksValidIsinPair(String s) {
+        if (!s.contains(':')) return false;
+        final parts = s.split(':');
+        if (parts.length != 2) return false;
+        final isin = parts[0].trim();
+        final folio = parts[1].trim();
+        if (isin.isEmpty || folio.isEmpty) return false;
+        if (!RegExp(r'^[A-Z0-9]+$').hasMatch(isin)) return false;
+        return true;
+      }
+
+      final filteredIsinAdd = isinAdd.where(looksValidIsinPair).toList();
+      final filteredIsinRemove = isinRemove.where(looksValidIsinPair).toList();
+      if (filteredIsinAdd.length != isinAdd.length ||
+          filteredIsinRemove.length != isinRemove.length) {
+        debugPrint('⚠️ Removed malformed ISIN entries from lists');
+      }
+
+      debugPrint('📤 ISIN_ADD (${filteredIsinAdd.length}): $filteredIsinAdd');
+      debugPrint(
+        '📤 ISIN_REMOVE (${filteredIsinRemove.length}): $filteredIsinRemove',
+      );
+      debugPrint('📤 ISIN_MODIFY (always empty): $isinModify');
+      if (skipped.isNotEmpty) debugPrint('⚠️ Skipped entries: $skipped');
+
+      // Determine loan_amount to send as nullable double:
+      // - when add/remove present -> send null
+      // - otherwise -> send actual baseLoanAmount
+      double? loanAmountToSend;
+      if (filteredIsinAdd.isNotEmpty || filteredIsinRemove.isNotEmpty) {
+        loanAmountToSend = null;
+        debugPrint('⚠️ Add/remove detected -> sending loan_amount = null');
+      } else {
+        loanAmountToSend = baseLoanAmount;
+        debugPrint(
+          'ℹ️ No add/remove -> sending loan_amount = $loanAmountToSend',
+        );
+      }
+
+      // Final body preview for debugging
+      final bodyPreview = {
+        'req_id': reqId,
+        'loan_amount': loanAmountToSend,
+        'lender_id': lenderId,
+        'isin_add': filteredIsinAdd,
+        'isin_remove': filteredIsinRemove,
+        'isin_modify': isinModify,
+      };
+      debugPrint('📦 Final request body preview: $bodyPreview');
+
+      // Call repository (new method with named args)
+      final result = await lenderRepository.editLoanAmount(
+        reqId: reqId,
+        loanAmount: loanAmountToSend,
+        lenderId: lenderId,
+        isinAdd: filteredIsinAdd,
+        isinRemove: filteredIsinRemove,
+        isinModify: isinModify,
+      );
+
+      // Handle Result<MfDetailsResponse>
+      await result.when(
+        success: (updatedData) async {
+          debugPrint('✅ editLoanAmount success, updating state');
+
+          // Map lenders from response into UI model Lender
+          final updatedLenders = updatedData.lenders.map((l) {
+            return Lender(
+              id: l.id.toString(),
+              name: l.name ?? '-',
+              logoAsset: l.logo ?? '',
+              interestRate: l.loanInterest ?? 0.0,
+              loanAmount: l.loanAmount ?? 0.0,
+              pledgeableMFs: l.eligibleFundsCount ?? 0,
+              tag: '',
+            );
+          }).toList();
+
+          emit(
+            state.copyWith(
+              mfDetailsResponse: updatedData,
+              pledgeableFunds: updatedData.pledgeableFunds,
+              lenders: updatedLenders,
+              isLoading: false,
+              shouldNavigateToKyc: true,
+              generalErrorMessage: null,
+            ),
+          );
+        },
+        failure: (error) {
+          debugPrint('❌ editLoanAmount failed: $error');
+          emit(state.copyWith(isLoading: false, generalErrorMessage: error));
+        },
+      );
+    } catch (e, st) {
+      debugPrint('💥 Unexpected exception in _onConfirmFundSelection: $e\n$st');
+      emit(state.copyWith(isLoading: false, generalErrorMessage: e.toString()));
+    }
   }
-}
 
   void _onViewDetailsToggled(
     ViewDetailsToggled event,
@@ -1984,180 +1973,156 @@ Future<void> _onConfirmFundSelection(
 
   //steps pressed
   //steps pressed
- Future<void> _onNextStepPressed(
-  NextStepPressed event,
-  Emitter<EligibilityState> emit,
-) async {
-  bool proceed = true;
+  Future<void> _onNextStepPressed(
+    NextStepPressed event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    bool proceed = true;
 
-  // STEP 0: Investment type selection
-  if (state.pageIndex == 0) {
-    if (state.formData.investmentType == InvestmentType.none) {
+    // STEP 0: Investment type selection
+    if (state.pageIndex == 0) {
+      if (state.formData.investmentType == InvestmentType.none) {
+        emit(
+          state.copyWith(
+            generalErrorMessage: 'Please select an investment type.',
+          ),
+        );
+        proceed = false;
+      }
+    }
+
+    // STEP 1: Insurance flow → go to Insurance Upload page (index 2)
+    if (state.pageIndex == 1 &&
+        state.formData.investmentType == InvestmentType.insurancePolicy) {
       emit(
         state.copyWith(
-          generalErrorMessage: 'Please select an investment type.',
-        ),
-      );
-      proceed = false;
-    }
-  }
-
-  // STEP 1: Insurance flow → go to Insurance Upload page (index 2)
-  if (state.pageIndex == 1 &&
-      state.formData.investmentType == InvestmentType.insurancePolicy) {
-    emit(
-      state.copyWith(
-        pageIndex: 2, // goes to Insurance Upload page
-        majorStep: 1,
-        clearErrors: true,
-      ),
-    );
-    return;
-  }
-
-  // STEP 1: Shares flow → go to next page (index 2), NO PAN validation
-  if (state.pageIndex == 1 &&
-      state.formData.investmentType == InvestmentType.shares) {
-    emit(
-      state.copyWith(
-        pageIndex: 2,
-        majorStep: 1,
-        clearErrors: true,
-      ),
-    );
-    return;
-  }
-
-  // STEP 1: PAN flow (Mutual Fund etc.)
-  if (state.pageIndex == 1) {
-    final pan = state.formData.panNumber;
-    final name = state.formData.panFullName;
-    final dob = state.formData.panDob;
-
-    String? panError, nameError, dobError;
-
-    if (pan == null || pan.isEmpty) {
-      panError = 'PAN number is required.';
-      proceed = false;
-    } else if (pan.length != 10) {
-      panError = 'Please enter a valid 10-digit PAN.';
-      proceed = false;
-    }
-
-    if (name == null || name.isEmpty) {
-      nameError = 'Name is required.';
-      proceed = false;
-    }
-
-    if (dob == null || dob.isEmpty) {
-      dobError = 'Date of Birth is required.';
-      proceed = false;
-    }
-
-    if (!proceed) {
-      emit(
-        state.copyWith(
-          panNumberError: panError,
-          panFullNameError: nameError,
-          panDobError: dobError,
+          pageIndex: 2, // goes to Insurance Upload page
+          majorStep: 1,
+          clearErrors: true,
         ),
       );
       return;
     }
 
-    // 🔥 Correct: open fetching overlay
-    emit(
-      state.copyWith(
-        isLoading: true,
-        clearErrors: true,
-        currentOverlay: EligibilityOverlayType.fetchingPortfolio,
-      ),
-    );
+    // STEP 1: Shares flow → go to next page (index 2), NO PAN validation
+    if (state.pageIndex == 1 &&
+        state.formData.investmentType == InvestmentType.shares) {
+      emit(state.copyWith(pageIndex: 2, majorStep: 1, clearErrors: true));
+      return;
+    }
 
-    // 🔥 Correct: call API
-    add(FetchStep2Data());
+    // STEP 1: PAN flow (Mutual Fund etc.)
+    if (state.pageIndex == 1) {
+      final pan = state.formData.panNumber;
+      final name = state.formData.panFullName;
+      final dob = state.formData.panDob;
 
-    // ❌ DO NOT add any overlay logic here.
-    return;
-  }
+      String? panError, nameError, dobError;
 
-  if (!proceed) return;
+      if (pan == null || pan.isEmpty) {
+        panError = 'PAN number is required.';
+        proceed = false;
+      } else if (pan.length != 10) {
+        panError = 'Please enter a valid 10-digit PAN.';
+        proceed = false;
+      }
 
-  // STEP > 1: rest of flow
-  switch (state.pageIndex) {
-    case 0:
-      emit(
-        state.copyWith(
-          pageIndex: 1,
-          majorStep: 1,
-          clearErrors: true,
-        ),
-      );
-      break;
+      if (name == null || name.isEmpty) {
+        nameError = 'Name is required.';
+        proceed = false;
+      }
 
-    case 2:
-      // 🔥 If INSURANCE → Submit Upload Docs & Move to Success
-      if (state.formData.investmentType == InvestmentType.insurancePolicy) {
+      if (dob == null || dob.isEmpty) {
+        dobError = 'Date of Birth is required.';
+        proceed = false;
+      }
+
+      if (!proceed) {
         emit(
           state.copyWith(
-            pageIndex: 5, // Your Success Screen index
-            majorStep: 4,
+            panNumberError: panError,
+            panFullNameError: nameError,
+            panDobError: dobError,
+          ),
+        );
+        return;
+      }
+
+      // 🔥 Correct: open fetching overlay
+      emit(
+        state.copyWith(
+          isLoading: true,
+          clearErrors: true,
+          currentOverlay: EligibilityOverlayType.fetchingPortfolio,
+        ),
+      );
+
+      // 🔥 Correct: call API
+      add(FetchStep2Data());
+
+      // ❌ DO NOT add any overlay logic here.
+      return;
+    }
+
+    if (!proceed) return;
+
+    // STEP > 1: rest of flow
+    switch (state.pageIndex) {
+      case 0:
+        emit(state.copyWith(pageIndex: 1, majorStep: 1, clearErrors: true));
+        break;
+
+      case 2:
+        // 🔥 If INSURANCE → Submit Upload Docs & Move to Success
+        if (state.formData.investmentType == InvestmentType.insurancePolicy) {
+          emit(
+            state.copyWith(
+              pageIndex: 5, // Your Success Screen index
+              majorStep: 4,
+              clearErrors: true,
+            ),
+          );
+          return;
+        }
+
+        // 🔥 Otherwise normal MF / Shares lender validation (for now)
+        if (state.selectedLenderId == null) {
+          emit(
+            state.copyWith(
+              generalErrorMessage: 'Please select a lender to continue.',
+            ),
+          );
+          return;
+        }
+        emit(
+          state.copyWith(
+            pageIndex: 4,
+            majorStep: 3,
             clearErrors: true,
+            clearSelectedLender: true,
           ),
         );
-        return;
-      }
+        break;
 
-      // 🔥 Otherwise normal MF / Shares lender validation (for now)
-      if (state.selectedLenderId == null) {
-        emit(
-          state.copyWith(
-            generalErrorMessage: 'Please select a lender to continue.',
-          ),
-        );
-        return;
-      }
-      emit(
-        state.copyWith(
-          pageIndex: 4,
-          majorStep: 3,
-          clearErrors: true,
-          clearSelectedLender: true,
-        ),
-      );
-      break;
+      case 3:
+        emit(state.copyWith(pageIndex: 4, majorStep: 3, clearErrors: true));
+        break;
 
-    case 3:
-      emit(
-        state.copyWith(
-          pageIndex: 4,
-          majorStep: 3,
-          clearErrors: true,
-        ),
-      );
-      break;
+      case 4:
+        emit(state.copyWith(pageIndex: 5, majorStep: 4, clearErrors: true));
+        break;
 
-    case 4:
-      emit(
-        state.copyWith(
-          pageIndex: 5,
-          majorStep: 4,
-          clearErrors: true,
-        ),
-      );
-      break;
+      case 5:
+        emit(state.copyWith(isLoading: true));
+        print('Form submitted: ${state.formData}');
+        await Future.delayed(const Duration(seconds: 2));
+        emit(state.copyWith(isLoading: false));
+        break;
 
-    case 5:
-      emit(state.copyWith(isLoading: true));
-      print('Form submitted: ${state.formData}');
-      await Future.delayed(const Duration(seconds: 2));
-      emit(state.copyWith(isLoading: false));
-      break;
-
-    default:
-      emit(state.copyWith(clearErrors: true));
+      default:
+        emit(state.copyWith(clearErrors: true));
+    }
   }
-}
 
   void _onPreviousStepPressed(
     PreviousStepPressed event,
@@ -2242,6 +2207,7 @@ Future<void> _onConfirmFundSelection(
     print('🚀 _onStartKyc called in bloc');
     print('📋 reqId: ${event.reqId}');
     print('📋 lenderCode: ${event.lenderCode}');
+    print('📍 Location: ${event.latitude}, ${event.longitude}');
 
     emit(state.copyWith(kycLoading: true, kycError: null));
     try {
@@ -2255,8 +2221,14 @@ Future<void> _onConfirmFundSelection(
       print('📞 API Response: ${response.status}');
 
       if (response.status == 'success') {
-        await _openWebView(response.data.url, event.context);
         emit(state.copyWith(kycLoading: false, kycUrl: response.data.url));
+
+        await Navigator.push(
+          event.context,
+          MaterialPageRoute(
+            builder: (context) => WebViewScreen(url: response.data.url),
+          ),
+        );
       } else {
         final errorMsg = response.message ?? 'KYC initiation failed';
         print('❌ KYC Error: $errorMsg');
@@ -2405,11 +2377,21 @@ Future<void> _onConfirmFundSelection(
     emit(state.copyWith(userMobileNumber: event.mobileNumber));
   }
 
+  /// 📱 Start Digio SDK for penny drop (Link Account step)
+  /// Called when: Status is kyc_done and user taps step 2, or automatically after kyc_done
+  /// Purpose: Initialize Digio SDK, start KYC workflow for bank account linking
   Future<void> _onStartDigioKyc(
     StartDigioKyc event,
     Emitter<EligibilityState> emit,
   ) async {
-    emit(state.copyWith(kycLoading: true, kycError: null));
+    debugPrint('🚀 Starting Digio KYC');
+    emit(
+      state.copyWith(
+        kycLoading: true,
+        kycError: null,
+        hasTriggeredDigio: true, // Mark as triggered
+      ),
+    );
 
     try {
       final configResult = await _digioRepository.getDigioConfig(
@@ -2458,23 +2440,246 @@ Future<void> _onConfirmFundSelection(
     DigioKycCompleted event,
     Emitter<EligibilityState> emit,
   ) {
-    emit(
-      state.copyWith(
-        kycLoading: false,
-        kycError: null,
-        snackbarMessage: 'KYC completed successfully!',
-      ),
-    );
+    debugPrint('✅ Digio KYC completed');
+    emit(state.copyWith(kycLoading: false, kycError: null));
+    add(const CheckPledgeStatus());
   }
 
   void _onDigioKycFailed(DigioKycFailed event, Emitter<EligibilityState> emit) {
-    emit(
-      state.copyWith(
-        kycLoading: false,
-        kycError: event.error,
-        snackbarMessage: 'KYC failed: ${event.error}',
-      ),
+    debugPrint('❌ Digio KYC failed: ${event.error}');
+    emit(state.copyWith(kycLoading: false, kycError: event.error));
+  }
+
+  /// 🎯 KYC Screen: Initial pledge MF API call, WebSocket connection, and auto KYC flow
+  /// Called when: Screen loads, WebSocket status changes
+  /// Purpose: Fetch current KYC status, update checkboxes, setup WebSocket listener
+  Future<void> _onCheckPledgeStatus(
+    CheckPledgeStatus event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    emit(state.copyWith(isLoading: true));
+
+    final reqId = getIt<AppStateProvider>().reqId;
+    final token = getIt<AppStateProvider>().token;
+
+    if (reqId == null || token == null) {
+      emit(state.copyWith(isLoading: false));
+      return;
+    }
+
+    final kycSteps = [
+      "fillBasicInfo".tr,
+      "aadharPanVerification".tr,
+      "linkAccountMandate".tr,
+      "loanAgreementSigning".tr,
+      "SetMandate".tr,
+    ];
+
+    final pledgeRepo = PledgeStatusRepository(getIt<ApiClient>());
+    final result = await pledgeRepo.checkPledgeMfStatus(
+      reqId: reqId,
+      authToken: token,
     );
+
+    result.when(
+      success: (data) async {
+        final statusData = data['data']?['status'];
+        String? initialStatus;
+        if (statusData is String) {
+          initialStatus = statusData;
+        } else if (statusData is List && statusData.isNotEmpty) {
+          initialStatus = statusData.first as String?;
+        }
+
+        // ✅ Auto-check checkboxes based on current KYC status
+        List<bool> initialSteps = [false, false, false, false, false];
+
+        if (initialStatus != null) {
+          switch (initialStatus) {
+            case 'pan_verified':
+            case 'start_kyc':
+              // Step 0: Fill Basic Info - Not started yet
+              break;
+            case 'kyc_done':
+              // Steps 0,1: Fill Basic Info + Aadhar Pan Verification - DONE
+              initialSteps[0] = true;
+              initialSteps[1] = true;
+              debugPrint('✅ Auto-checked steps 0 & 1 for kyc_done status');
+              break;
+            case 'penny_drop_done':
+              // Steps 0,1,2: Basic + Aadhar + Link Account - DONE
+              initialSteps[0] = true;
+              initialSteps[1] = true;
+              initialSteps[2] = true;
+              break;
+            case 'kfs_agreement_done':
+              // Steps 0,1,2,3: Basic + Aadhar + Link + Agreement - DONE
+              initialSteps[0] = true;
+              initialSteps[1] = true;
+              initialSteps[2] = true;
+              initialSteps[3] = true;
+              break;
+            case 'final_step_done':
+            case 'completed':
+            case 'mandate_done':
+              // All steps completed
+              initialSteps = [true, true, true, true, true];
+              break;
+          }
+        }
+
+        emit(
+          state.copyWith(
+            kycSteps: kycSteps,
+            kycStepChecks: initialSteps,
+            isLoading: false,
+            currentKycStatus: initialStatus,
+            kycUrl: null,
+          ),
+        );
+
+        // 🔌 WebSocket Listener: Real-time KYC status updates
+        // Handles: kyc_done, penny_drop_done, kfs_agreement_done, completed/mandate_done
+        await pledgeRepo.connectWebSocket(token);
+        _socketSubscription?.cancel();
+        _socketSubscription = pledgeRepo.listenForKycStatus().listen((
+          response,
+        ) {
+          final status = response['status'] as String?;
+          debugPrint('🔔 WebSocket status received: $status');
+          
+          if (status == 'kyc_done') {
+            debugPrint('✅ Closing WebView immediately');
+            _webViewCloseController.add(true);
+            Future.delayed(const Duration(milliseconds: 300), () {
+              add(const CheckPledgeStatus());
+            });
+          } else if (status != null) {
+            add(const CheckPledgeStatus());
+          }
+        });
+
+        // 🚀 Auto-start KYC flow based on current status
+        if (initialStatus == null ||
+            initialStatus == 'pending' ||
+            initialStatus == 'start_kyc' ||
+            initialStatus == 'pan_verified') {
+          // Status: New user or PAN verified -> Start Step 0 (Fill Basic Info)
+          await _startKycFlow(reqId);
+        } else if (initialStatus == 'penny_drop_done' ||
+            initialStatus == 'kfs_agreement_done') {
+          // Status: Step 2 or 3 done -> Auto-trigger next step (Step 3 or 4)
+          await _startKycFlow(reqId);
+        }
+      },
+      failure: (error) {
+        debugPrint('Error checking pledge status: $error');
+      },
+    );
+  }
+
+  /// 🚀 Auto start KYC API call
+  /// Called when: Status is pan_verified/pending/start_kyc, or kfs_agreement_done from WebSocket
+  /// Purpose: Request location permission, call start-kyc API, store URL in state for WebView
+  Future<void> _startKycFlow(String reqId) async {
+    try {
+      // Show loader
+      emit(state.copyWith(kycLoading: true, kycError: null));
+
+      // Check and request location permission
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          debugPrint('❌ Location permission denied');
+          emit(
+            state.copyWith(
+              kycLoading: false,
+              kycError: 'Location permission denied',
+            ),
+          );
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        debugPrint('❌ Location permission permanently denied');
+        emit(
+          state.copyWith(
+            kycLoading: false,
+            kycError: 'Location permission denied',
+          ),
+        );
+        return;
+      }
+
+      // Get current location
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      final response = await _kycRepository.startKyc(
+        reqId: reqId,
+        lenderCode: 'BFL',
+        latitude: position.latitude,
+        longitude: position.longitude,
+      );
+      debugPrint('Start KYC response: ${response.status}');
+
+      // Store URL in state for UI to open WebView
+      if (response.status == 'success' && response.data.url.isNotEmpty) {
+        String stepName = 'KYC Verification';
+        if (state.currentKycStatus == 'kfs_agreement_done') {
+          stepName = state.kycSteps.length > 4 ? state.kycSteps[4] : 'Set Mandate';
+        } else if (state.currentKycStatus == 'penny_drop_done') {
+          stepName = state.kycSteps.length > 3 ? state.kycSteps[3] : 'Loan Agreement Signing';
+        } else {
+          stepName = state.kycSteps.isNotEmpty ? state.kycSteps[0] : 'Fill Basic Info';
+        }
+        emit(state.copyWith(
+          kycLoading: false,
+          kycUrl: response.data.url,
+          currentStepName: stepName,
+        ));
+      } else{
+        emit(
+          state.copyWith(kycLoading: false, kycError: 'Failed to get KYC URL'),
+        );
+      }
+    } catch (e) {
+      debugPrint('Start KYC error: $e');
+      emit(state.copyWith(kycLoading: false, kycError: e.toString()));
+    }
+  }
+
+  /// Handle Digio SDK config and penny drop API when kyc_done
+  Future<void> _handleDigioFlow(String reqId) async {
+    try {
+      final configResult = await _digioRepository.getDigioConfig(reqId: reqId);
+
+      configResult.when(
+        success: (config) async {
+          final prefs = await SharedPreferences.getInstance();
+          final docId = prefs.getString('docId$reqId');
+
+          if (docId != null && docId.isNotEmpty) {
+            final updateResult = await _digioRepository.updateKycStatus(
+              null,
+              docId,
+              onWebViewOpen: () {},
+            );
+
+            updateResult.when(
+              success: (link) => debugPrint('Penny drop success: $link'),
+              failure: (err) => debugPrint('Penny drop error: $err'),
+            );
+          }
+        },
+        failure: (err) => debugPrint('Digio config error: $err'),
+      );
+    } catch (e, stack) {
+      debugPrint('Digio flow error: $e\n$stack');
+    }
   }
 
   Future<void> _openWebView(String url, BuildContext context) async {
@@ -2486,5 +2691,186 @@ Future<void> _onConfirmFundSelection(
     } catch (e) {
       print('Failed to open WebView: $e');
     }
+  }
+
+  /// Request location permission and start KYC flow
+  Future<void> _onRequestLocationAndStartKyc(
+    RequestLocationAndStartKyc event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    try {
+      debugPrint('🌍 Requesting location permission...');
+
+      // Check if location services are enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        debugPrint('❌ Location services are disabled');
+        return;
+      }
+
+      // Check current permission status
+      LocationPermission permission = await Geolocator.checkPermission();
+      debugPrint('📍 Current permission: $permission');
+
+      // Request permission if denied
+      if (permission == LocationPermission.denied) {
+        debugPrint('🔔 Requesting location permission dialog...');
+        permission = await Geolocator.requestPermission();
+        debugPrint('📍 Permission after request: $permission');
+
+        if (permission == LocationPermission.denied) {
+          debugPrint('❌ Location permission denied by user');
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        debugPrint('❌ Location permission permanently denied');
+        return;
+      }
+
+      debugPrint('✅ Location permission granted, fetching location...');
+
+      // Get current location
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      debugPrint('📍 Location: ${position.latitude}, ${position.longitude}');
+
+      final reqId = getIt<AppStateProvider>().reqId;
+      if (reqId == null || reqId.isEmpty) {
+        debugPrint('❌ reqId is null or empty');
+        return;
+      }
+
+      debugPrint('🚀 Triggering StartKycEvent with location');
+
+      // Trigger start KYC with location
+      add(
+        StartKycEvent(
+          reqId: reqId,
+          lenderCode: 'BFL',
+          latitude: position.latitude,
+          longitude: position.longitude,
+          context: event.context,
+        ),
+      );
+    } catch (e) {
+      debugPrint('❌ Location error: $e');
+    }
+  }
+
+  /// 👆 Handle manual step tap by user
+  /// Called when: User taps on any KYC step
+  /// Purpose:
+  ///   - Step 0: Start KYC flow (location + API)
+  ///   - Step 2: Start Digio SDK for Link Account
+  ///   - Step 3/4: Start KYC flow for agreement/mandate
+  Future<void> _onKycStepTapped(
+    KycStepTapped event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    debugPrint('🔔 KycStepTapped handler called for step ${event.stepIndex}');
+
+    final reqId = getIt<AppStateProvider>().reqId;
+    if (reqId == null) {
+      debugPrint('❌ reqId is null');
+      return;
+    }
+
+    final status = state.currentKycStatus;
+    debugPrint('📊 Current KYC status: $status');
+
+    // Step 0: Start KYC flow
+    if (event.stepIndex == 0 &&
+        (status == null || status == 'start_kyc' || status == 'pending' || status == 'pan_verified')) {
+      try {
+        final stepName = state.kycSteps.isNotEmpty ? state.kycSteps[0] : 'Fill Basic Info';
+        emit(state.copyWith(currentStepName: stepName));
+        
+        debugPrint('📍 Fetching location for KYC...');
+        final position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
+        debugPrint(
+          '✅ Location fetched: ${position.latitude}, ${position.longitude}',
+        );
+
+        add(
+          StartKycEvent(
+            reqId: reqId,
+            lenderCode: 'BFL',
+            latitude: position.latitude,
+            longitude: position.longitude,
+            context: event.context,
+          ),
+        );
+        debugPrint('✅ StartKycEvent added to bloc');
+      } catch (e) {
+        debugPrint('❌ Error in KycStepTapped: $e');
+      }
+    }
+    // Step 2: Link Account - Start Digio SDK
+    else if (event.stepIndex == 2 && status == 'kyc_done') {
+      debugPrint('🚀 Starting Digio SDK for Link Account step');
+      // Reset flag to allow re-trigger
+      emit(state.copyWith(hasTriggeredDigio: false));
+      add(StartDigioKyc(reqId: reqId, context: event.context));
+    }
+    // Step 3 & 4: Start KYC flow
+    else if ((event.stepIndex == 3 || event.stepIndex == 4) &&
+        (status == 'penny_drop_done' || status == 'kfs_agreement_done')) {
+      try {
+        final stepName = state.kycSteps.length > event.stepIndex 
+            ? state.kycSteps[event.stepIndex] 
+            : 'KYC Verification';
+        emit(state.copyWith(currentStepName: stepName));
+        
+        debugPrint('📍 Fetching location for Step ${event.stepIndex}...');
+        final position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
+        debugPrint(
+          '✅ Location fetched: ${position.latitude}, ${position.longitude}',
+        );
+
+        add(
+          StartKycEvent(
+            reqId: reqId,
+            lenderCode: 'BFL',
+            latitude: position.latitude,
+            longitude: position.longitude,
+            context: event.context,
+          ),
+        );
+        debugPrint('✅ StartKycEvent added for step ${event.stepIndex}');
+      } catch (e) {
+        debugPrint('❌ Error in Step ${event.stepIndex}: $e');
+      }
+    }
+    // Penny drop done status
+    else if (status == 'penny_drop_done') {
+      final prefs = await SharedPreferences.getInstance();
+      final docId = prefs.getString('docId$reqId');
+      if (docId != null && docId.isNotEmpty) {
+        final updateResult = await _digioRepository.updateKycStatus(
+          null,
+          docId,
+          onWebViewOpen: () {},
+        );
+        updateResult.when(
+          success: (link) => debugPrint('Penny drop success: $link'),
+          failure: (err) => debugPrint('Penny drop error: $err'),
+        );
+      }
+    }
+  }
+
+  @override
+  Future<void> close() {
+    _socketSubscription?.cancel();
+    _webViewCloseController.close();
+    return super.close();
   }
 }

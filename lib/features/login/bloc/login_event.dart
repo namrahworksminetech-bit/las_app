@@ -34,7 +34,11 @@ class LoginVerifyOtpPressed extends LoginEvent {
 
 
 class LoginResendOtpPressed extends LoginEvent {
-  const LoginResendOtpPressed();
+  final String mobile;
+  const LoginResendOtpPressed({required this.mobile});
+
+  @override
+  List<Object?> get props => [mobile];
 }
 
 class LoginSnackbarCleared extends LoginEvent {}
