@@ -31,16 +31,6 @@ class PledgeFundsOtpScreen extends StatefulWidget {
 
 class _PledgeFundsOtpScreenState extends State<PledgeFundsOtpScreen> {
   final TextEditingController _otpController = TextEditingController();
-  bool _isSubmitting = false;
-
-  // class-level AppStateProvider (do not shadow locally)
-  final AppStateProvider appState = GetIt.instance<AppStateProvider>();
-
-  final RtaRepository _rtaRepo = RtaRepository();
-  final PledgeStatusRepository _pledgeStatusRepository = PledgeStatusRepository();
-
-  // Prevent submitting before pledge check finished and phone saved
-  bool _pledgeChecked = false;
 
   @override
   void dispose() {
@@ -48,256 +38,92 @@ class _PledgeFundsOtpScreenState extends State<PledgeFundsOtpScreen> {
     super.dispose();
   }
 
-  Future<void> _submitOtp() async {
-    final otp = _otpController.text.trim();
-    if (otp.isEmpty || otp.length < 4) {
-      if (!mounted) return;
-      Get.snackbar('Error', 'Please enter a valid OTP');
-      return;
-    }
 
-    // DEBUG: log values used for submission
-    debugPrint(
-        '🔎 _submitOtp: widget.mobileNumber=${widget.mobileNumber}, appState.mobileNumber=${appState.mobileNumber}, _pledgeChecked=$_pledgeChecked');
-
-    // Ensure pledge check finished
-    if (!_pledgeChecked) {
-      if (!mounted) return;
-      Get.snackbar('Please wait', 'Still fetching OTP destination — try again in a moment');
-      debugPrint('Submit blocked: pledge check not completed');
-      return;
-    }
-
-   var phone = (widget.mobileNumber != null && widget.mobileNumber!.isNotEmpty)
-    ? widget.mobileNumber!
-    : (appState.mobileNumber ?? '');
-    if (phone.isEmpty) {
-      if (!mounted) return;
-      Get.snackbar('Error', 'Phone number not available');
-      debugPrint('Submit failed: phone empty');
-      return;
-    }
-
-
-    if (phone.contains('*')) {
-      if (!mounted) return;
-      Get.snackbar('Error', 'Phone number is masked. Use the original phone to verify OTP.');
-      debugPrint('Attempt to submit OTP with masked phone: $phone');
-      return;
-    }
-
-
-    phone = phone.replaceAll(RegExp(r'[\s\-]'), '');
-    if (!phone.startsWith('+')) {
-      phone = phone.startsWith('91') ? '+$phone' : '+91$phone';
-    }
-
-    debugPrint('Using phone for verify: $phone');
-
-    if (appState.token == null || appState.token!.isEmpty) {
-      if (!mounted) return;
-      Get.snackbar('Error', 'Authorization token missing');
-      return;
-    }
-    if (appState.reqId == null || appState.reqId!.isEmpty) {
-      if (!mounted) return;
-      Get.snackbar('Error', 'reqId missing');
-      return;
-    }
-
-    setState(() => _isSubmitting = true);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      Get.snackbar('Please wait', 'Verifying OTP...');
-    });
-
-    try {
-      final returnedReqId = await _rtaRepo.verifyRtaOtp(
-        phone: phone,
-        otp: otp,
-      );
-
-      if (!mounted) return;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Get.snackbar('Success', 'OTP verified successfully');
-      });
-
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoanSuccessScreen()),
-      );
-    } on DioException catch (e) {
-      if (!mounted) return;
-      if (e.type == DioExceptionType.sendTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.connectionTimeout) {
-        Get.snackbar('Error', 'Server down, please try again later');
-      } else {
-        final errMsg = e.response?.data?['message'] ?? e.message ?? 'Network error';
-        Get.snackbar('Error', errMsg);
-      }
-    } catch (e) {
-      if (mounted) Get.snackbar('Error', e.toString());
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
-    }
-  }
 
   @override
   void initState() {
     super.initState();
-
-
     _otpController.addListener(() {
       if (!mounted) return;
-    
-      setState(() {});
+      context.read<EligibilityBloc>().add(OtpChanged(_otpController.text));
     });
-
-    
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _callPledgeStatusApi();
-    });
+    context.read<EligibilityBloc>().add(const FetchPledgePhoneNumber());
   }
 
-  Future<void> _callPledgeStatusApi() async {
-    try {
-      final reqId = appState.reqId;
-      final token = appState.token;
+  void _submitOtp(BuildContext context, EligibilityState state) {
+    final otp = _otpController.text.trim();
+    if (otp.isEmpty || otp.length < 4) return;
 
-      if (reqId == null || reqId.isEmpty) {
-        debugPrint('[PledgeStatus] skipped: reqId is null/empty');
-        return;
-      }
-      if (token == null || token.isEmpty) {
-        debugPrint('[PledgeStatus] skipped: token is null/empty');
-        return;
-      }
+    final phone = state.pledgePhoneNumber ?? widget.mobileNumber ?? '';
+    if (phone.isEmpty || phone.contains('*')) return;
 
-      debugPrint('[PledgeStatus] calling API with reqId=$reqId');
-
-      final result = await _pledgeStatusRepository.checkPledgeMfStatus(
-        reqId: reqId,
-        type: "pledge",
-        authToken: token,
-      );
-
-      result.when(
-        success: (data) {
-          debugPrint("Pledge Status Success (raw): $data");
-
-          try {
-            // robust extraction: data['data'] might be Map or List or nested
-            String? phoneFromResp;
-            final inner = data['data'];
-
-            if (inner is List && inner.isNotEmpty) {
-              final first = inner[0];
-              if (first is Map && first['phone'] != null) {
-                phoneFromResp = first['phone'].toString();
-              }
-            } else if (inner is Map && inner['data'] is List && (inner['data'] as List).isNotEmpty) {
-              final first = (inner['data'] as List)[0];
-              if (first is Map && first['phone'] != null) phoneFromResp = first['phone'].toString();
-            } else if (inner is Map && inner['phone'] != null) {
-              phoneFromResp = inner['phone'].toString();
-            }
-
-            debugPrint('Parsed phoneFromResp: $phoneFromResp');
-
-            if (phoneFromResp == null || phoneFromResp.isEmpty) {
-              debugPrint('No phone found in pledge response; skipping save.');
-              // mark that we've completed check even if no phone (so user isn't blocked forever)
-              _pledgeChecked = true;
-              setState(() {});
-            } else if (phoneFromResp.contains('*')) {
-              debugPrint('Phone is masked; not saving to AppState: $phoneFromResp');
-              if (mounted) {
-                Get.snackbar(
-                  'Note',
-                  'OTP sent to a masked number. If verification fails, use the original phone.',
-                  snackPosition: SnackPosition.BOTTOM,
-                  duration: const Duration(seconds: 4),
-                );
-              }
-              // still mark pledge checked (we know check completed but phone masked)
-              _pledgeChecked = true;
-              setState(() {});
-            } else {
-              // normalize: remove spaces/hyphens, ensure +91 prefix
-              var normalized = phoneFromResp.replaceAll(RegExp(r'[\s\-]'), '');
-              if (!normalized.startsWith('+')) {
-                normalized = normalized.startsWith('91') ? '+$normalized' : '+91$normalized';
-              }
-
-              // save into AppState
-              appState.setMobileNumber(normalized);
-              _pledgeChecked = true;
-              setState(() {});
-              debugPrint('✅ Saved phone into AppState.mobileNumber: $normalized');
-
-              if (mounted) {
-                Get.snackbar(
-                  'Info',
-                  'OTP sent to $normalized',
-                  snackPosition: SnackPosition.BOTTOM,
-                  duration: const Duration(seconds: 2),
-                );
-              }
-            }
-          } catch (e, st) {
-            debugPrint('Error parsing/saving phone from pledge response: $e\n$st');
-            // mark checked to avoid blocking user forever
-            _pledgeChecked = true;
-            setState(() {});
-          }
-        },
-        failure: (error) {
-          debugPrint("Pledge Status Failure: $error");
-          // mark checked to avoid blocking submit forever
-          _pledgeChecked = true;
-          setState(() {});
-        },
-      );
-    } catch (e, st) {
-      debugPrint('PledgeStatus API error: $e\n$st');
-      _pledgeChecked = true;
-      if (mounted) setState(() {});
-    }
+    context.read<EligibilityBloc>().add(SubmitPledgeOtp(otp: otp, phone: phone));
   }
-Future<bool> _showExitConfirmDialog() async {
-  final res = await showDialog<bool>(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) {
-      return AlertDialog(
-        title: const Text("Exit Application?"),
-        content: const Text(
-          "Are you sure you want to exit this step and go back to the Dashboard?",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text("Cancel"),
+
+  Future<bool> _showExitConfirmDialog() async {
+    final res = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Exit Application?"),
+          content: const Text(
+            "Are you sure you want to exit this step and go back to the Dashboard?",
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text("Confirm"),
-          ),
-        ],
-      );
-    },
-  );
-  return res ?? false;
-}
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text("Confirm"),
+            ),
+          ],
+        );
+      },
+    );
+    return res ?? false;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final bool canSubmit = !_isSubmitting &&
-        _otpController.text.trim().isNotEmpty &&
-        _pledgeChecked &&
-        (widget.mobileNumber != null && widget.mobileNumber!.isNotEmpty || (appState.mobileNumber != null && appState.mobileNumber!.isNotEmpty));
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<EligibilityBloc, EligibilityState>(
+          listenWhen: (prev, curr) => 
+              !prev.pledgeOtpSubmitting && curr.pledgeOtpSubmitting == false && prev.rtaOtpError != curr.rtaOtpError && curr.rtaOtpError == null,
+          listener: (context, state) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const LoanSuccessScreen()),
+            );
+          },
+        ),
+        BlocListener<EligibilityBloc, EligibilityState>(
+          listenWhen: (prev, curr) => prev.pledgePhoneNumber != curr.pledgePhoneNumber && curr.pledgePhoneNumber != null,
+          listener: (context, state) {
+            Get.snackbar(
+              'OTP Sent',
+              'OTP sent to ${state.pledgePhoneNumber}',
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: AppColors.bPrimaryColor,
+              colorText: Colors.white,
+              duration: const Duration(seconds: 2),
+            );
+          },
+        ),
+      ],
+      child: _buildBody(context),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    return BlocBuilder<EligibilityBloc, EligibilityState>(
+      builder: (context, state) {
+        final canSubmit = state.otp.trim().isNotEmpty && 
+            state.pledgeChecked && 
+            (state.pledgePhoneNumber != null || widget.mobileNumber != null);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -327,48 +153,63 @@ Future<bool> _showExitConfirmDialog() async {
                     circularStrokeCap: CircularStrokeCap.round,
                   ),
                   Gaps.wMd,
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CText('pledgeFunds'.tr, style: AppTypography.h2),
-                      Gaps.hXxs,
-                      CText('nextApplicationSubmission'.tr,
-                          style: AppTypography.bodySecondary),
-                    ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CText('pledgeFunds'.tr, style: AppTypography.h2),
+                        Gaps.hXxs,
+                        CText(
+                          'nextApplicationSubmission'.tr,
+                          style: AppTypography.bodySecondary,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
               Gaps.hXl,
               const Divider(thickness: 1.5, color: AppColors.bSecondaryColor),
               Gaps.hMd,
-             GestureDetector(
-  onTap: () async {
-    final shouldExit = await _showExitConfirmDialog();
-    if (shouldExit) {
-      if (!mounted) return;
+              GestureDetector(
+                onTap: () async {
+                  final shouldExit = await _showExitConfirmDialog();
+                  if (shouldExit) {
+                    if (!mounted) return;
 
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => Home()),
-        (route) => false,
-      );
-    }
-  },
-  child: Row(
-    children: [
-      const Icon(Icons.arrow_back, color: AppColors.white, size: 20),
-      Gaps.wXs,
-      CText('goBack'.tr,
-          style: AppTypography.bodySmall.copyWith(color: AppColors.white)),
-    ],
-  ),
-),
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => Home()),
+                      (route) => false,
+                    );
+                  }
+                },
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.arrow_back,
+                      color: AppColors.white,
+                      size: 20,
+                    ),
+                    Gaps.wXs,
+                    CText(
+                      'goBack'.tr,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
               Gaps.hXs,
-              CText('otpSentMessage'.tr,
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: AppColors.white,
-                    height: 1.4,
-                  )),
+              CText(
+                'otpSentMessage'.tr,
+                style: AppTypography.bodyMedium.copyWith(
+                  color: AppColors.white,
+                  height: 1.4,
+                ),
+              ),
               Gaps.hXs,
               BlocBuilder<EligibilityBloc, EligibilityState>(
                 builder: (context, state) {
@@ -390,7 +231,9 @@ Future<bool> _showExitConfirmDialog() async {
                     ],
                     onChanged: (value) =>
                         context.read<EligibilityBloc>().add(OtpChanged(value)),
-                    errorText: state.rtaOtpError != null && state.rtaOtpError!.isNotEmpty
+                    errorText:
+                        state.rtaOtpError != null &&
+                            state.rtaOtpError!.isNotEmpty
                         ? state.rtaOtpError
                         : null,
                   );
@@ -403,21 +246,22 @@ Future<bool> _showExitConfirmDialog() async {
                   CButton(
                     text: "submitComplete".tr,
                     type: ButtonType.primaryWhite,
-                    isLoading: _isSubmitting,
-                    suffixIcon: _isSubmitting
+                    suffixIcon: state.pledgeOtpSubmitting
                         ? null
-                        : const Icon(Icons.arrow_forward, color: AppColors.black, size: 18),
-                    onPressed: canSubmit ? _submitOtp : null,
+                        : const Icon(
+                            Icons.arrow_forward,
+                            color: AppColors.black,
+                            size: 18,
+                          ),
+                    onPressed: canSubmit ? () => _submitOtp(context, state) : null,
+                    isLoading: state.pledgeOtpSubmitting,
                   ),
                   Gaps.hXs,
                   GestureDetector(
-                    onTap: _isSubmitting
+                    onTap: state.pledgeOtpSubmitting
                         ? null
                         : () {
-                            final bloc = context.read<EligibilityBloc>();
-                            if (!bloc.isClosed) {
-                              bloc.add(const ResendOtp());
-                            }
+                            context.read<EligibilityBloc>().add(const FetchPledgePhoneNumber());
                           },
                     child: RichText(
                       text: TextSpan(
@@ -445,6 +289,8 @@ Future<bool> _showExitConfirmDialog() async {
           ),
         ),
       ),
+    );
+      },
     );
   }
 }

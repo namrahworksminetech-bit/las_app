@@ -10,6 +10,7 @@ import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
 import 'package:las_app/common_widgets/webview_screen.dart';
+import 'package:las_app/features/new_user/view/widgets/four_pledge_funds/pledge_funds_otp_screen.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
 class KycVerificationScreen extends StatefulWidget {
@@ -32,27 +33,42 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   Widget build(BuildContext context) {
     return MultiBlocListener(
       listeners: [
-        // 🔔 Listener 1: Auto-trigger Digio SDK when kyc_done status detected
+        // 🔔 Listener 1: Navigation to OTP screen
+        BlocListener<EligibilityBloc, EligibilityState>(
+          listenWhen: (previous, current) =>
+              current.shouldNavigateToOtp && !previous.shouldNavigateToOtp,
+          listener: (context, state) {
+            debugPrint('✅ All KYC steps completed, navigating to OTP screen');
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const PledgeFundsOtpScreen()),
+            );
+          },
+        ),
+        
+        // 🔔 Listener 2: Auto-trigger Digio SDK when kyc_done status detected
         BlocListener<EligibilityBloc, EligibilityState>(
           listenWhen: (previous, current) {
-            return previous.currentKycStatus != 'kyc_done' &&
-                current.currentKycStatus == 'kyc_done' &&
-                !current.kycLoading;
+            final step0Done =
+                current.kycStepChecks.length > 0 && current.kycStepChecks[0];
+            final step1Done =
+                current.kycStepChecks.length > 1 && current.kycStepChecks[1];
+            final isKycDone = current.currentKycStatus == 'kyc_done';
+            final notTriggered = !current.hasTriggeredDigio;
+
+            debugPrint('🔍 Digio Listener Check:');
+            debugPrint('  step0Done: $step0Done, step1Done: $step1Done');
+            debugPrint('  isKycDone: $isKycDone, notTriggered: $notTriggered');
+
+            return step0Done && step1Done && isKycDone && notTriggered;
           },
           listener: (context, state) async {
-            if (state.hasTriggeredDigio) {
-              debugPrint('⚠️ Digio already triggered, skipping duplicate call');
-              return;
-            }
+            debugPrint('🔔 kyc_done detected - triggering Digio SDK');
 
-            debugPrint('🔔 BlocListener triggered: kyc_done detected');
-            debugPrint('   kycLoading: ${state.kycLoading}');
-            
             await Future.delayed(const Duration(milliseconds: 500));
-            
+
             final reqId = GetIt.instance<AppStateProvider>().reqId;
             if (reqId != null) {
-              debugPrint('   Triggering StartDigioKyc event');
               context.read<EligibilityBloc>().add(
                 StartDigioKyc(reqId: reqId, context: context),
               );
@@ -312,14 +328,21 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                     children: [
                       BlocBuilder<EligibilityBloc, EligibilityState>(
                         builder: (context, state) {
-                          final checks = state.kycStepChecks ?? [];
+                          // require at least 5 checks and all true for proceed
+                          final checks = state.kycStepChecks;
                           final allStepsCompleted =
                               checks.length >= 5 &&
                               checks.take(5).every((s) => s);
 
                           return CButton(
                             text: 'proceedToFinalStep'.tr,
-                            onPressed: allStepsCompleted ? () {} : null,
+                            onPressed: allStepsCompleted
+                                ? () {
+                                    context.read<EligibilityBloc>().add(
+                                      const NavigateToNextScreen(),
+                                    );
+                                  }
+                                : null,
                             type: allStepsCompleted
                                 ? ButtonType.primaryWhite
                                 : ButtonType.secondaryGrey,

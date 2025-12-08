@@ -363,15 +363,15 @@ class SetUserMobileNumber extends EligibilityEvent {
 
 class StartDigioKyc extends EligibilityEvent {
   final String reqId;
-  final BuildContext context;
+  final BuildContext? context;
 
   const StartDigioKyc({
     required this.reqId,
-    required this.context,
+    this.context,
   });
 
   @override
-  List<Object> get props => [reqId];
+  List<Object?> get props => [reqId, context];
 }
 
 class DigioKycCompleted extends EligibilityEvent {
@@ -391,7 +391,11 @@ class DigioKycFailed extends EligibilityEvent {
 }
 
 class CheckPledgeStatus extends EligibilityEvent {
-  const CheckPledgeStatus();
+  final BuildContext? context;
+  const CheckPledgeStatus({this.context});
+  
+  @override
+  List<Object?> get props => [context];
 }
 
 class RequestLocationAndStartKyc extends EligibilityEvent {
@@ -414,4 +418,35 @@ class KycStepTapped extends EligibilityEvent {
 
   @override
   List<Object> get props => [stepIndex];
+}
+
+class PennyDropPollingCompleted extends EligibilityEvent {
+  const PennyDropPollingCompleted();
+
+  @override
+  List<Object> get props => [];
+}
+
+class NavigateToNextScreen extends EligibilityEvent {
+  const NavigateToNextScreen();
+
+  @override
+  List<Object> get props => [];
+}
+
+class FetchPledgePhoneNumber extends EligibilityEvent {
+  const FetchPledgePhoneNumber();
+
+  @override
+  List<Object> get props => [];
+}
+
+class SubmitPledgeOtp extends EligibilityEvent {
+  final String otp;
+  final String phone;
+
+  const SubmitPledgeOtp({required this.otp, required this.phone});
+
+  @override
+  List<Object> get props => [otp, phone];
 }

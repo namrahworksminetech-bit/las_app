@@ -76,6 +76,10 @@ class DigioService {
       _isProcessing = true;
       HashMap<String, String> additionalData = HashMap<String, String>();
 
+      print('🚀 Calling Digio SDK start...');
+      print('📋 Customer ID: $customerId');
+      print('📋 Identifier: $identifier');
+      
       final result = await _kycWorkflowPlugin!.start(
         customerId,
         identifier,
@@ -83,11 +87,18 @@ class DigioService {
         additionalData,
       );
 
+      print('✅ Digio SDK completed with result: $result');
+      
+      // Wait a bit to ensure SDK has fully closed
+      await Future.delayed(const Duration(milliseconds: 500));
+      
       return Success(result.toString());
     } catch (e) {
+      print('❌ Digio SDK error: $e');
       return Failure('Failed to start KYC: $e');
     } finally {
       _isProcessing = false;
+      print('🏁 SDK processing flag cleared');
     }
   }
 }

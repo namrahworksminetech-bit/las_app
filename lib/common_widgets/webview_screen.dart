@@ -49,7 +49,13 @@ class _WebViewScreenState extends State<WebViewScreen> {
     if (widget.bloc != null) {
       _closeSubscription = widget.bloc!.webViewCloseStream.listen((_) {
         debugPrint('🚪 WebView closing - signal from bloc');
-        if (mounted) Get.back();
+        if (mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && Navigator.canPop(context)) {
+              Navigator.of(context).pop();
+            }
+          });
+        }
       });
     }
 

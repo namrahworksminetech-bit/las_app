@@ -35,16 +35,6 @@ class DigioRepository {
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
-    final existingDocId = prefs.getString('docId$reqId');
-
-    // If docId already exists, skip API call and directly start polling
-    if (existingDocId != null) {
-      print('📋 DocId already exists, starting polling directly');
-      if (!_isPollingActive) {
-        startPollingKycStatus(context, existingDocId);
-      }
-      return Success({'message': 'Using existing docId'});
-    }
 
     if (token == null || token.isEmpty) {
       print('❌ Token missing!');
@@ -65,14 +55,15 @@ class DigioRepository {
       if (response.statusCode == 200 || response.statusCode == 201) {
         print('✅ API Response: ${response.data}');
         final data = response.data['data'];
-        if (data != null) {
+        if (data != null && context != null) {
           print(
             '📋 Customer ID: ${data['customer_identifier'] ?? data['customer_id']}',
           );
           print('📋 ID: ${data['id']}');
           print('📋 Access Token: ${data['access_token']}');
           print('📋 Environment: ${data['environment']}');
-          // ❌ REMOVED: Automatic startKycWorkflow call to prevent duplicate SDK launch
+          // Launch SDK workflow
+          await startKycWorkflow(data, context);
         }
         return Success(response.data);
       } else {
@@ -120,61 +111,65 @@ class DigioRepository {
       if (reqId == null) return null;
 
       final prefs = await SharedPreferences.getInstance();
-      String? cleanDocumentId = prefs.getString('docId$reqId');
-
+      
+      // Always launch SDK fresh - don't check for existing docId
+      String? cleanDocumentId;
       var workflowResult;
 
-      if (cleanDocumentId == null) {
-        try {
-          var digioConfig = DigioConfig();
-          digioConfig.theme.primaryColor = "#32a83a";
-          if (digioDetails["environment"] == "production") {
-            digioConfig.environment = Environment.PRODUCTION;
-          } else {
-            digioConfig.environment = Environment.SANDBOX;
-          }
-          final _kycWorkflowPlugin = KycWorkflow(digioConfig);
-          _kycWorkflowPlugin.setGatewayEventListener((
-            GatewayEvent? gatewayEvent,
-          ) {
-            print("gateway funnel event" + gatewayEvent.toString());
-          });
-
-          final id = digioDetails["id"]?.toString();
-          final customerIdentifier =
-              digioDetails["customer_identifier"]?.toString() ??
-              digioDetails["customer_id"]?.toString();
-          final accessToken = digioDetails["access_token"]?.toString();
-
-          if (id == null || customerIdentifier == null || accessToken == null) {
-            print('❌ Missing required Digio parameters');
-            return null;
-          }
-
-          workflowResult = await _kycWorkflowPlugin.start(
-            id,
-            customerIdentifier,
-            accessToken,
-            null,
-          );
-          print('workflowResult : ' + workflowResult.toString());
-
-          if (workflowResult != null && reqId != null) {
-            cleanDocumentId = KycHelper.extractDocumentId(
-              workflowResult.toString(),
-            );
-            // await prefs.setString("docId$reqId", cleanDocumentId);
-          }
-        } on PlatformException {
-          workflowResult = 'Failed to get platform version.';
+      try {
+        var digioConfig = DigioConfig();
+        digioConfig.theme.primaryColor = "#32a83a";
+        if (digioDetails["environment"] == "production") {
+          digioConfig.environment = Environment.PRODUCTION;
+        } else {
+          digioConfig.environment = Environment.SANDBOX;
         }
+        final _kycWorkflowPlugin = KycWorkflow(digioConfig);
+        _kycWorkflowPlugin.setGatewayEventListener((
+          GatewayEvent? gatewayEvent,
+        ) {
+          print("gateway funnel event" + gatewayEvent.toString());
+        });
+
+        final id = digioDetails["id"]?.toString();
+        final customerIdentifier =
+            digioDetails["customer_identifier"]?.toString() ??
+            digioDetails["customer_id"]?.toString();
+        final accessToken = digioDetails["access_token"]?.toString();
+
+        if (id == null || customerIdentifier == null || accessToken == null) {
+          print('❌ Missing required Digio parameters');
+          return null;
+        }
+
+        print('🚀 Launching Digio SDK...');
+        workflowResult = await _kycWorkflowPlugin.start(
+          id,
+          customerIdentifier,
+          accessToken,
+          null,
+        );
+        print('workflowResult : ' + workflowResult.toString());
+
+        if (workflowResult != null && reqId != null) {
+          cleanDocumentId = KycHelper.extractDocumentId(
+            workflowResult.toString(),
+          );
+        }
+      } on PlatformException catch (e) {
+        print('❌ Platform exception: $e');
+        workflowResult = 'Failed to get platform version.';
       }
 
+      // Only start polling if KYC was actually completed
       if (cleanDocumentId != null && workflowResult != null) {
         String workflowStr = workflowResult.toString();
         if (workflowStr.contains('"message":"KYC process completed"')) {
+          print('✅ KYC completed, saving docId and starting polling');
           await prefs.setString("docId$reqId", cleanDocumentId);
           startPollingKycStatus(context, cleanDocumentId);
+        } else {
+          print('⚠️ KYC not completed yet, not starting polling');
         }
       }
     } else if (status.isDenied) {
@@ -276,18 +271,29 @@ class DigioRepository {
   }
 
   /// Start polling Digio KYC status for given documentId. Will stop after success.
-  void startPollingKycStatus(BuildContext? context, String documentId) async {
-    if (_isPollingActive) return;
+  void startPollingKycStatus(
+    BuildContext? context, 
+    String documentId, {
+    VoidCallback? onPollingComplete,
+  }) async {
+    if (_isPollingActive) {
+      print('⚠️ Polling already active, skipping');
+      return;
+    }
 
     // stop any previous polling then start fresh
     stopPolling();
     _isPollingActive = true;
 
-    // Read reqId & persistent flag first to avoid unnecessary calls
+    // Read reqId & clear in-memory cache to allow fresh polling
     final prefs = await SharedPreferences.getInstance();
     final appState = GetIt.instance<AppStateProvider>();
     final reqId = appState.reqId;
     if (reqId != null) {
+      // Clear in-memory cache to allow fresh API call
+      _pennydropDoneCache.remove(reqId);
+      print('🧹 Cleared in-memory pennydrop cache for reqId=$reqId');
+      
       final already = prefs.getBool('pennydrop_done_$reqId') ?? false;
       if (already) {
         print(
@@ -297,8 +303,10 @@ class DigioRepository {
         return;
       }
     }
+    
+    print('🔄 Starting penny drop polling for docId=$documentId');
 
-    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
       // double check stop condition
       if (!_isPollingActive) {
         timer.cancel();
@@ -336,6 +344,7 @@ class DigioRepository {
       if (success) {
         print('----pennydrop success -> stopping polling');
         stopPolling();
+        onPollingComplete?.call();
       } else {
         print('----pennydrop not successful yet, continue polling');
       }

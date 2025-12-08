@@ -18,11 +18,13 @@ import 'package:las_app/features/new_user/repository/lenders_data_repo.dart'
 import 'package:las_app/features/new_user/repository/rta_otp_repo.dart';
 import 'package:las_app/features/new_user/repository/digio_repo.dart';
 import 'package:las_app/features/new_user/digio_service.dart';
+import 'package:las_app/features/new_user/repository/rta_repo.dart';
 import 'package:las_app/features/new_user/repository/shares_repo.dart';
 import 'package:las_app/features/new_user/repository/pledge_status_repo.dart';
 import 'package:las_app/helper_widgets/fund_utils.dart';
 import 'package:las_app/models/funds/funds_detail_model.dart';
 import 'package:las_app/models/funds/pledge_mf_response.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -32,6 +34,7 @@ import 'package:las_app/models/funds/mf_details_response_model.dart';
 import 'package:las_app/models/funds/pledgeable_model.dart';
 import 'package:las_app/models/pan_verification/pan_otp_response_model.dart';
 import 'package:las_app/models/pan_verification/pan_verify_response_model.dart';
+import 'package:universal_html/js.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:las_app/common_widgets/webview_screen.dart';
 
@@ -51,7 +54,7 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
 
   final SharesRepository _sharesRepository = SharesRepository();
   StreamSubscription? _socketSubscription;
-  
+
   final _webViewCloseController = StreamController<bool>.broadcast();
   Stream<bool> get webViewCloseStream => _webViewCloseController.stream;
 
@@ -129,7 +132,107 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     on<CheckPledgeStatus>(_onCheckPledgeStatus);
     on<RequestLocationAndStartKyc>(_onRequestLocationAndStartKyc);
     on<KycStepTapped>(_onKycStepTapped);
+    on<PennyDropPollingCompleted>(_onPennyDropPollingCompleted);
+    on<NavigateToNextScreen>(_onNavigateToNextScreen);
+    on<FetchPledgePhoneNumber>(_onFetchPledgePhoneNumber);
+    on<SubmitPledgeOtp>(_onSubmitPledgeOtp);
   }
+
+  void _onPennyDropPollingCompleted(
+    PennyDropPollingCompleted event,
+    Emitter<EligibilityState> emit,
+  ) {
+    debugPrint('✅ Penny drop polling completed');
+    emit(state.copyWith(isPennyDropPolling: false, shouldNavigateToOtp: true));
+  }
+
+  void _onNavigateToNextScreen(
+    NavigateToNextScreen event,
+    Emitter<EligibilityState> emit,
+  ) {
+    debugPrint('📍 Navigating to OTP screen');
+    emit(state.copyWith(shouldNavigateToOtp: true));
+  }
+
+  Future<void> _onFetchPledgePhoneNumber(
+    FetchPledgePhoneNumber event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    final reqId = getIt<AppStateProvider>().reqId;
+    final token = getIt<AppStateProvider>().token;
+
+    if (reqId == null || token == null) {
+      emit(state.copyWith(pledgeChecked: true));
+      return;
+    }
+
+    try {
+      final pledgeRepo = PledgeStatusRepository(getIt<ApiClient>());
+      final result = await pledgeRepo.checkPledgeMfStatus(
+        reqId: reqId,
+        type: "pledge",
+        authToken: token,
+      );
+
+      result.when(
+        success: (data) {
+          String? phoneFromResp;
+          final inner = data['data'];
+
+          if (inner is List && inner.isNotEmpty) {
+            final first = inner[0];
+            if (first is Map && first['phone'] != null) {
+              phoneFromResp = first['phone'].toString();
+            }
+          } else if (inner is Map && inner['phone'] != null) {
+            phoneFromResp = inner['phone'].toString();
+          }
+
+          if (phoneFromResp != null &&
+              phoneFromResp.isNotEmpty &&
+              !phoneFromResp.contains('*')) {
+            var normalized = phoneFromResp.replaceAll(RegExp(r'[\s\-]'), '');
+            if (!normalized.startsWith('+')) {
+              normalized = normalized.startsWith('91')
+                  ? '+$normalized'
+                  : '+91$normalized';
+            }
+            emit(
+              state.copyWith(
+                pledgePhoneNumber: normalized,
+                pledgeChecked: true,
+              ),
+            );
+          } else {
+            emit(state.copyWith(pledgeChecked: true));
+          }
+        },
+        failure: (_) => emit(state.copyWith(pledgeChecked: true)),
+      );
+    } catch (e) {
+      emit(state.copyWith(pledgeChecked: true));
+    }
+  }
+
+  Future<void> _onSubmitPledgeOtp(
+    SubmitPledgeOtp event,
+    Emitter<EligibilityState> emit,
+  ) async {
+    emit(state.copyWith(pledgeOtpSubmitting: true, rtaOtpError: null));
+
+    try {
+      final rtaRepo = RtaRepository(
+        apiClient: getIt<ApiClient>(),
+        appState: getIt<AppStateProvider>(),
+      );
+      await rtaRepo.verifyRtaOtp(phone: event.phone, otp: event.otp);
+      emit(state.copyWith(pledgeOtpSubmitting: false, rtaOtpError: null));
+    } catch (e) {
+      final errorMsg = e.toString().replaceFirst('Exception: ', '');
+      emit(state.copyWith(pledgeOtpSubmitting: false, rtaOtpError: errorMsg));
+    }
+  }
+
   /* =========================================================
                       INSURANCE FLOW BLoC
    ========================================================= */
@@ -2386,52 +2489,103 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
   ) async {
     debugPrint('🚀 Starting Digio KYC');
     emit(
-      state.copyWith(
-        kycLoading: true,
-        kycError: null,
-        hasTriggeredDigio: true, // Mark as triggered
-      ),
+      state.copyWith(kycLoading: true, kycError: null, hasTriggeredDigio: true),
     );
 
     try {
+      // Clear old docId and polling status before starting fresh
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('docId${event.reqId}');
+      await prefs.remove('pennydrop_done_${event.reqId}');
+      debugPrint('🧹 Cleared old docId and pennydrop status for fresh start');
+
+      // Stop any active polling to start fresh
+      _digioRepository.stopPolling();
+      debugPrint('🛑 Stopped any existing polling');
+
       final configResult = await _digioRepository.getDigioConfig(
         reqId: event.reqId,
+        context: event.context,
       );
 
       await configResult.when(
         success: (config) async {
-          final initResult = await _digioService.initializeSDK(
-            config['environment'] ?? 'sandbox',
-          );
+          debugPrint('✅ Digio config received: $config');
+
+          final data = config['data'];
+          if (data == null) {
+            add(DigioKycFailed('Config data is null'));
+            return;
+          }
+
+          final customerId =
+              data['id']?.toString() ?? data['customer_id']?.toString() ?? '';
+          final identifier =
+              data['customer_identifier']?.toString() ??
+              data['identifier']?.toString() ??
+              '';
+          final accessToken = data['access_token']?.toString() ?? '';
+          final environment = data['environment']?.toString() ?? 'sandbox';
+
+          debugPrint('📋 Customer ID: $customerId');
+          debugPrint('📋 Identifier: $identifier');
+          debugPrint('📋 Environment: $environment');
+
+          if (customerId.isEmpty || identifier.isEmpty || accessToken.isEmpty) {
+            add(DigioKycFailed('Missing required Digio parameters'));
+            return;
+          }
+
+          final initResult = await _digioService.initializeSDK(environment);
 
           await initResult.when(
             success: (_) async {
-              final kycResult = await _digioService.startKYC(
-                customerId: config['customer_id'] ?? '',
-                identifier: config['identifier'] ?? '',
-                accessToken: config['access_token'] ?? '',
-              );
+              debugPrint('✅ SDK initialized, requesting camera permission...');
 
-              await kycResult.when(
-                success: (result) {
-                  print('KYC Result: $result');
-                  add(const DigioKycCompleted());
-                },
-                failure: (error) {
-                  add(DigioKycFailed(error));
-                },
-              );
+              if (event.context != null) {
+                // Request camera permission before starting SDK
+                final cameraStatus = await Permission.camera.request();
+                if (!cameraStatus.isGranted) {
+                  add(DigioKycFailed('Camera permission denied'));
+                  return;
+                }
+
+                debugPrint('✅ Camera permission granted, starting Digio KYC...');
+                final kycResult = await _digioService.startKYC(
+                  customerId: customerId,
+                  identifier: identifier,
+                  accessToken: accessToken,
+                );
+                debugPrint('📱 Digio SDK startKYC called');
+
+                await kycResult.when(
+                  success: (result) {
+                    debugPrint('✅ KYC Result: $result');
+                    add(const DigioKycCompleted());
+                  },
+                  failure: (error) {
+                    debugPrint('❌ KYC failed: $error');
+                    add(DigioKycFailed(error));
+                  },
+                );
+              } else {
+                debugPrint('⚠️ No context, skipping SDK launch');
+                emit(state.copyWith(kycLoading: false));
+              }
             },
             failure: (error) {
+              debugPrint('❌ SDK init failed: $error');
               add(DigioKycFailed(error));
             },
           );
         },
         failure: (error) {
+          debugPrint('❌ Config fetch failed: $error');
           add(DigioKycFailed(error));
         },
       );
     } catch (e) {
+      debugPrint('❌ Exception: $e');
       add(DigioKycFailed('Failed to start KYC: $e'));
     }
   }
@@ -2439,9 +2593,56 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
   void _onDigioKycCompleted(
     DigioKycCompleted event,
     Emitter<EligibilityState> emit,
-  ) {
+  ) async {
     debugPrint('✅ Digio KYC completed');
     emit(state.copyWith(kycLoading: false, kycError: null));
+
+    final reqId = getIt<AppStateProvider>().reqId;
+    if (reqId != null) {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Clear old penny drop status to allow fresh API call
+      await prefs.remove('pennydrop_done_$reqId');
+      debugPrint('🧹 Cleared old pennydrop status');
+
+      // Wait for backend to process
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Fetch fresh config to get latest docId
+      debugPrint('🔄 Fetching fresh config for latest docId...');
+      final configResult = await _digioRepository.getDigioConfig(reqId: reqId);
+
+      await configResult.when(
+        success: (config) async {
+          final newDocId = config['data']?['id']?.toString();
+          if (newDocId != null && newDocId.isNotEmpty) {
+            await prefs.setString('docId$reqId', newDocId);
+            debugPrint('✅ Stored docId: $newDocId');
+            debugPrint('🚀 Starting penny drop polling...');
+
+            emit(state.copyWith(isPennyDropPolling: true));
+
+            // Start polling - it will call penny drop API automatically every 5 seconds
+            _digioRepository.startPollingKycStatus(
+              null,
+              newDocId,
+              onPollingComplete: () {
+                debugPrint('✅ Polling completed successfully');
+                add(const PennyDropPollingCompleted());
+              },
+            );
+          } else {
+            debugPrint('❌ No docId found in config');
+            emit(state.copyWith(isPennyDropPolling: false));
+          }
+        },
+        failure: (err) {
+          debugPrint('❌ Config fetch error: $err');
+          emit(state.copyWith(isPennyDropPolling: false));
+        },
+      );
+    }
+
     add(const CheckPledgeStatus());
   }
 
@@ -2457,7 +2658,8 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     CheckPledgeStatus event,
     Emitter<EligibilityState> emit,
   ) async {
-    emit(state.copyWith(isLoading: true));
+    // Reset Digio trigger flag when checking status
+    emit(state.copyWith(isLoading: true, hasTriggeredDigio: false));
 
     final reqId = getIt<AppStateProvider>().reqId;
     final token = getIt<AppStateProvider>().token;
@@ -2544,32 +2746,50 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
         _socketSubscription?.cancel();
         _socketSubscription = pledgeRepo.listenForKycStatus().listen((
           response,
-        ) {
+        ) async {
           final status = response['status'] as String?;
           debugPrint('🔔 WebSocket status received: $status');
-          
+
           if (status == 'kyc_done') {
-            debugPrint('✅ Closing WebView immediately');
+            debugPrint('✅ kyc_done - closing WebView, updating steps');
             _webViewCloseController.add(true);
-            Future.delayed(const Duration(milliseconds: 300), () {
-              add(const CheckPledgeStatus());
-            });
+            add(const UpdateKycStep(0, true));
+            add(const UpdateKycStep(1, true));
+          } else if (status == 'penny_drop_done') {
+            debugPrint('✅ penny_drop_done - updating step 2');
+            add(const UpdateKycStep(2, true));
+            add(const CheckPledgeStatus());
+          } else if (status == 'kfs_agreement_done' || status == 'completed') {
+            debugPrint('✅ $status - closing WebView');
+            _webViewCloseController.add(true);
+            add(const CheckPledgeStatus());
           } else if (status != null) {
             add(const CheckPledgeStatus());
           }
         });
 
         // 🚀 Auto-start KYC flow based on current status
-        if (initialStatus == null ||
-            initialStatus == 'pending' ||
-            initialStatus == 'start_kyc' ||
-            initialStatus == 'pan_verified') {
-          // Status: New user or PAN verified -> Start Step 0 (Fill Basic Info)
-          await _startKycFlow(reqId);
-        } else if (initialStatus == 'penny_drop_done' ||
-            initialStatus == 'kfs_agreement_done') {
-          // Status: Step 2 or 3 done -> Auto-trigger next step (Step 3 or 4)
-          await _startKycFlow(reqId);
+        final allStepsComplete =
+            initialSteps.length >= 5 && initialSteps.every((s) => s);
+
+        if (!allStepsComplete) {
+          if (initialStatus == null ||
+              initialStatus == 'pending' ||
+              initialStatus == 'start_kyc' ||
+              initialStatus == 'pan_verified') {
+            // Status: New user or PAN verified -> Start Step 0 (Fill Basic Info)
+            await _startKycFlow(reqId);
+          } else if (initialStatus == 'kyc_done' && event.context != null) {
+            // Status: KYC done -> Auto-start Digio SDK
+            debugPrint('🚀 Auto-starting Digio SDK for kyc_done status');
+            add(StartDigioKyc(reqId: reqId, context: event.context!));
+          } else if (initialStatus == 'penny_drop_done') {
+            // Status: Penny drop done -> Start Step 3 (Agreement)
+            await _startKycFlow(reqId);
+          } else if (initialStatus == 'kfs_agreement_done') {
+            // Status: Agreement done -> Start Step 4 (Mandate)
+            await _startKycFlow(reqId);
+          }
         }
       },
       failure: (error) {
@@ -2630,18 +2850,26 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
       if (response.status == 'success' && response.data.url.isNotEmpty) {
         String stepName = 'KYC Verification';
         if (state.currentKycStatus == 'kfs_agreement_done') {
-          stepName = state.kycSteps.length > 4 ? state.kycSteps[4] : 'Set Mandate';
+          stepName = state.kycSteps.length > 4
+              ? state.kycSteps[4]
+              : 'Set Mandate';
         } else if (state.currentKycStatus == 'penny_drop_done') {
-          stepName = state.kycSteps.length > 3 ? state.kycSteps[3] : 'Loan Agreement Signing';
+          stepName = state.kycSteps.length > 3
+              ? state.kycSteps[3]
+              : 'Loan Agreement Signing';
         } else {
-          stepName = state.kycSteps.isNotEmpty ? state.kycSteps[0] : 'Fill Basic Info';
+          stepName = state.kycSteps.isNotEmpty
+              ? state.kycSteps[0]
+              : 'Fill Basic Info';
         }
-        emit(state.copyWith(
-          kycLoading: false,
-          kycUrl: response.data.url,
-          currentStepName: stepName,
-        ));
-      } else{
+        emit(
+          state.copyWith(
+            kycLoading: false,
+            kycUrl: response.data.url,
+            currentStepName: stepName,
+          ),
+        );
+      } else {
         emit(
           state.copyWith(kycLoading: false, kycError: 'Failed to get KYC URL'),
         );
@@ -2784,11 +3012,16 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
 
     // Step 0: Start KYC flow
     if (event.stepIndex == 0 &&
-        (status == null || status == 'start_kyc' || status == 'pending' || status == 'pan_verified')) {
+        (status == null ||
+            status == 'start_kyc' ||
+            status == 'pending' ||
+            status == 'pan_verified')) {
       try {
-        final stepName = state.kycSteps.isNotEmpty ? state.kycSteps[0] : 'Fill Basic Info';
+        final stepName = state.kycSteps.isNotEmpty
+            ? state.kycSteps[0]
+            : 'Fill Basic Info';
         emit(state.copyWith(currentStepName: stepName));
-        
+
         debugPrint('📍 Fetching location for KYC...');
         final position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high,
@@ -2814,25 +3047,71 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     // Step 2: Link Account - Start Digio SDK
     else if (event.stepIndex == 2 && status == 'kyc_done') {
       debugPrint('🚀 Starting Digio SDK for Link Account step');
-      // Reset flag to allow re-trigger
+      // Clear all flags before starting
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('docId$reqId');
+      await prefs.remove('pennydrop_done_$reqId');
       emit(state.copyWith(hasTriggeredDigio: false));
       add(StartDigioKyc(reqId: reqId, context: event.context));
     }
-    // Step 3 & 4: Start KYC flow
-    else if ((event.stepIndex == 3 || event.stepIndex == 4) &&
-        (status == 'penny_drop_done' || status == 'kfs_agreement_done')) {
-      try {
-        final stepName = state.kycSteps.length > event.stepIndex 
-            ? state.kycSteps[event.stepIndex] 
-            : 'KYC Verification';
-        emit(state.copyWith(currentStepName: stepName));
+    // Step 3: Loan Agreement - Check penny drop first if kyc_done
+    else if (event.stepIndex == 3) {
+      if (status == 'kyc_done') {
+        // Digio complete but penny drop pending
+        debugPrint('💰 Checking penny drop before loan agreement...');
+        final prefs = await SharedPreferences.getInstance();
+        final docId = prefs.getString('docId$reqId');
         
-        debugPrint('📍 Fetching location for Step ${event.stepIndex}...');
+        if (docId != null && docId.isNotEmpty) {
+          final updateResult = await _digioRepository.updateKycStatus(
+            null,
+            docId,
+            onWebViewOpen: () {},
+          );
+          updateResult.when(
+            success: (link) {
+              debugPrint('✅ Penny drop success, refreshing status...');
+              add(const CheckPledgeStatus());
+            },
+            failure: (err) => debugPrint('❌ Penny drop error: $err'),
+          );
+        }
+      } else if (status == 'penny_drop_done') {
+        // Penny drop done, start loan agreement
+        try {
+          final stepName = state.kycSteps.length > 3
+              ? state.kycSteps[3]
+              : 'Loan Agreement Signing';
+          emit(state.copyWith(currentStepName: stepName));
+
+          final position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.high,
+          );
+
+          add(
+            StartKycEvent(
+              reqId: reqId,
+              lenderCode: 'BFL',
+              latitude: position.latitude,
+              longitude: position.longitude,
+              context: event.context,
+            ),
+          );
+        } catch (e) {
+          debugPrint('❌ Error in Step 3: $e');
+        }
+      }
+    }
+    // Step 4: Mandate
+    else if (event.stepIndex == 4 && status == 'kfs_agreement_done') {
+      try {
+        final stepName = state.kycSteps.length > 4
+            ? state.kycSteps[4]
+            : 'Set Mandate';
+        emit(state.copyWith(currentStepName: stepName));
+
         final position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high,
-        );
-        debugPrint(
-          '✅ Location fetched: ${position.latitude}, ${position.longitude}',
         );
 
         add(
@@ -2844,25 +3123,8 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
             context: event.context,
           ),
         );
-        debugPrint('✅ StartKycEvent added for step ${event.stepIndex}');
       } catch (e) {
-        debugPrint('❌ Error in Step ${event.stepIndex}: $e');
-      }
-    }
-    // Penny drop done status
-    else if (status == 'penny_drop_done') {
-      final prefs = await SharedPreferences.getInstance();
-      final docId = prefs.getString('docId$reqId');
-      if (docId != null && docId.isNotEmpty) {
-        final updateResult = await _digioRepository.updateKycStatus(
-          null,
-          docId,
-          onWebViewOpen: () {},
-        );
-        updateResult.when(
-          success: (link) => debugPrint('Penny drop success: $link'),
-          failure: (err) => debugPrint('Penny drop error: $err'),
-        );
+        debugPrint('❌ Error in Step 4: $e');
       }
     }
   }

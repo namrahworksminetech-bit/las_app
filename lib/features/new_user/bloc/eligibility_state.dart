@@ -171,6 +171,11 @@ class EligibilityState extends Equatable {
     this.currentKycStatus,
     this.hasTriggeredDigio = false,
     this.currentStepName,
+    this.isPennyDropPolling = false,
+    this.shouldNavigateToOtp = false,
+    this.pledgeOtpSubmitting = false,
+    this.pledgeChecked = false,
+    this.pledgePhoneNumber,
   });
 
     final List<Map<String, dynamic>> insurers;     // dropdown list
@@ -280,6 +285,11 @@ class EligibilityState extends Equatable {
   final String? currentKycStatus;
   final bool hasTriggeredDigio;
   final String? currentStepName;
+  final bool isPennyDropPolling;
+  final bool shouldNavigateToOtp;
+  final bool pledgeOtpSubmitting;
+  final bool pledgeChecked;
+  final String? pledgePhoneNumber;
 
   EligibilityState copyWith({
 
@@ -355,6 +365,11 @@ class EligibilityState extends Equatable {
     String? currentKycStatus,
     bool? hasTriggeredDigio,
     String? currentStepName,
+    bool? isPennyDropPolling,
+    bool? shouldNavigateToOtp,
+    bool? pledgeOtpSubmitting,
+    bool? pledgeChecked,
+    String? pledgePhoneNumber,
     bool clearErrors = false,
 
         bool? isShareUploading,
@@ -456,6 +471,11 @@ class EligibilityState extends Equatable {
       currentKycStatus: currentKycStatus ?? this.currentKycStatus,
       hasTriggeredDigio: hasTriggeredDigio ?? this.hasTriggeredDigio,
       currentStepName: currentStepName ?? this.currentStepName,
+      isPennyDropPolling: isPennyDropPolling ?? this.isPennyDropPolling,
+      shouldNavigateToOtp: shouldNavigateToOtp ?? this.shouldNavigateToOtp,
+      pledgeOtpSubmitting: pledgeOtpSubmitting ?? this.pledgeOtpSubmitting,
+      pledgeChecked: pledgeChecked ?? this.pledgeChecked,
+      pledgePhoneNumber: pledgePhoneNumber ?? this.pledgePhoneNumber,
          isShareUploading: isShareUploading ?? this.isShareUploading,
       isShareSubmitting: isShareSubmitting ?? this.isShareSubmitting,
       shareUploadPath: clearErrors ? null : (shareUploadPath ?? this.shareUploadPath),
@@ -558,6 +578,11 @@ class EligibilityState extends Equatable {
     currentKycStatus,
     hasTriggeredDigio,
     currentStepName,
+    isPennyDropPolling,
+    shouldNavigateToOtp,
+    pledgeOtpSubmitting,
+    pledgeChecked,
+    pledgePhoneNumber,
         isShareUploading,
     isShareSubmitting,
     shareUploadPath,
