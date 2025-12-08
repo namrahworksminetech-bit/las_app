@@ -12,11 +12,10 @@ enum LenderSelectionView {
   lenderList,
   portfolioBreakdown,
   pledgeableDetail,
-  nonPledgeableDetail,  // NEW
-  dematDetail,          // NEW
+  nonPledgeableDetail, // NEW
+  dematDetail, // NEW
   fundSelection,
 }
-
 
 class Lender extends Equatable {
   final String id;
@@ -36,7 +35,7 @@ class Lender extends Equatable {
     required this.loanAmount,
     required this.pledgeableMFs,
     required this.tag,
-    required this.maxEligibleLimit
+    required this.maxEligibleLimit,
   });
 
   @override
@@ -50,7 +49,7 @@ class Lender extends Equatable {
     double? loanAmount,
     int? pledgeableMFs,
     String? tag,
-    double? maxEligibleLimit
+    double? maxEligibleLimit,
   }) {
     return Lender(
       id: id ?? this.id,
@@ -71,7 +70,7 @@ class EligibilityFormData extends Equatable {
     this.panNumber,
     this.panFullName,
     this.panDob,
-        this.panEmail,
+    this.panEmail,
   });
 
   final InvestmentType investmentType;
@@ -84,19 +83,25 @@ class EligibilityFormData extends Equatable {
     String? panNumber,
     String? panFullName,
     String? panDob,
-      String? panEmail,
+    String? panEmail,
   }) {
     return EligibilityFormData(
       investmentType: investmentType ?? this.investmentType,
       panNumber: panNumber ?? this.panNumber,
       panFullName: panFullName ?? this.panFullName,
       panDob: panDob ?? this.panDob,
-        panEmail: panEmail ?? this.panEmail,
+      panEmail: panEmail ?? this.panEmail,
     );
   }
 
   @override
-  List<Object?> get props => [investmentType, panNumber, panFullName, panDob,   panEmail];
+  List<Object?> get props => [
+    investmentType,
+    panNumber,
+    panFullName,
+    panDob,
+    panEmail,
+  ];
 }
 
 class EligibilityState extends Equatable {
@@ -151,7 +156,7 @@ class EligibilityState extends Equatable {
     this.fundsToAdd = const [], // <-- ADD THIS
     this.fundsToRemove = const [],
 
-        this.isShareUploading = false,
+    this.isShareUploading = false,
     this.isShareSubmitting = false,
     this.shareUploadPath,
     this.shareError,
@@ -167,7 +172,7 @@ class EligibilityState extends Equatable {
     this.isInsuranceSubmitting = false,
     this.insuranceSuccess = false,
     this.insuranceError,
-        this.insurers = const [],
+    this.insurers = const [],
     this.insurerCode,
     this.insurancePolicyNo,
     this.insuranceName,
@@ -189,29 +194,27 @@ class EligibilityState extends Equatable {
     this.pledgeOtpSubmitting = false,
     this.pledgeChecked = false,
     this.pledgePhoneNumber,
-this.hasUnsavedFundChanges = false,
-this.panEmail,
-this.panEmailError,
-
-
+    this.hasUnsavedFundChanges = false,
+    this.panEmail,
+    this.panEmailError,
   });
   final String? panLiveError;
-final bool isOtpVisible;
-final bool hasUnsavedFundChanges;
+  final bool isOtpVisible;
+  final bool hasUnsavedFundChanges;
 
-final String? panEmail;
-final String? panEmailError;
+  final String? panEmail;
+  final String? panEmailError;
 
-    final List<Map<String, dynamic>> insurers;     // dropdown list
-  final String? insurerCode;                     // selected code
+  final List<Map<String, dynamic>> insurers; // dropdown list
+  final String? insurerCode; // selected code
   final String? insurancePolicyNo;
   final String? insuranceName;
   final String? insuranceDob;
 
   /// ================= INSURANCE UPLOAD KEYS =============
-  final String? unitKey;        // unit_statement_path
-  final String? policyKey;   
-    final bool isFetchingInsurers;
+  final String? unitKey; // unit_statement_path
+  final String? policyKey;
+  final bool isFetchingInsurers;
   final bool isUploadingUnit;
   final bool isUploadingPolicy;
   final bool isSubmittingInsurance;
@@ -272,16 +275,16 @@ final String? panEmailError;
   final Set<String> selectedFundIds;
   final Set<String> previousSelectedFundIds;
 
-   final bool isShareUploading;
+  final bool isShareUploading;
   final bool isShareSubmitting;
   final String? shareUploadPath;
   final String? shareError;
   final bool shareSuccess;
 
-    final List<Map<String, dynamic>> insuranceCompanies;
+  final List<Map<String, dynamic>> insuranceCompanies;
 
   final String? selectedInsuranceCode;
-  final String? selectedInsuranceName; 
+  final String? selectedInsuranceName;
 
   final String? unitStatementPath;
   final String? policyDocumentPath;
@@ -289,8 +292,6 @@ final String? panEmailError;
   final bool isUnitUploading;
   final bool isPolicyUploading;
   final bool isInsuranceSubmitting;
-
-
 
   // KYC / OTP / misc
   final List<bool> kycStepChecks;
@@ -316,11 +317,11 @@ final String? panEmailError;
   final String? pledgePhoneNumber;
 
   EligibilityState copyWith({
-     bool? isOtpVisible,
-bool? hasUnsavedFundChanges,
+    bool? isOtpVisible,
+    bool? hasUnsavedFundChanges,
 
-String? panLiveError,
-       List<Map<String,dynamic>>? insurers,
+    String? panLiveError,
+    List<Map<String, dynamic>>? insurers,
     String? insurerCode,
     String? insurancePolicyNo,
     String? insuranceName,
@@ -399,13 +400,13 @@ String? panLiveError,
     String? pledgePhoneNumber,
     bool clearErrors = false,
 
-        bool? isShareUploading,
+    bool? isShareUploading,
     bool? isShareSubmitting,
     String? shareUploadPath,
     String? shareError,
     bool? shareSuccess,
 
-     List<Map<String, dynamic>>? insuranceCompanies,
+    List<Map<String, dynamic>>? insuranceCompanies,
     String? selectedInsuranceCode,
     String? selectedInsuranceName,
     String? unitStatementPath,
@@ -414,16 +415,15 @@ String? panLiveError,
     bool? isPolicyUploading,
     bool? isInsuranceSubmitting,
     String? panEmail,
-String? panEmailError,
-
-
+    String? panEmailError,
   }) {
     return EligibilityState(
-panLiveError: panLiveError ?? this.panLiveError,
-  isOtpVisible: isOtpVisible ?? this.isOtpVisible,
-hasUnsavedFundChanges: hasUnsavedFundChanges ?? this.hasUnsavedFundChanges,
+      panLiveError: panLiveError ?? this.panLiveError,
+      isOtpVisible: isOtpVisible ?? this.isOtpVisible,
+      hasUnsavedFundChanges:
+          hasUnsavedFundChanges ?? this.hasUnsavedFundChanges,
 
-       insurers: insurers ?? this.insurers,
+      insurers: insurers ?? this.insurers,
       insurerCode: insurerCode ?? this.insurerCode,
       insurancePolicyNo: insurancePolicyNo ?? this.insurancePolicyNo,
       insuranceName: insuranceName ?? this.insuranceName,
@@ -509,22 +509,26 @@ hasUnsavedFundChanges: hasUnsavedFundChanges ?? this.hasUnsavedFundChanges,
       pledgeOtpSubmitting: pledgeOtpSubmitting ?? this.pledgeOtpSubmitting,
       pledgeChecked: pledgeChecked ?? this.pledgeChecked,
       pledgePhoneNumber: pledgePhoneNumber ?? this.pledgePhoneNumber,
-         isShareUploading: isShareUploading ?? this.isShareUploading,
+      isShareUploading: isShareUploading ?? this.isShareUploading,
       isShareSubmitting: isShareSubmitting ?? this.isShareSubmitting,
-      shareUploadPath: clearErrors ? null : (shareUploadPath ?? this.shareUploadPath),
+      shareUploadPath: clearErrors
+          ? null
+          : (shareUploadPath ?? this.shareUploadPath),
       shareError: clearErrors ? null : (shareError ?? this.shareError),
       shareSuccess: shareSuccess ?? this.shareSuccess,
-        insuranceCompanies: insuranceCompanies ?? this.insuranceCompanies,
-        selectedInsuranceCode: selectedInsuranceCode ?? this.selectedInsuranceCode,
-        selectedInsuranceName: selectedInsuranceName ?? this.selectedInsuranceName,
-        unitStatementPath: unitStatementPath ?? this.unitStatementPath,
-        policyDocumentPath: policyDocumentPath ?? this.policyDocumentPath,
-        isUnitUploading: isUnitUploading ?? this.isUnitUploading,
-        isPolicyUploading: isPolicyUploading ?? this.isPolicyUploading,
-        isInsuranceSubmitting: isInsuranceSubmitting ?? this.isInsuranceSubmitting,
-       panEmail: panEmail ?? this.panEmail,
-panEmailError: panEmailError,
-
+      insuranceCompanies: insuranceCompanies ?? this.insuranceCompanies,
+      selectedInsuranceCode:
+          selectedInsuranceCode ?? this.selectedInsuranceCode,
+      selectedInsuranceName:
+          selectedInsuranceName ?? this.selectedInsuranceName,
+      unitStatementPath: unitStatementPath ?? this.unitStatementPath,
+      policyDocumentPath: policyDocumentPath ?? this.policyDocumentPath,
+      isUnitUploading: isUnitUploading ?? this.isUnitUploading,
+      isPolicyUploading: isPolicyUploading ?? this.isPolicyUploading,
+      isInsuranceSubmitting:
+          isInsuranceSubmitting ?? this.isInsuranceSubmitting,
+      panEmail: panEmail ?? this.panEmail,
+      panEmailError: panEmailError,
     );
   }
 
@@ -548,21 +552,21 @@ panEmailError: panEmailError,
     formData,
     isSavingLoan,
     pledgeStatus,
-     isShareUploading,
+    isShareUploading,
     isShareSubmitting,
     shareUploadPath,
     shareError,
     shareSuccess,
 
     // ===== INSURANCE FLOW =====
-    insurers,              // list of companies
-    insurerCode,           // selected code
+    insurers, // list of companies
+    insurerCode, // selected code
     insurancePolicyNo,
     insuranceName,
     insuranceDob,
 
-    unitKey,               // uploaded unit doc
-    policyKey,             // uploaded policy doc
+    unitKey, // uploaded unit doc
+    policyKey, // uploaded policy doc
 
     isFetchingInsurers,
     isUploadingUnit,
@@ -618,16 +622,15 @@ panEmailError: panEmailError,
     pledgeOtpSubmitting,
     pledgeChecked,
     pledgePhoneNumber,
-        isShareUploading,
+    isShareUploading,
     isShareSubmitting,
     shareUploadPath,
     shareError,
     shareSuccess,
-panLiveError,
-isOtpVisible,
-hasUnsavedFundChanges
-    ,panEmail,
-panEmailError,
-
+    panLiveError,
+    isOtpVisible,
+    hasUnsavedFundChanges,
+    panEmail,
+    panEmailError,
   ];
 }

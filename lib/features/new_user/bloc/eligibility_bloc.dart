@@ -54,7 +54,7 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
 
   final SharesRepository _sharesRepository = SharesRepository();
   StreamSubscription? _socketSubscription;
-  
+
   final _webViewCloseController = StreamController<bool>.broadcast();
   Stream<bool> get webViewCloseStream => _webViewCloseController.stream;
 
@@ -147,30 +147,30 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     on<FetchPledgePhoneNumber>(_onFetchPledgePhoneNumber);
     on<SubmitPledgeOtp>(_onSubmitPledgeOtp);
   }
-void _onPanEmailUpdated(
-  PanEmailUpdated event,
-  Emitter<EligibilityState> emit,
-) {
-  final email = event.email.trim();
-  String? error;
 
-  final emailRegex = RegExp(r'^[\w\.\-]+@[\w\-]+\.[a-zA-Z]{2,}$');
+  void _onPanEmailUpdated(
+    PanEmailUpdated event,
+    Emitter<EligibilityState> emit,
+  ) {
+    final email = event.email.trim();
+    String? error;
 
-  if (email.isEmpty) {
-    error = "Email is required";
-  } else if (!emailRegex.hasMatch(email)) {
-    error = "Enter a valid email address";
+    final emailRegex = RegExp(r'^[\w\.\-]+@[\w\-]+\.[a-zA-Z]{2,}$');
+
+    if (email.isEmpty) {
+      error = "Email is required";
+    } else if (!emailRegex.hasMatch(email)) {
+      error = "Enter a valid email address";
+    }
+
+    emit(
+      state.copyWith(
+        panEmail: email,
+        panEmailError: error,
+        formData: state.formData.copyWith(panEmail: email),
+      ),
+    );
   }
-
-  emit(
-    state.copyWith(
-      panEmail: email,
-      panEmailError: error,
-      formData: state.formData.copyWith(panEmail: email),
-    ),
-  );
-}
-
 
   void _onPennyDropPollingCompleted(
     PennyDropPollingCompleted event,
@@ -1348,7 +1348,7 @@ void _onPanEmailUpdated(
               name: l.name ?? '-',
               logoAsset: l.logo ?? '',
               interestRate: l.loanInterest ?? 0.0,
-              maxEligibleLimit: l.maxEligibleLimit?? 0.0,
+              maxEligibleLimit: l.maxEligibleLimit ?? 0.0,
               loanAmount: l.loanAmount ?? 0.0,
               pledgeableMFs: l.eligibleFundsCount ?? 0,
               tag: '',
@@ -1363,7 +1363,7 @@ void _onPanEmailUpdated(
               isLoading: false,
               hasUnsavedFundChanges: false,
               generalErrorMessage: null,
-                  previousSelectedFundIds: state.selectedFundIds,
+              previousSelectedFundIds: state.selectedFundIds,
             ),
           );
         },
@@ -2616,7 +2616,9 @@ void _onPanEmailUpdated(
                   return;
                 }
 
-                debugPrint('✅ Camera permission granted, starting Digio KYC...');
+                debugPrint(
+                  '✅ Camera permission granted, starting Digio KYC...',
+                );
                 final kycResult = await _digioService.startKYC(
                   customerId: customerId,
                   identifier: identifier,
