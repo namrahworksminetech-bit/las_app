@@ -14,22 +14,34 @@ class LoginSendOtpPressed extends LoginEvent {
   @override
   List<Object?> get props => [mobile];
 }
+class LoginToggleOtpVisibility extends LoginEvent {}
+
+class LoginEmailUpdated extends LoginEvent {
+  final String email;
+  LoginEmailUpdated(this.email);
+}
+
+class LoginMobileUpdated extends LoginEvent {
+  final String mobile;
+  LoginMobileUpdated(this.mobile);
+}
+
 
 class LoginVerifyOtpPressed extends LoginEvent {
   final String mobile;
   final String otpRef;
   final String otp;
-  final String email;
+
 
   const LoginVerifyOtpPressed({
     required this.mobile,
     required this.otpRef,
     required this.otp,
-    required this.email,
+
   });
 
   @override
-  List<Object?> get props => [mobile, otpRef, otp, email];
+  List<Object?> get props => [mobile, otpRef, otp];
 }
 
 

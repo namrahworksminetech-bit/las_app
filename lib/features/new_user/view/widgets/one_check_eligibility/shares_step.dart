@@ -12,7 +12,7 @@ import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
 import 'package:las_app/features/new_user/view/insurance_success_screen.dart';
-import 'package:las_app/features/home/view_home.dart'; // ⬅ Required same as lender screen
+import 'package:las_app/features/home/view_home.dart';
 
 class StepSharesDetailsPage extends StatefulWidget {
   const StepSharesDetailsPage({super.key});
@@ -57,17 +57,16 @@ class _StepSharesDetailsPageState extends State<StepSharesDetailsPage> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
         final exit = await _showExitConfirmDialog();
         if (exit) _navigateToDashboard();
-        return false; 
+        return false;
       },
 
-      child: Scaffold( 
+      child: Scaffold(
         backgroundColor: AppColors.black,
         body: BlocConsumer<EligibilityBloc, EligibilityState>(
           listener: (context, state) {
@@ -86,105 +85,122 @@ class _StepSharesDetailsPageState extends State<StepSharesDetailsPage> {
           },
 
           builder: (context, state) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+            return Stack(
+              children: [
+                // MAIN UI
+                SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CDropdown(
+                        label: "Select Your Broker",
+                        value: broker,
+                        items: const ["Zerodha", "Upstox", "Groww", "Angel One"],
+                        onChanged: (v) => setState(() => broker = v),
+                      ),
 
+                      const SizedBox(height: 18),
 
-                  CDropdown(
-                    label: "Select Your Broker",
-                    value: broker,
-                    items: const ["Zerodha", "Upstox", "Groww", "Angel One"],
-                    onChanged: (v) => setState(() => broker = v),
-                  ),
+                      CInput(
+                        labelText: "Depository Participant ID",
+                        controller: dpIdController,
+                        hintText: "Enter DP ID",
+                        keyboardType: TextInputType.number,
+                      ),
 
-                  const SizedBox(height: 18),
+                      const SizedBox(height: 24),
 
-                  CInput(
-                    labelText: "Depository Participant ID",
-                    controller: dpIdController,
-                    hintText: "Enter DP ID",
-                    keyboardType: TextInputType.number,
-                  ),
+                      UploadTile(
+                        "Holding Statement *",
+                        holdingFile,
+                        () async {
+                          if (state.isShareUploading) return;
 
-                  const SizedBox(height: 24),
+                          final pick = await FilePicker.platform.pickFiles(withData: true);
+                          if (pick == null || pick.files.single.bytes == null) return;
 
-                  UploadTile(
-                    "Holding Statement *",
-                    holdingFile,
-                    () async {
-                      if (state.isShareUploading) return;
+                          final file = pick.files.single;
+                          final bytes = file.bytes!;
+                          final ext = file.extension?.toLowerCase();
 
-                      final pick = await FilePicker.platform.pickFiles(withData: true);
-                      if (pick == null || pick.files.single.bytes == null) return;
-
-                      final file = pick.files.single;
-                      final bytes = file.bytes!;
-                      final ext = file.extension?.toLowerCase();
-
-                      if (ext == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Invalid file type")),
-                        );
-                        return;
-                      }
-
-                      context.read<EligibilityBloc>().add(
-                        UploadHoldingFile(
-                          fileBytes: bytes,
-                          mimeType: "application/$ext",
-                          fileType: ext,
-                        ),
-                      );
-
-                      setState(() => holdingFile = file.name);
-                    },
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  if (state.shareUploadPath != null)
-                    CText(
-                      "Uploaded ✓ (${state.shareUploadPath})",
-                      style: AppTypography.caption.copyWith(color: Colors.green),
-                    ),
-
-                  const SizedBox(height: 30),
-
-                  CButton(
-                    text: state.isShareSubmitting ? "Submitting..." : "Next",
-                    onPressed: state.shareUploadPath != null &&
-                            broker != null &&
-                            !state.isShareUploading
-                        ? () {
-                            context.read<EligibilityBloc>().add(
-                              SubmitShareDetails(
-                                broker: broker!,
-                                dpId: dpIdController.text,
-                              ),
+                          if (ext == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Invalid file type")),
                             );
+                            return;
                           }
-                        : null,
-                  ),
 
-                  const SizedBox(height: 20),
-                  Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
+                          context.read<EligibilityBloc>().add(
+                            UploadHoldingFile(
+                              fileBytes: bytes,
+                              mimeType: "application/$ext",
+                              fileType: ext,
+                            ),
+                          );
+
+                          setState(() => holdingFile = file.name);
+                        },
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      if (state.shareUploadPath != null)
                         CText(
-                          'Powered by',
-                          style: AppTypography.caption.copyWith(color: AppColors.bSecondaryColor),
+                          "Uploaded ✓ (${state.shareUploadPath})",
+                          style: AppTypography.caption.copyWith(color: Colors.green),
                         ),
-                        const SizedBox(width: 4),
-                        Image.asset('assets/images/value_enable_logo.png', height: 20),
-                      ],
+
+                      const SizedBox(height: 30),
+
+                      CButton(
+                        text: state.isShareSubmitting ? "Submitting..." : "Next",
+                        onPressed: state.shareUploadPath != null &&
+                                broker != null &&
+                                !state.isShareUploading
+                            ? () {
+                                context.read<EligibilityBloc>().add(
+                                  SubmitShareDetails(
+                                    broker: broker!,
+                                    dpId: dpIdController.text,
+                                  ),
+                                );
+                              }
+                            : null,
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CText(
+                              'Powered by',
+                              style: AppTypography.caption.copyWith(color: AppColors.bSecondaryColor),
+                            ),
+                            const SizedBox(width: 4),
+                            Image.asset('assets/images/value_enable_logo.png', height: 20),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 🔥 FULLSCREEN BLOCKING LOADER WHILE UPLOADING
+                if (state.isShareUploading)
+                  Container(
+                    width: double.infinity,
+                    height: double.infinity,
+                    color: Colors.black.withOpacity(0.6),
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.bPrimaryColor,
+                      ),
                     ),
                   ),
-                ],
-              ),
+              ],
             );
           },
         ),

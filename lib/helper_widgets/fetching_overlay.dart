@@ -17,53 +17,82 @@ class PortfolioFetchingOverlay extends StatefulWidget {
 }
 
 class _PortfolioFetchingOverlayState extends State<PortfolioFetchingOverlay> {
-
   @override
-void initState() {
-  super.initState();
-  debugPrint("🔥 PortfolioFetchingOverlay INIT CALLED");
+  void initState() {
+    super.initState();
+    debugPrint("🔥 PortfolioFetchingOverlay INIT CALLED");
 
-  final bloc = context.read<EligibilityBloc>();
-  if (bloc.state.isStep2Loading) {
-    debugPrint('🔁 Fetch already in progress, skipping add(FetchStep2Data)');
-  } else if (bloc.state.mfDetailsResponse != null) {
-    debugPrint('🔁 mfDetailsResponse already present, skipping fetch');
-  } else {
-    bloc.add(FetchStep2Data());
+    final bloc = context.read<EligibilityBloc>();
+
+    if (bloc.state.isStep2Loading) {
+      debugPrint('🔁 Already loading… skipping fetch');
+    } else if (bloc.state.mfDetailsResponse != null) {
+      debugPrint('🔁 Data already present… skipping fetch');
+    } else {
+      bloc.add(FetchStep2Data());
+    }
   }
-}
+
   @override
   Widget build(BuildContext context) {
-    return BlocListener<EligibilityBloc, EligibilityState>(
-  listenWhen: (prev, curr) =>
-      prev.isStep2Loading == true && curr.isStep2Loading == false,
-  listener: (context, state) {
-    debugPrint("🎯 BlocListener triggered — isStep2Loading changed");
-    debugPrint('   isLoading=${state.isLoading} isStep2Loading=${state.isStep2Loading}');
+    return Stack(
+      children: [
+        /// DARK OVERLAY — BLOCK ALL OUTSIDE TOUCHES
+        ModalBarrier(
+          color: Colors.black.withOpacity(0.5),
+          dismissible: false,
+        ),
 
-    // If API returned an error, show it and close the overlay
-    if (state.generalErrorMessage != null && state.generalErrorMessage!.isNotEmpty) {
+        /// FIXED BOTTOM OVERLAY — NOT DISMISSIBLE / NOT SCROLLABLE
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: GestureDetector(
+            // BLOCK SWIPE DOWN
+            onVerticalDragStart: (_) {},
+            onVerticalDragUpdate: (_) {},
+            onVerticalDragEnd: (_) {},
+            behavior: HitTestBehavior.opaque,
+
+            child: IgnorePointer(
+              ignoring: false,
+              child: BlocListener<EligibilityBloc, EligibilityState>(
+                listenWhen: (prev, curr) =>
+                    prev.isStep2Loading == true &&
+                    curr.isStep2Loading == false,
+                listener: _listener,
+                child: _buildUI(),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _listener(BuildContext context, EligibilityState state) {
+    debugPrint("🎯 Step2 loading finished, navigating…");
+
+    // ERROR CASE — Close overlay & show message
+    if (state.generalErrorMessage != null &&
+        state.generalErrorMessage!.isNotEmpty) {
       Get.snackbar("Error", state.generalErrorMessage!);
+
       try {
         if (Navigator.of(context).canPop()) Navigator.of(context).pop();
       } catch (e) {
-        debugPrint('⚠️ Navigator.pop() failed: $e');
+        debugPrint('⚠️ Failed to pop overlay: $e');
       }
       return;
     }
 
-    // Close fetching overlay if open
+    // CLOSE THIS OVERLAY
     try {
-      if (Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      } else {
-        debugPrint('⚠️ No route to pop when closing fetching overlay');
-      }
+      if (Navigator.of(context).canPop()) Navigator.of(context).pop();
     } catch (e) {
-      debugPrint('⚠️ Exception when trying to pop fetching overlay: $e');
+      debugPrint('⚠️ Error closing overlay: $e');
     }
 
-    // Open result bottom sheet with the same bloc instance
+    // OPEN RESULT SHEET
     Get.bottomSheet(
       BlocProvider.value(
         value: context.read<EligibilityBloc>(),
@@ -71,65 +100,67 @@ void initState() {
       ),
       isScrollControlled: true,
     );
-  },
-  child: _buildUI(),
-)
-;
   }
 
   Widget _buildUI() {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: Gaps.xl),
+      width: double.infinity,
       decoration: const BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      width: double.infinity,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Gaps.xl),
-            child: Column(
-              children: [
-                CText(
-                  'almostThere'.tr,
-                  style: AppTypography.h2.copyWith(color: AppColors.black),
-                  textAlign: TextAlign.center,
-                ),
-                Gaps.hXs,
-                CText(
-                  'fetchingMutualFunds'.tr,
-                  style: AppTypography.bodyMedium.copyWith(color: AppColors.black),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+
+      /// PREVENT INTERNAL SCROLLING
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Gaps.xl),
+              child: Column(
+                children: [
+                  CText(
+                    'almostThere'.tr,
+                    style: AppTypography.h2.copyWith(color: AppColors.black),
+                    textAlign: TextAlign.center,
+                  ),
+                  Gaps.hXs,
+                  CText(
+                    'fetchingMutualFunds'.tr,
+                    style: AppTypography.bodyMedium
+                        .copyWith(color: AppColors.black),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          Gaps.hXxl,
+            Gaps.hXxl,
 
-          SizedBox(
-            width: 240,
-            height: 240,
-            child: Image.asset(
-              'assets/images/fundFetchingAnimation.png',
-              fit: BoxFit.contain,
+            SizedBox(
+              width: 240,
+              height: 240,
+              child: Image.asset(
+                'assets/images/fundFetchingAnimation.png',
+                fit: BoxFit.contain,
+              ),
             ),
-          ),
 
-          Gaps.hXxl,
+            Gaps.hXxl,
 
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Gaps.xl),
-            child: CText(
-              'cibilNote'.tr,
-              textAlign: TextAlign.center,
-              style: AppTypography.bodySmall
-                  .copyWith(color: AppColors.kIndicatorInactiveColor),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Gaps.xl),
+              child: CText(
+                'cibilNote'.tr,
+                textAlign: TextAlign.center,
+                style: AppTypography.bodySmall
+                    .copyWith(color: AppColors.kIndicatorInactiveColor),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

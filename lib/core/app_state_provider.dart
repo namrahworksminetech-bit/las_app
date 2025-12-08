@@ -18,6 +18,7 @@ class AppStateProvider extends ChangeNotifier {
   String? get email => _email;
 
   void setEmail(String email) {
+     print("📲 AppStateProvider → email saved: $email"); // ← ADD THIS
     _email = email;
     notifyListeners();
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:las_app/common_widgets/c_snackbar.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
@@ -35,23 +36,21 @@ class PortfolioBreakdownView extends StatelessWidget {
       decimalDigits: 2,
     );
 
-    final isRefreshing = context
-        .watch<EligibilityBloc>()
-        .state
-        .isPortfolioRefreshing;
+    final isRefreshing =
+        context.watch<EligibilityBloc>().state.isPortfolioRefreshing;
 
-    // Extract data from the response
+    // Extract data
     final List<PledgeableFund> pledgeableFunds =
         mfDetailsResponse.pledgeableFunds;
-    final double? nonPledgeableFunds = mfDetailsResponse.nonPledgeableAmount;
-    final double? dematFunds = mfDetailsResponse.dematAmount;
-    final double unapprovedFunds = 0.0; // or another API field if available
 
-    // Calculate numeric totals
     final double totalPledgeable = pledgeableFunds.fold<double>(
       0,
       (sum, fund) => sum + (fund.availableAmount ?? 0),
     );
+
+    final double nonPledgeable = mfDetailsResponse.nonPledgeableAmount ?? 0;
+    final double demat = mfDetailsResponse.dematAmount ?? 0;
+    final double unapprovedFunds = 0.0;
 
     return SingleChildScrollView(
       key: const ValueKey('breakdown_view'),
@@ -96,23 +95,31 @@ class PortfolioBreakdownView extends StatelessWidget {
 
           // Breakdown Rows
           _buildBreakdownRow(
+              context: context,
             title: 'pledgeableFunds'.tr,
             value: formatCurrencyInt.format(totalPledgeable),
+            amount: totalPledgeable,
             onTap: () => onCategoryTapped('pledgeable'),
           ),
           _buildBreakdownRow(
+              context: context,
             title: 'nonPledgeableFunds'.tr,
-            value: formatCurrencyInt.format(nonPledgeableFunds ?? 0),
+            value: formatCurrencyInt.format(nonPledgeable),
+            amount: nonPledgeable,
             onTap: () => onCategoryTapped('non_pledgeable'),
           ),
           _buildBreakdownRow(
+              context: context,
             title: 'dematFunds'.tr,
-            value: formatCurrencyInt.format(dematFunds ?? 0),
+            value: formatCurrencyInt.format(demat),
+            amount: demat,
             onTap: () => onCategoryTapped('demat'),
           ),
           _buildBreakdownRow(
+              context: context,
             title: 'unapprovedFunds'.tr,
             value: formatCurrency.format(unapprovedFunds),
+            amount: unapprovedFunds,
             onTap: () => onCategoryTapped('unapproved'),
             showBorder: false,
           ),
@@ -120,57 +127,72 @@ class PortfolioBreakdownView extends StatelessWidget {
       ),
     );
   }
+Widget _buildBreakdownRow({
+    required BuildContext context,
+  required String title,
+  required String value,
+  required double amount,
+  required VoidCallback onTap,
+  bool showBorder = true,
+}) {
+  return InkWell(
+    onTap: () {
+      if (amount <= 0) {
+        CSnackBar.show(
+          context,
+          "No funds available under $title",
+          isError: true,
+        );
+        return; // ❌ prevent navigation
+      }
 
-  Widget _buildBreakdownRow({
-    required String title,
-    required String value,
-    required VoidCallback onTap,
-    bool showBorder = true,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16.0),
-        decoration: BoxDecoration(
-          border: showBorder
-              ? const Border(
-                  bottom: BorderSide(
-                    color: AppColors.bSecondaryColor,
-                    width: 0.5,
-                  ),
-                )
-              : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Flexible(child: CText(title, style: AppTypography.bodyWhite)),
-            Flexible(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: CText(
-                      value,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.bodyWhite.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
+      onTap(); // ✅ navigate only when amount > 0
+    },
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 16.0),
+      decoration: BoxDecoration(
+        border: showBorder
+            ? const Border(
+                bottom: BorderSide(
+                  color: AppColors.bSecondaryColor,
+                  width: 0.5,
+                ),
+              )
+            : null,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Flexible(
+            child: CText(title, style: AppTypography.bodyWhite),
+          ),
+          Flexible(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: CText(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.bodyWhite.copyWith(
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                  Gaps.wXs,
-                  const Icon(
-                    Icons.arrow_forward_ios,
-                    color: AppColors.bSecondaryColor,
-                    size: 14,
-                  ),
-                ],
-              ),
+                ),
+                Gaps.wXs,
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  color: AppColors.bSecondaryColor,
+                  size: 14,
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 }

@@ -6,6 +6,7 @@ class LenderItem {
   final String? logo;
   final double? loanInterest;
   final double? loanAmount;
+  final double? maxEligibleLimit;
   final int? eligibleFundsCount;
   final List<EligibleFund>? eligibleFunds;
 
@@ -17,6 +18,7 @@ class LenderItem {
     this.loanAmount,
     this.eligibleFundsCount,
     this.eligibleFunds,
+    this.maxEligibleLimit
   });
 
   static double _toDouble(dynamic v) {
@@ -46,6 +48,7 @@ class LenderItem {
       logo: json['logo'],
       loanInterest: _toDouble(json['loan_interest'] ?? json['roi']),
       loanAmount: _toDouble(json['loan_amount'] ?? json['eligible_limit']),
+      maxEligibleLimit: _toDouble(json['max_eligible_limit'] ?? json ['max_eligible_limit']),
       eligibleFundsCount: _toInt(
         json['eligible_funds_count'] ?? json['eligibleFundsCount'],
       ),
@@ -62,6 +65,7 @@ class LenderItem {
     'name': name,
     'logo': logo,
     'loan_interest': loanInterest,
+    'max_eligible_limit':maxEligibleLimit,
     'loan_amount': loanAmount,
     'eligible_funds_count': eligibleFundsCount,
     'eligible_funds':

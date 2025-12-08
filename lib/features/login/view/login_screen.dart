@@ -253,66 +253,79 @@ class _LoginScreenState extends State<LoginScreen> {
                                   color: AppColors.white,
                                 ),
                               ),
-                              Gaps.hXxl,
-
-                              /// Email field
-                              CInput(
-                                labelText: 'EmailAddress'.tr,
-                                controller: _emailController,
-                                enabled: !isOtpView,
-                                keyboardType: TextInputType.emailAddress,
-                                hintText: 'enterEmail'.tr,
-                                suffixIcon: const Icon(
-                                  Icons.email_outlined,
-                                  color: AppColors.white,
-                                  size: 16,
-                                ),
-                              ),
+                      
                               Gaps.hXl,
 
-                              /// Mobile field
-                              CInput(
-                                labelText: 'MobileNumber'.tr,
-                                controller: _mobileController,
-                                errorText: state.mobileError,
-                                hintText: 'enterMobileNumber'.tr,
-                                keyboardType: TextInputType.phone,
-                                prefixText: '+91 ',
-                                prefixStyle: const TextStyle(
-                                  color: AppColors
-                                      .white, // same as your input text color
-                                  fontSize: 16,
-                                ),
-                                enabled: !isOtpView,
-                                suffixIcon: const Icon(
-                                  Icons.phone_outlined,
-                                  color: AppColors.white,
-                                  size: 16,
-                                ),
-                                inputFormatters: [
-                                  LengthLimitingTextInputFormatter(
-                                    10,
-                                  ), // ✅ Max 10 digits only
-                                  FilteringTextInputFormatter
-                                      .digitsOnly, // ✅ Only numbers allowed
-                                ],
-                              ),
+                            CInput(
+  labelText: 'MobileNumber'.tr,
+  controller: _mobileController,
+  hintText: 'enterMobileNumber'.tr,
+  keyboardType: TextInputType.phone,
+  prefixText: '+91 ',
+  prefixStyle: const TextStyle(color: AppColors.white, fontSize: 16),
+  enabled: !isOtpView,
+
+  inputFormatters: [
+    LengthLimitingTextInputFormatter(10),
+    FilteringTextInputFormatter.digitsOnly,
+  ],
+
+  onChanged: (value) {
+    context.read<LoginBloc>().add(LoginMobileUpdated(value.trim()));
+  },
+
+  // ❌ Show error only when invalid
+  errorText: state.mobileLiveError != null &&
+          state.mobileLiveError != "Valid"
+      ? state.mobileLiveError
+      : null,
+
+  // ✔ Green tick when valid
+  suffixIcon: state.mobileLiveError == "Valid"
+      ? const Icon(Icons.check_circle, color: Colors.green, size: 18)
+      : const Icon(Icons.phone_outlined,
+          color: AppColors.white,
+          size: 16,
+        ),
+)
+,
+
                               Gaps.hXl,
 
                               /// OTP field (shown below existing)
-                              if (isOtpView)
-                                CInput(
-                                  labelText: 'EnterOTP'.tr,
-                                  controller: _otpController,
-                                  errorText: state.otpError,
-                                  inputFormatters: [
-                                    LengthLimitingTextInputFormatter(6),
-                                    FilteringTextInputFormatter.digitsOnly,
-                                  ],
-                                  hintText: '******',
-                                  keyboardType: TextInputType.number,
-                                  obscureText: true,
-                                ),
+                             if (isOtpView)
+  CInput(
+    labelText: 'EnterOTP'.tr,
+    controller: _otpController,
+    errorText: state.otpError,
+
+    keyboardType: TextInputType.number,
+
+    obscureText: !state.isLoginOtpVisible, // 🔥 controlled by Bloc
+
+    inputFormatters: [
+      LengthLimitingTextInputFormatter(6),
+      FilteringTextInputFormatter.digitsOnly,
+    ],
+
+    hintText: '******',
+
+    suffixIcon: GestureDetector(
+      onTap: () {
+        context
+            .read<LoginBloc>()
+            .add(LoginToggleOtpVisibility()); // 🔥 NO setState
+      },
+      child: Icon(
+        state.isLoginOtpVisible
+            ? Icons.visibility
+            : Icons.visibility_off,
+        color: AppColors.bSecondaryColor,
+        size: 20,
+      ),
+    ),
+  ),
+
                               if (isOtpView) Gaps.hXl,
                             ],
                           ),
@@ -332,13 +345,38 @@ class _LoginScreenState extends State<LoginScreen> {
                           if (!isOtpView) ...[
                             CButton(
                               text: 'SendOTP'.tr,
-                              onPressed: state.isLoading ? null : () {
-                                bloc.add(
-                                  LoginSendOtpPressed(
-                                    mobile: _mobileController.text.trim(),
-                                  ),
-                                );
-                              },
+                             onPressed: state.isLoading ? null : () {
+
+  final mobile = _mobileController.text.trim();
+
+  // Check empty fields
+  if (mobile.isEmpty) {
+    CSnackBar.show(
+      context,
+      "Please enter all details",
+      isError: true,
+    );
+    return;
+  }
+
+  // Check valid formats
+  if ( state.mobileLiveError != "Valid") {
+    CSnackBar.show(
+      context,
+      "Please enter valid Email & Mobile Number",
+      isError: true,
+    );
+    return;
+  }
+
+  // Send OTP if all valid
+  bloc.add(
+    LoginSendOtpPressed(
+      mobile: mobile,
+    ),
+  );
+},
+
                               type: ButtonType.primaryWhite,
                               suffixIcon: const Icon(
                                 Icons.arrow_forward,
@@ -349,26 +387,29 @@ class _LoginScreenState extends State<LoginScreen> {
                           ] else ...[
                             CButton(
                               text: 'Continue'.tr,
-                              onPressed: () {
-                                if (state.otpRef == null ||
-                                    state.otpRef!.isEmpty) {
-                                  CSnackBar.show(
-                                    context,
-                                    'Missing OTP reference. Please resend OTP.',
-                                    isError: true,
-                                  );
-                                  return;
-                                }
+                              onPressed: (state.mobileLiveError != "Valid")
+                                  ? null
+                                  : () {
+                                      if (state.otpRef == null ||
+                                          state.otpRef!.isEmpty) {
+                                        CSnackBar.show(
+                                          context,
+                                          'Missing OTP reference. Please resend OTP.',
+                                          isError: true,
+                                        );
+                                        return;
+                                      }
 
-                                bloc.add(
-                                  LoginVerifyOtpPressed(
-                                    mobile: _mobileController.text.trim(),
-                                    otpRef: state.otpRef!,
-                                    otp: _otpController.text.trim(),
-                                      email: _emailController.text.trim(),
-                                  ),
-                                );
-                              },
+                                      bloc.add(
+                                        LoginVerifyOtpPressed(
+                                          mobile: _mobileController.text.trim(),
+                                          otpRef: state.otpRef!,
+                                          otp: _otpController.text.trim(),
+                                        
+                                        ),
+                                      );
+                                    },
+
                               type: ButtonType.primaryWhite,
                               suffixIcon: const Icon(
                                 Icons.arrow_forward,
@@ -396,7 +437,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ..onTap = () {
                                           bloc.add(
                                             LoginResendOtpPressed(
-                                              mobile: _mobileController.text.trim(),
+                                              mobile: _mobileController.text
+                                                  .trim(),
                                             ),
                                           );
                                         },
@@ -411,8 +453,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
 
-                  /// ---------- Loader ----------
-                  // NOTE: we hide the loader if _forceStopLoading == true (timeout occurred)
+             
                   if (state.isLoading && !_forceStopLoading)
                     Container(
                       color: Colors.black.withOpacity(0.4),
