@@ -12,8 +12,11 @@ enum LenderSelectionView {
   lenderList,
   portfolioBreakdown,
   pledgeableDetail,
+  nonPledgeableDetail,  // NEW
+  dematDetail,          // NEW
   fundSelection,
 }
+
 
 class Lender extends Equatable {
   final String id;
@@ -23,6 +26,7 @@ class Lender extends Equatable {
   final double loanAmount;
   final int pledgeableMFs;
   final String tag;
+  final double maxEligibleLimit;
 
   const Lender({
     required this.id,
@@ -32,6 +36,7 @@ class Lender extends Equatable {
     required this.loanAmount,
     required this.pledgeableMFs,
     required this.tag,
+    required this.maxEligibleLimit
   });
 
   @override
@@ -45,6 +50,7 @@ class Lender extends Equatable {
     double? loanAmount,
     int? pledgeableMFs,
     String? tag,
+    double? maxEligibleLimit
   }) {
     return Lender(
       id: id ?? this.id,
@@ -52,6 +58,7 @@ class Lender extends Equatable {
       logoAsset: logoAsset ?? this.logoAsset,
       interestRate: interestRate ?? this.interestRate,
       loanAmount: loanAmount ?? this.loanAmount,
+      maxEligibleLimit: maxEligibleLimit ?? this.maxEligibleLimit,
       pledgeableMFs: pledgeableMFs ?? this.pledgeableMFs,
       tag: tag ?? this.tag,
     );
@@ -64,33 +71,37 @@ class EligibilityFormData extends Equatable {
     this.panNumber,
     this.panFullName,
     this.panDob,
+        this.panEmail,   
   });
 
   final InvestmentType investmentType;
   final String? panNumber;
   final String? panFullName;
   final String? panDob;
-
+  final String? panEmail;   
   EligibilityFormData copyWith({
     InvestmentType? investmentType,
     String? panNumber,
     String? panFullName,
     String? panDob,
+      String? panEmail,  
   }) {
     return EligibilityFormData(
       investmentType: investmentType ?? this.investmentType,
       panNumber: panNumber ?? this.panNumber,
       panFullName: panFullName ?? this.panFullName,
       panDob: panDob ?? this.panDob,
+        panEmail: panEmail ?? this.panEmail,
     );
   }
 
   @override
-  List<Object?> get props => [investmentType, panNumber, panFullName, panDob];
+  List<Object?> get props => [investmentType, panNumber, panFullName, panDob,   panEmail];
 }
 
 class EligibilityState extends Equatable {
   const EligibilityState({
+    this.isOtpVisible = false,
     this.majorStep = 1,
     this.pageIndex = 0,
     this.formData = const EligibilityFormData(),
@@ -170,8 +181,21 @@ class EligibilityState extends Equatable {
     this.kycSteps = const [],
     this.currentKycStatus,
     this.hasTriggeredDigio = false,
+    this.panLiveError,
+
     this.currentStepName,
+this.hasUnsavedFundChanges = false,
+this.panEmail,
+this.panEmailError,
+
+
   });
+  final String? panLiveError;
+final bool isOtpVisible;
+final bool hasUnsavedFundChanges;
+
+final String? panEmail;
+final String? panEmailError;
 
     final List<Map<String, dynamic>> insurers;     // dropdown list
   final String? insurerCode;                     // selected code
@@ -282,7 +306,10 @@ class EligibilityState extends Equatable {
   final String? currentStepName;
 
   EligibilityState copyWith({
+     bool? isOtpVisible,
+bool? hasUnsavedFundChanges,
 
+String? panLiveError,
        List<Map<String,dynamic>>? insurers,
     String? insurerCode,
     String? insurancePolicyNo,
@@ -371,9 +398,15 @@ class EligibilityState extends Equatable {
     bool? isUnitUploading,
     bool? isPolicyUploading,
     bool? isInsuranceSubmitting,
+    String? panEmail,
+String? panEmailError,
+
 
   }) {
     return EligibilityState(
+panLiveError: panLiveError ?? this.panLiveError,
+  isOtpVisible: isOtpVisible ?? this.isOtpVisible,
+hasUnsavedFundChanges: hasUnsavedFundChanges ?? this.hasUnsavedFundChanges,
 
        insurers: insurers ?? this.insurers,
       insurerCode: insurerCode ?? this.insurerCode,
@@ -469,7 +502,9 @@ class EligibilityState extends Equatable {
         isUnitUploading: isUnitUploading ?? this.isUnitUploading,
         isPolicyUploading: isPolicyUploading ?? this.isPolicyUploading,
         isInsuranceSubmitting: isInsuranceSubmitting ?? this.isInsuranceSubmitting,
-       
+       panEmail: panEmail ?? this.panEmail,
+panEmailError: panEmailError,
+
     );
   }
 
@@ -563,7 +598,11 @@ class EligibilityState extends Equatable {
     shareUploadPath,
     shareError,
     shareSuccess,
+panLiveError,
+isOtpVisible,
+hasUnsavedFundChanges
+    ,panEmail,
+panEmailError,
 
-    
   ];
 }

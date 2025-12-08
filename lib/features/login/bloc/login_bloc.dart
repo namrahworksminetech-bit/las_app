@@ -24,6 +24,16 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     on<LoginVerifyOtpPressed>(_onVerifyOtpPressed);
     on<LoginSnackbarCleared>(_onSnackbarCleared);
     on<LoginResendOtpPressed>(_onResendOtpPressed);
+    on<LoginEmailUpdated>(_onEmailUpdated);
+on<LoginMobileUpdated>(_onMobileUpdated);
+  on<LoginToggleOtpVisibility>(_onToggleOtpVisibility);
+  
+  }
+void _onToggleOtpVisibility(
+    LoginToggleOtpVisibility event,
+    Emitter<LoginState> emit,
+  ) {
+    emit(state.copyWith(isLoginOtpVisible: !state.isLoginOtpVisible));
   }
 
  
@@ -84,14 +94,12 @@ Future<void> _onVerifyOtpPressed(
     final appState = getIt<AppStateProvider>();
     appState.setToken(response.token!);
     appState.setMobileNumber(event.mobile);
-      final prefs = await SharedPreferences.getInstance();
-  await prefs.setString("mobile_number", event.mobile);
+    final prefs = await SharedPreferences.getInstance();
 
-
-  appState.setEmail(event.email);
-  await prefs.setString("email", event.email);
-   
+// Save mobile
 await prefs.setString("mobile_number", event.mobile);
+appState.setMobileNumber(event.mobile);
+
 
 
     if (response.reqId != null && response.reqId!.isNotEmpty) {
@@ -379,4 +387,42 @@ await prefs.setString("mobile_number", event.mobile);
   ) {
     emit(state.copyWith(clearSnackbar: true));
   }
+
+  void _onEmailUpdated(
+  LoginEmailUpdated event,
+  Emitter<LoginState> emit,
+) {
+  final email = event.email.trim();
+
+  String? error;
+
+  if (email.isEmpty) {
+    error = null; // no error until typing starts
+  } else if (!RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$').hasMatch(email)) {
+    error = "Invalid email address";
+  } else {
+    error = "Valid";
+  }
+
+  emit(state.copyWith(emailLiveError: error));
+}
+void _onMobileUpdated(
+  LoginMobileUpdated event,
+  Emitter<LoginState> emit,
+) {
+  final mobile = event.mobile.trim();
+
+  String? error;
+
+  if (mobile.isEmpty) {
+    error = null; 
+  } else if (mobile.length != 10) {
+    error = "Invalid mobile number";
+  } else {
+    error = "Valid";
+  }
+
+  emit(state.copyWith(mobileLiveError: error));
+}
+
 }

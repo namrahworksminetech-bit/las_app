@@ -51,7 +51,7 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
 
   final SharesRepository _sharesRepository = SharesRepository();
   StreamSubscription? _socketSubscription;
-  
+
   final _webViewCloseController = StreamController<bool>.broadcast();
   Stream<bool> get webViewCloseStream => _webViewCloseController.stream;
 
@@ -79,6 +79,8 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     on<PanNumberUpdated>(_onPanNumberUpdated);
     on<PanFullNameUpdated>(_onPanFullNameUpdated);
     on<PanDobUpdated>(_onPanDobUpdated);
+    on<PanEmailUpdated>(_onPanEmailUpdated);
+
     on<AcknowledgeKycNavigation>(_onAcknowledgeKycNavigation);
     on<UploadHoldingFile>(_onUploadHoldingFile);
     on<SubmitShareDetails>(_onSubmitShareDetails);
@@ -129,10 +131,39 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     on<CheckPledgeStatus>(_onCheckPledgeStatus);
     on<RequestLocationAndStartKyc>(_onRequestLocationAndStartKyc);
     on<KycStepTapped>(_onKycStepTapped);
+
+    on<ToggleOtpVisibility>(_onToggleOtpVisibility);
   }
-  /* =========================================================
-                      INSURANCE FLOW BLoC
-   ========================================================= */
+  void _onToggleOtpVisibility(
+    ToggleOtpVisibility event,
+    Emitter<EligibilityState> emit,
+  ) {
+    emit(state.copyWith(isOtpVisible: !state.isOtpVisible));
+  }
+void _onPanEmailUpdated(
+  PanEmailUpdated event,
+  Emitter<EligibilityState> emit,
+) {
+  final email = event.email.trim();
+  String? error;
+
+  final emailRegex = RegExp(r'^[\w\.\-]+@[\w\-]+\.[a-zA-Z]{2,}$');
+
+  if (email.isEmpty) {
+    error = "Email is required";
+  } else if (!emailRegex.hasMatch(email)) {
+    error = "Enter a valid email address";
+  }
+
+  emit(
+    state.copyWith(
+      panEmail: email,
+      panEmailError: error,
+      formData: state.formData.copyWith(panEmail: email),
+    ),
+  );
+}
+
   final InsuranceRepository _insuranceRepo =
       GetIt.instance<InsuranceRepository>();
 
@@ -385,32 +416,28 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
 
   // Replace your existing handler with this in EligibilityBloc
   void _onJumpToPage(JumpToPage event, Emitter<EligibilityState> emit) {
-    // Defensive: clamp pageIndex to valid range if you want
     final int target = event.pageIndex.clamp(0, 5);
 
-    // Determine majorStep mapping explicitly
+    // 🔥 Do NOT reset majorStep when going backward programmatically
     final int newMajor = switch (target) {
-      0 => 1, // Investment / fund-type
-      1 => 1, // PAN screen still majorStep 1
-      2 => 2, // lender selection (major step 2)
+      0 => 1,
+      1 => state.majorStep, // FIX: do not downgrade step
+      2 => 2,
       3 => 2,
-      4 => 3, // next major step
-      5 => 4, // final
+      4 => 3,
+      5 => 4,
       _ => state.majorStep,
     };
 
-    // Default updates: pageIndex and majorStep
     var nextState = state.copyWith(
       pageIndex: target,
       majorStep: newMajor,
-      // Ensure we clear any overlay if jumping programmatically
+
       currentOverlay: EligibilityOverlayType.none,
-      // Clear any transient snackbar/generic error if desired:
       generalErrorMessage: null,
     );
 
-    // If we are jumping to page 1 (PAN) from inside lender flow ensure lenderSelectionView
-    // is set back to lenderList so it won't try to fetch when user navigates later.
+    // Ensure lender view resets when jumping back
     if (target == 1 &&
         state.lenderSelectionView != LenderSelectionView.lenderList) {
       nextState = nextState.copyWith(
@@ -418,19 +445,10 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
       );
     }
 
-    // If jumping into lender flow (pageIndex 2) and you want a specific subview, you can
-    // set it here; otherwise keep existing value.
-    if (target == 2 && state.lenderSelectionView == null) {
-      nextState = nextState.copyWith(
-        lenderSelectionView: LenderSelectionView.lenderList,
-      );
-    }
-
-    // Emit only once with everything applied
     emit(nextState);
 
     debugPrint(
-      '🔁 JumpToPage -> page:$target major:$newMajor lenderView:${nextState.lenderSelectionView} overlay:${nextState.currentOverlay}',
+      '🔁 JumpToPage -> page:$target major:$newMajor lenderView:${nextState.lenderSelectionView}',
     );
   }
 
@@ -653,15 +671,31 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     );
   }
 
-  // pan
   void _onPanNumberUpdated(
     PanNumberUpdated event,
     Emitter<EligibilityState> emit,
   ) {
+    final pan = event.pan.toUpperCase();
+
+    String? liveMessage;
+
+    if (pan.isEmpty) {
+      liveMessage = null; // nothing yet
+    } else if (pan.length < 10) {
+      liveMessage = "Invalid PAN format"; // too short
+    } else if (!RegExp(r'^[A-Z]{5}[0-9]{4}[A-Z]$').hasMatch(pan)) {
+      liveMessage = "Invalid PAN format"; // wrong pattern
+    } else {
+      liveMessage = "Valid PAN";
+    }
+
     emit(
       state.copyWith(
-        formData: state.formData.copyWith(panNumber: event.pan),
-        panNumberError: null,
+        formData: state.formData.copyWith(panNumber: pan),
+        // old error used in submit-level validation
+        panNumberError: liveMessage == "Valid PAN" ? null : liveMessage,
+        // new live message used in UI
+        panLiveError: liveMessage,
       ),
     );
   }
@@ -926,6 +960,7 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
               interestRate: l.loanInterest ?? 0.0,
               loanAmount: l.loanAmount ?? 0.0,
               pledgeableMFs: l.eligibleFundsCount ?? 0,
+              maxEligibleLimit: l.maxEligibleLimit ?? 0.0,
               tag: '',
             );
           }).toList();
@@ -1047,6 +1082,7 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     emit(
       state.copyWith(
         selectedFundIds: currentSelected,
+        hasUnsavedFundChanges: true,
         previousSelectedFundIds: previousSelected,
       ),
     );
@@ -1206,6 +1242,7 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
               name: l.name ?? '-',
               logoAsset: l.logo ?? '',
               interestRate: l.loanInterest ?? 0.0,
+              maxEligibleLimit: l.maxEligibleLimit?? 0.0,
               loanAmount: l.loanAmount ?? 0.0,
               pledgeableMFs: l.eligibleFundsCount ?? 0,
               tag: '',
@@ -1218,8 +1255,9 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
               pledgeableFunds: updatedData.pledgeableFunds,
               lenders: updatedLenders,
               isLoading: false,
-              shouldNavigateToKyc: true,
+              hasUnsavedFundChanges: false,
               generalErrorMessage: null,
+                  previousSelectedFundIds: state.selectedFundIds,
             ),
           );
         },
@@ -1314,22 +1352,47 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     BreakdownCategoryTapped event,
     Emitter<EligibilityState> emit,
   ) {
-    if (event.categoryId == 'pledgeable') {
-      print("🟢 Switching to Pledgeable Detail view");
-      print("🟢 Current funds count: ${state.pledgeableFunds.length}");
+    switch (event.categoryId) {
+      case 'pledgeable':
+        print("🟢 Switching to Pledgeable Detail view");
+        print(
+          "🟢 Pledgeable funds count: ${state.mfDetailsResponse?.pledgeableFunds.length ?? 0}",
+        );
+        emit(
+          state.copyWith(
+            lenderSelectionView: LenderSelectionView.pledgeableDetail,
+          ),
+        );
+        break;
 
-      emit(
-        state.copyWith(
-          lenderSelectionView: LenderSelectionView.pledgeableDetail,
-        ),
-      );
-    } else {
-      // For other categories (non-pledgeable, demat, etc.)
-      emit(
-        state.copyWith(
-          lenderSelectionView: LenderSelectionView.portfolioBreakdown,
-        ),
-      );
+      case 'non_pledgeable':
+        print("🟡 Switching to Non-Pledgeable Detail view");
+        print(
+          "🟡 Non-Pledgeable funds count: ${state.mfDetailsResponse?.nonPledgeableFunds.length ?? 0}",
+        );
+        emit(
+          state.copyWith(
+            lenderSelectionView: LenderSelectionView.nonPledgeableDetail,
+          ),
+        );
+        break;
+
+      case 'demat':
+        print("🔵 Switching to Demat Detail view");
+        print(
+          "🔵 Demat funds count: ${state.mfDetailsResponse?.dematFunds.length ?? 0}",
+        );
+        emit(
+          state.copyWith(lenderSelectionView: LenderSelectionView.dematDetail),
+        );
+        break;
+
+      default:
+        emit(
+          state.copyWith(
+            lenderSelectionView: LenderSelectionView.portfolioBreakdown,
+          ),
+        );
     }
   }
 
@@ -2547,7 +2610,7 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
         ) {
           final status = response['status'] as String?;
           debugPrint('🔔 WebSocket status received: $status');
-          
+
           if (status == 'kyc_done') {
             debugPrint('✅ Closing WebView immediately');
             _webViewCloseController.add(true);
@@ -2630,18 +2693,26 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
       if (response.status == 'success' && response.data.url.isNotEmpty) {
         String stepName = 'KYC Verification';
         if (state.currentKycStatus == 'kfs_agreement_done') {
-          stepName = state.kycSteps.length > 4 ? state.kycSteps[4] : 'Set Mandate';
+          stepName = state.kycSteps.length > 4
+              ? state.kycSteps[4]
+              : 'Set Mandate';
         } else if (state.currentKycStatus == 'penny_drop_done') {
-          stepName = state.kycSteps.length > 3 ? state.kycSteps[3] : 'Loan Agreement Signing';
+          stepName = state.kycSteps.length > 3
+              ? state.kycSteps[3]
+              : 'Loan Agreement Signing';
         } else {
-          stepName = state.kycSteps.isNotEmpty ? state.kycSteps[0] : 'Fill Basic Info';
+          stepName = state.kycSteps.isNotEmpty
+              ? state.kycSteps[0]
+              : 'Fill Basic Info';
         }
-        emit(state.copyWith(
-          kycLoading: false,
-          kycUrl: response.data.url,
-          currentStepName: stepName,
-        ));
-      } else{
+        emit(
+          state.copyWith(
+            kycLoading: false,
+            kycUrl: response.data.url,
+            currentStepName: stepName,
+          ),
+        );
+      } else {
         emit(
           state.copyWith(kycLoading: false, kycError: 'Failed to get KYC URL'),
         );
@@ -2784,11 +2855,16 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
 
     // Step 0: Start KYC flow
     if (event.stepIndex == 0 &&
-        (status == null || status == 'start_kyc' || status == 'pending' || status == 'pan_verified')) {
+        (status == null ||
+            status == 'start_kyc' ||
+            status == 'pending' ||
+            status == 'pan_verified')) {
       try {
-        final stepName = state.kycSteps.isNotEmpty ? state.kycSteps[0] : 'Fill Basic Info';
+        final stepName = state.kycSteps.isNotEmpty
+            ? state.kycSteps[0]
+            : 'Fill Basic Info';
         emit(state.copyWith(currentStepName: stepName));
-        
+
         debugPrint('📍 Fetching location for KYC...');
         final position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high,
@@ -2822,11 +2898,11 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     else if ((event.stepIndex == 3 || event.stepIndex == 4) &&
         (status == 'penny_drop_done' || status == 'kfs_agreement_done')) {
       try {
-        final stepName = state.kycSteps.length > event.stepIndex 
-            ? state.kycSteps[event.stepIndex] 
+        final stepName = state.kycSteps.length > event.stepIndex
+            ? state.kycSteps[event.stepIndex]
             : 'KYC Verification';
         emit(state.copyWith(currentStepName: stepName));
-        
+
         debugPrint('📍 Fetching location for Step ${event.stepIndex}...');
         final position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high,

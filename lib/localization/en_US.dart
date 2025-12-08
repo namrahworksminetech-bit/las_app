@@ -84,7 +84,7 @@ final Map<String, String> enUS = {
   'goBack': 'Go Back',
   'viewLenders': 'View Lenders',
   'viewYourMfDetails': 'View Your MF Details',
-  'eligibleCreditLimit': 'Your Eligible Credit Limit',
+  'eligibleCreditLimit': 'Pledgeable Portfolio Value',
   'totalPortfolioValue': 'Your Total Portfolio Value is @value',
 
   'selectLenderInfo': 'Select a lender to proceed with your loan application.',

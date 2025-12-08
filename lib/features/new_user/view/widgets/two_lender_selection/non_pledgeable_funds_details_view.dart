@@ -9,10 +9,10 @@ import 'package:las_app/common_widgets/c_text.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
 import 'package:las_app/models/funds/pledgeable_model.dart';
 
-class PledgeableFundsDetailView extends StatelessWidget {
+class NonPledgeableFundsDetailView extends StatelessWidget {
   final VoidCallback onRefresh;
 
-  const PledgeableFundsDetailView({
+  const NonPledgeableFundsDetailView({
     super.key,
     required this.onRefresh,
   });
@@ -22,10 +22,8 @@ class PledgeableFundsDetailView extends StatelessWidget {
     final eligibilityState = context.watch<EligibilityBloc>().state;
     final isRefreshing = eligibilityState.isPortfolioRefreshing;
 
-    // We can either use state.pledgeableFunds or mfDetailsResponse.pledgeableFunds
     final List<PledgeableFund> funds =
-        eligibilityState.mfDetailsResponse?.pledgeableFunds ??
-        eligibilityState.pledgeableFunds;
+        eligibilityState.mfDetailsResponse?.nonPledgeableFunds ?? [];
 
     final formatCurrencyInt = NumberFormat.currency(
       locale: 'en_IN',
@@ -35,6 +33,7 @@ class PledgeableFundsDetailView extends StatelessWidget {
 
     return Column(
       children: [
+        // 🔥 EXACT MATCH WITH PLEDGEABLE
         Padding(
           padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 8.0),
           child: SizedBox(
@@ -70,12 +69,13 @@ class PledgeableFundsDetailView extends StatelessWidget {
           ),
         ),
 
-        // ✅ Handle empty or data state
+        // 🔥 NO DIVIDER HERE — MATCHES PLEDGEABLE VIEW EXACTLY
+
         if (funds.isEmpty)
           Expanded(
             child: Center(
               child: CText(
-                "No pledgeable funds found",
+                "No non-pledgeable funds found",
                 style: AppTypography.bodyWhite,
               ),
             ),
@@ -83,7 +83,7 @@ class PledgeableFundsDetailView extends StatelessWidget {
         else
           Expanded(
             child: ListView.separated(
-              key: const ValueKey('pledgeable_detail_view'),
+              key: const ValueKey('nonpledgeable_detail_view'),
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               itemCount: funds.length,
               separatorBuilder: (_, __) => const Divider(

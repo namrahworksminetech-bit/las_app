@@ -9,7 +9,6 @@ import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/features/new_user/repository/lenders_data_repo.dart';
 import 'package:las_app/features/new_user/repository/pan_veirfy_repo.dart';
-import 'package:las_app/features/new_user/view/insurance_success_screen.dart';
 import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/insurance_step_one.dart';
 import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/insurance_step_two.dart';
 import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/shares_step.dart';
@@ -36,7 +35,6 @@ class _EligibilityScreenState extends State<EligibilityScreen> {
   PersistentBottomSheetController? _bottomSheetController;
   bool _isOverlayOpen = false;
 
-int _backPressCount = 0;
 
   @override
   void dispose() {

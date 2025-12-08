@@ -569,24 +569,24 @@ class _DashboardState extends State<Dashboard> {
         color: AppColors.kPrimaryColor,
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Row(
-        children: [
-          Icon(Icons.notifications_none_sharp),
-          Gaps.wMd,
-          Expanded(child: Text('Next EMI due in 5 days.')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              minimumSize: Size.zero,
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadiusGeometry.circular(4),
-              ),
-            ),
-            onPressed: () {},
-            child: Text('Pay Now'),
-          ),
-        ],
-      ),
+      // child: Row(
+      //   children: [
+      //     Icon(Icons.notifications_none_sharp),
+      //     Gaps.wMd,
+      //     Expanded(child: Text('Next EMI due in 5 days.')),
+      //     ElevatedButton(
+      //       style: ElevatedButton.styleFrom(
+      //         minimumSize: Size.zero,
+      //         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      //         shape: RoundedRectangleBorder(
+      //           borderRadius: BorderRadiusGeometry.circular(4),
+      //         ),
+      //       ),
+      //       onPressed: () {},
+      //       child: Text('Pay Now'),
+      //     ),
+      //   ],
+      // ),
     );
   }
 

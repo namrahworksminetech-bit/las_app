@@ -6,6 +6,18 @@ abstract class EligibilityEvent extends Equatable {
   List<Object?> get props => [];
 }
 
+
+class PanValidationError extends EligibilityEvent {
+  final String message;
+  const PanValidationError(this.message);
+}
+
+class PanValidationErrorCleared extends EligibilityEvent {
+  const PanValidationErrorCleared();
+}
+
+
+
 class InvestmentTypeUpdated extends EligibilityEvent {
   final InvestmentType type;
   const InvestmentTypeUpdated(this.type);
@@ -20,6 +32,7 @@ class ToggleKycStep extends EligibilityEvent {
   @override
   List<Object?> get props => [index];
 }
+class ToggleOtpVisibility extends EligibilityEvent {}
 
 class PanNumberUpdated extends EligibilityEvent {
   final String pan;
@@ -203,6 +216,12 @@ class StartFetchingFromLogin extends EligibilityEvent {
 class ConfirmFundSelection extends EligibilityEvent {
   const ConfirmFundSelection();
 }
+
+class PanEmailUpdated extends EligibilityEvent {
+  final String email;
+  PanEmailUpdated(this.email);
+}
+
 class JumpToPage extends EligibilityEvent {
   final int pageIndex;
   const JumpToPage(this.pageIndex);

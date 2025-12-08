@@ -9,10 +9,13 @@ class LoginState extends Equatable {
     this.mobileError,
     this.otpError,
     this.snackbarMessage,
-       this.pledgeStatus,
-    
+    this.pledgeStatus,
+
     this.token,
     this.otpRef,
+
+    this.mobileLiveError,
+    this.isLoginOtpVisible = false,
   });
 
   final LoginViewStatus viewStatus;
@@ -24,6 +27,8 @@ class LoginState extends Equatable {
   final String? token;
   final String? otpRef;
 
+  final String? mobileLiveError;
+  final bool isLoginOtpVisible;
 
   LoginState copyWith({
     LoginViewStatus? viewStatus,
@@ -31,23 +36,29 @@ class LoginState extends Equatable {
     String? mobileError,
     String? otpError,
     String? snackbarMessage,
-       String? pledgeStatus,
+    String? pledgeStatus,
     String? token,
-  
+
     String? otpRef,
     bool clearSnackbar = false,
+    String? emailLiveError,
+    String? mobileLiveError,
+    bool? isLoginOtpVisible,
   }) {
     return LoginState(
       viewStatus: viewStatus ?? this.viewStatus,
       isLoading: isLoading ?? this.isLoading,
       mobileError: mobileError,
-            pledgeStatus: pledgeStatus ?? this.pledgeStatus,
+      pledgeStatus: pledgeStatus ?? this.pledgeStatus,
       otpError: otpError,
-      snackbarMessage:
-      clearSnackbar ? null : snackbarMessage ?? this.snackbarMessage,
+      snackbarMessage: clearSnackbar
+          ? null
+          : snackbarMessage ?? this.snackbarMessage,
       token: token ?? this.token,
       otpRef: otpRef ?? this.otpRef,
-   
+    
+      mobileLiveError: mobileLiveError ?? this.mobileLiveError,
+      isLoginOtpVisible: isLoginOtpVisible ?? this.isLoginOtpVisible,
     );
   }
 
@@ -57,11 +68,13 @@ class LoginState extends Equatable {
     isLoading,
     mobileError,
     otpError,
-   
 
     snackbarMessage,
-            pledgeStatus,
+    pledgeStatus,
     token,
     otpRef,
+ 
+    mobileLiveError,
+    isLoginOtpVisible,
   ];
 }

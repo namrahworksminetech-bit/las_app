@@ -3,13 +3,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:las_app/common_widgets/c_button.dart';
 import 'package:las_app/common_widgets/c_drop_down.dart';
 import 'package:las_app/common_widgets/c_input.dart';
+import 'package:las_app/common_widgets/c_snackbar.dart';
 import 'package:las_app/common_widgets/c_text.dart';
 import 'package:las_app/common_widgets/drop_dwon.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
-import 'package:las_app/features/home/view_home.dart';   // ⬅ EXIT redirection target
+import 'package:las_app/features/home/view_home.dart';
 
 class StepInsuranceDetailsPage extends StatefulWidget {
   const StepInsuranceDetailsPage({super.key});
@@ -24,7 +25,6 @@ class _StepInsuranceDetailsPageState extends State<StepInsuranceDetailsPage> {
   final nameController = TextEditingController();
   final dobController = TextEditingController();
 
-  String? insurer;
   bool accepted = false;
 
   @override
@@ -33,22 +33,27 @@ class _StepInsuranceDetailsPageState extends State<StepInsuranceDetailsPage> {
     context.read<EligibilityBloc>().add(FetchInsurers());
   }
 
-  /// ---------------- EXIT CONFIRM POPUP ----------------
+  /// Exit Dialog
   Future<bool> _showExitDialog() async {
     return await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Exit to Home?"),
-        content: const Text(
-          "If you leave this step, entered details will be lost.\nDo you want to continue?",
-        ),
-        actions: [
-          TextButton(onPressed: ()=> Navigator.pop(ctx,false), child: const Text("Cancel")),
-          TextButton(onPressed: ()=> Navigator.pop(ctx,true),  child: const Text("Confirm")),
-        ],
-      ),
-    ) ?? false;
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            title: const Text("Exit to Home?"),
+            content: const Text(
+              "If you leave this step, entered details will be lost.\nDo you want to continue?",
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text("Cancel")),
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text("Confirm")),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   void _goHome() {
@@ -58,13 +63,15 @@ class _StepInsuranceDetailsPageState extends State<StepInsuranceDetailsPage> {
       (route) => false,
     );
   }
-  //-------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      // ⬅ System Back Handling Same as Other Pages
       onWillPop: () async {
+        final state = context.read<EligibilityBloc>().state;
+
+        if (state.pageIndex != 1) return true;
+
         bool exit = await _showExitDialog();
         if (exit) _goHome();
         return false;
@@ -80,104 +87,115 @@ class _StepInsuranceDetailsPageState extends State<StepInsuranceDetailsPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
 
-                  /// ---------------- DROPDOWN ----------------
-                  CustomDropdown(
-                    label: "Select Your Insurer",
-                    value: state.insurerCode != null &&
-                           state.insurers.any((e) => e["code"] == state.insurerCode)
-                        ? state.insurerCode
-                        : null,
-                    items: state.insurers.map((e) => e["code"] as String).toList(),
-                    itemBuilder: (code) =>
-                      state.insurers.firstWhere((e) => e["code"] == code)["name"],
-                    onChanged: (code) {
-                      if (code == null) return;
-                      final selected = state.insurers.firstWhere((e) => e["code"] == code);
-    
-                      context.read<EligibilityBloc>().add(
-                        SaveInsuranceForm(
-                          insurerCode: selected["code"],
-                          name: nameController.text,
-                          dob: dobController.text,
-                          policyNumber: policyController.text,
-                        ),
-                      );
-                    },
-                  ),
+                CustomDropdown(
+  label: "Select Your Insurer",
+
+  value: state.insurerCode,
+  items: state.insurers
+      .map((e) => e["code"] as String)
+      .toSet()            // <-- remove duplicates
+      .toList(),
+
+  itemBuilder: (code) {
+    final entry = state.insurers.firstWhere((e) => e["code"] == code);
+    return entry["name"];
+  },
+
+  onChanged: (code) {
+    if (code == null) return;
+
+    context.read<EligibilityBloc>().add(
+      SaveInsuranceForm(
+        insurerCode: code,
+        name: nameController.text,
+        dob: dobController.text,
+        policyNumber: policyController.text,
+      ),
+    );
+  },
+),
+
 
                   const SizedBox(height: 18),
 
-                  /// ---------------- INPUTS ----------------
                   CInput(
                     labelText: "Policy Number",
+                    hintText: 'Enter valid policy number',
                     controller: policyController,
-                    hintText: "Enter Policy Number",
                   ),
 
                   const SizedBox(height: 18),
 
                   CInput(
                     labelText: "Name",
+                    hintText: 'Enter your name',
                     controller: nameController,
-                    hintText: "Enter Your Name",
                   ),
 
                   const SizedBox(height: 18),
 
                   CInput(
                     labelText: "Date of Birth",
+                    hintText: "DOB",
                     controller: dobController,
                     readOnly: true,
                     onTap: () => _selectDate(context),
-                    suffixIcon: const Icon(Icons.calendar_today_outlined,
-                        color: AppColors.bSecondaryColor, size: 20),
+                    suffixIcon: const Icon(
+                      Icons.calendar_today_outlined,
+                      color: AppColors.bSecondaryColor,
+                      size: 20,
+                    ),
                   ),
 
                   const SizedBox(height: 20),
 
-                  Row(
-                    children: [
-                      Checkbox(
-                        activeColor: AppColors.bPrimaryColor,
-                        value: accepted,
-                        onChanged: (v) => setState(() => accepted = v!),
-                      ),
-                      Expanded(
-                        child: CText(
-                          "Life Assured is different than the policyholder",
-                          style: const TextStyle(fontSize: 12, color: Colors.white),
-                        ),
-                      ),
-                    ],
-                  ),
+                
 
                   const SizedBox(height: 20),
 
-                  CButton(
-                    text: "Next",
-                    type: ButtonType.primaryWhite,
-                    onPressed:
-                      accepted &&
-                      state.insurerCode != null &&
-                      policyController.text.isNotEmpty &&
-                      nameController.text.isNotEmpty &&
-                      dobController.text.isNotEmpty
-                    ? () {
-                        context.read<EligibilityBloc>().add(
-                          SaveInsuranceForm(
-                            insurerCode: state.insurerCode!,
-                            policyNumber: policyController.text,
-                            name: nameController.text,
-                            dob: dobController.text,
-                          ),
-                        );
+                CButton(
+  text: "Next",
+  type: ButtonType.primaryWhite,
+  onPressed: () {
+    final bloc = context.read<EligibilityBloc>();
+    final insurer = bloc.state.insurerCode;
+    final policy = policyController.text.trim();
+    final name = nameController.text.trim();
+    final dob = dobController.text.trim();
 
-                        context.read<EligibilityBloc>().add(NextStepPressed());
-                      }
-                    : null,
-                  ),
+    if (insurer == null || insurer.isEmpty) {
+      CSnackBar.show(context, "Please select an insurer", isError: true);
+      return;
+    }
+    if (policy.isEmpty) {
+      CSnackBar.show(context, "Please enter policy number", isError: true);
+      return;
+    }
+    if (name.isEmpty) {
+      CSnackBar.show(context, "Please enter your name", isError: true);
+      return;
+    }
+    if (dob.isEmpty) {
+      CSnackBar.show(context, "Please select date of birth", isError: true);
+      return;
+    }
+
+    //  All good — save form and continue
+    bloc.add(
+      SaveInsuranceForm(
+        insurerCode: insurer,
+        policyNumber: policy,
+        name: name,
+        dob: dob,
+      ),
+    );
+
+    bloc.add(NextStepPressed());
+  },
+),
 
                   const SizedBox(height: 30),
+
                   Center(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -187,7 +205,8 @@ class _StepInsuranceDetailsPageState extends State<StepInsuranceDetailsPage> {
                               color: AppColors.bSecondaryColor,
                             )),
                         Gaps.wXs,
-                        Image.asset('assets/images/value_enable_logo.png', height: 20),
+                        Image.asset('assets/images/value_enable_logo.png',
+                            height: 20),
                       ],
                     ),
                   )

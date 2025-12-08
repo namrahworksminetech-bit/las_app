@@ -27,7 +27,7 @@ class FundSelectionView extends StatelessWidget {
       text: currentAmount.toStringAsFixed(0),
     );
 
-    final eligibleLimit = lender.loanAmount ?? 0.0;
+    final eligibleLimit = lender.maxEligibleLimit ?? 0.0;
     final eligibilityBloc = blocContext.read<EligibilityBloc>();
 
     final newAmount = await showDialog<double>(
@@ -261,6 +261,7 @@ class FundSelectionView extends StatelessWidget {
               interestRate: 0,
               loanAmount: 0,
               pledgeableMFs: 0,
+              maxEligibleLimit: 0,
               tag: '',
             ),
     );
@@ -547,59 +548,78 @@ class FundSelectionView extends StatelessWidget {
               ),
 
               // --- Continue Button ---
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24.0,
-                  vertical: 16.0,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Builder(
-                      builder: (blocContext) => CButton(
-                        text: 'continueWith'.trParams({
-                          'lenderName': selectedLender.name,
-                        }),
-                        onPressed: () {
-                          // NOTE: ConfirmFundSelection event should NOT require BuildContext anymore.
-                          // Update your event signature to ConfirmFundSelection() if needed.
-                          blocContext.read<EligibilityBloc>().add(
-                            ConfirmFundSelection(),
-                          );
-                        },
-                        type: ButtonType.primaryWhite,
-                        suffixIcon: const Icon(
-                          Icons.arrow_forward,
-                          color: AppColors.black,
-                          size: 18,
-                        ),
-                      ),
-                    ),
-                    Gaps.hSm,
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: CText(
-                            'Powered by',
-                            style: AppTypography.bodySecondary.copyWith(
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                        Gaps.wSm,
-                        Flexible(
-                          child: Image.asset(
-                            'assets/images/value_enable_logo.png',
-                            height: 20,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+           Padding(
+  padding: const EdgeInsets.symmetric(
+    horizontal: 24.0,
+    vertical: 16.0,
+  ),
+  child: Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+
+      /// 🔥 Show Save Changes button ONLY when there are unsaved changes
+      if (state.hasUnsavedFundChanges)
+        CButton(
+          text: "Save Changes",
+          type: ButtonType.primaryWhite,
+          onPressed: () {
+            context.read<EligibilityBloc>().add(ConfirmFundSelection());
+          },
+        ),
+
+      if (state.hasUnsavedFundChanges) Gaps.hMd,
+
+      /// 🚀 Continue Button (NO confirm fund selection here)
+      CButton(
+        text: 'continueWith'.trParams({
+          'lenderName': selectedLender.name,
+        }),
+        onPressed: () {
+          // DIRECT NAVIGATION TO KYC
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => BlocProvider.value(
+                value: eligibilityBloc,
+                child: KycVerificationScreen(),
               ),
+            ),
+          );
+        },
+        type: ButtonType.primaryWhite,
+        suffixIcon: const Icon(
+          Icons.arrow_forward,
+          color: AppColors.black,
+          size: 18,
+        ),
+      ),
+
+      Gaps.hSm,
+
+      Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: CText(
+              'Powered by',
+              style: AppTypography.bodySecondary.copyWith(
+                fontSize: 12,
+              ),
+            ),
+          ),
+          Gaps.wSm,
+          Flexible(
+            child: Image.asset(
+              'assets/images/value_enable_logo.png',
+              height: 20,
+            ),
+          ),
+        ],
+      ),
+    ],
+  ),
+),
+
             ],
           );
         },
