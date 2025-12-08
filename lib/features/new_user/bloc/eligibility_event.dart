@@ -459,6 +459,20 @@ class FetchPledgePhoneNumber extends EligibilityEvent {
   @override
   List<Object> get props => [];
 }
+class PledgeOtpChanged extends EligibilityEvent {
+  final String otp;
+  const PledgeOtpChanged(this.otp);
+
+  @override
+  List<Object> get props => [otp];
+}
+class TermsAgreementToggled extends EligibilityEvent {
+  final bool agreed;
+  const TermsAgreementToggled(this.agreed);
+
+  @override
+  List<Object?> get props => [agreed];
+}
 
 class SubmitPledgeOtp extends EligibilityEvent {
   final String otp;

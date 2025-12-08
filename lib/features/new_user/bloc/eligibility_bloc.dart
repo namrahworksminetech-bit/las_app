@@ -134,18 +134,34 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     on<CheckPledgeStatus>(_onCheckPledgeStatus);
     on<RequestLocationAndStartKyc>(_onRequestLocationAndStartKyc);
     on<KycStepTapped>(_onKycStepTapped);
-
+ on<PennyDropPollingCompleted>(_onPennyDropPollingCompleted);
+    on<NavigateToNextScreen>(_onNavigateToNextScreen);
+    on<FetchPledgePhoneNumber>(_onFetchPledgePhoneNumber);
+    on<SubmitPledgeOtp>(_onSubmitPledgeOtp);
     on<ToggleOtpVisibility>(_onToggleOtpVisibility);
+    on<PledgeOtpChanged>(_onPledgeOtpChanged);
+    on<TermsAgreementToggled>(_onTermsAgreementToggled);
+
   }
+void _onPledgeOtpChanged(PledgeOtpChanged event, Emitter<EligibilityState> emit) {
+  emit(state.copyWith(
+    pledgeOtp: event.otp,
+    pledgeOtpError: null,
+  ));
+}
+
+void _onTermsAgreementToggled(
+  TermsAgreementToggled event,
+  Emitter<EligibilityState> emit,
+) {
+  emit(state.copyWith(agreedToTerms: event.agreed));
+}
   void _onToggleOtpVisibility(
     ToggleOtpVisibility event,
     Emitter<EligibilityState> emit,
   ) {
     emit(state.copyWith(isOtpVisible: !state.isOtpVisible));
-    on<PennyDropPollingCompleted>(_onPennyDropPollingCompleted);
-    on<NavigateToNextScreen>(_onNavigateToNextScreen);
-    on<FetchPledgePhoneNumber>(_onFetchPledgePhoneNumber);
-    on<SubmitPledgeOtp>(_onSubmitPledgeOtp);
+   
   }
 
   void _onPanEmailUpdated(
@@ -188,65 +204,60 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     emit(state.copyWith(shouldNavigateToOtp: true));
   }
 
-  Future<void> _onFetchPledgePhoneNumber(
-    FetchPledgePhoneNumber event,
-    Emitter<EligibilityState> emit,
-  ) async {
-    final reqId = getIt<AppStateProvider>().reqId;
-    final token = getIt<AppStateProvider>().token;
+Future<void> _onFetchPledgePhoneNumber(
+  FetchPledgePhoneNumber event,
+  Emitter<EligibilityState> emit,
+) async {
+  final reqId = getIt<AppStateProvider>().reqId;
+  final token = getIt<AppStateProvider>().token;
 
-    if (reqId == null || token == null) {
-      emit(state.copyWith(pledgeChecked: true));
-      return;
-    }
-
-    try {
-      final pledgeRepo = PledgeStatusRepository(getIt<ApiClient>());
-      final result = await pledgeRepo.checkPledgeMfStatus(
-        reqId: reqId,
-        type: "pledge",
-        authToken: token,
-      );
-
-      result.when(
-        success: (data) {
-          String? phoneFromResp;
-          final inner = data['data'];
-
-          if (inner is List && inner.isNotEmpty) {
-            final first = inner[0];
-            if (first is Map && first['phone'] != null) {
-              phoneFromResp = first['phone'].toString();
-            }
-          } else if (inner is Map && inner['phone'] != null) {
-            phoneFromResp = inner['phone'].toString();
-          }
-
-          if (phoneFromResp != null &&
-              phoneFromResp.isNotEmpty &&
-              !phoneFromResp.contains('*')) {
-            var normalized = phoneFromResp.replaceAll(RegExp(r'[\s\-]'), '');
-            if (!normalized.startsWith('+')) {
-              normalized = normalized.startsWith('91')
-                  ? '+$normalized'
-                  : '+91$normalized';
-            }
-            emit(
-              state.copyWith(
-                pledgePhoneNumber: normalized,
-                pledgeChecked: true,
-              ),
-            );
-          } else {
-            emit(state.copyWith(pledgeChecked: true));
-          }
-        },
-        failure: (_) => emit(state.copyWith(pledgeChecked: true)),
-      );
-    } catch (e) {
-      emit(state.copyWith(pledgeChecked: true));
-    }
+  if (reqId == null || token == null) {
+    emit(state.copyWith(pledgeChecked: true));
+    return;
   }
+
+  try {
+    final pledgeRepo = PledgeStatusRepository(getIt<ApiClient>());
+    final result = await pledgeRepo.checkPledgeMfStatus(
+      reqId: reqId,
+      type: "pledge",
+      authToken: token,
+    );
+
+    result.when(
+      success: (data) {
+        String? phoneFromResp;
+
+        final inner = data['data'];
+        if (inner is List && inner.isNotEmpty) {
+          phoneFromResp = inner[0]['phone']?.toString();
+        } else if (inner is Map) {
+          phoneFromResp = inner['phone']?.toString();
+        }
+
+        if (phoneFromResp != null && phoneFromResp.isNotEmpty) {
+          String normalized = phoneFromResp.replaceAll(RegExp(r'[\s\-]'), '');
+
+          if (!normalized.startsWith('+')) {
+            normalized = normalized.startsWith('91')
+                ? '+$normalized'
+                : '+91$normalized';
+          }
+
+          emit(state.copyWith(
+            pledgePhoneNumber: normalized,
+            pledgeChecked: true,
+          ));
+        } else {
+          emit(state.copyWith(pledgeChecked: true));
+        }
+      },
+      failure: (_) => emit(state.copyWith(pledgeChecked: true)),
+    );
+  } catch (e) {
+    emit(state.copyWith(pledgeChecked: true));
+  }
+}
 
   Future<void> _onSubmitPledgeOtp(
     SubmitPledgeOtp event,

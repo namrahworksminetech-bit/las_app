@@ -389,6 +389,45 @@ text: _dobController.text, // directly show dd-mm-yyyy
     },
   ),
 ],
+SizedBox(height: 5,),
+BlocBuilder<EligibilityBloc, EligibilityState>(
+  buildWhen: (p, c) => p.agreedToTerms != c.agreedToTerms,
+  builder: (context, state) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 15),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Checkbox(
+            value: state.agreedToTerms,
+            activeColor: AppColors.bPrimaryColor,
+            onChanged: (val) {
+              context.read<EligibilityBloc>().add(
+                TermsAgreementToggled(val ?? false),
+              );
+            },
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                context.read<EligibilityBloc>().add(
+                  TermsAgreementToggled(!state.agreedToTerms),
+                );
+              },
+              child: Text(
+                "I agree with the Terms and Conditions of this app",
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.white,
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  },
+),
 
                       ],
                     ),
@@ -399,7 +438,8 @@ text: _dobController.text, // directly show dd-mm-yyyy
                   padding: const EdgeInsets.all(24.0),
                   child: CButton(
                     text: _getButtonText(state),
-                    onPressed: () => _onButtonPressed(state),
+                   onPressed: state.agreedToTerms ? () => _onButtonPressed(state) : null,
+
                     isLoading:
                         state.panStatus == PanVerificationStatus.verifying ||
                         state.otpStatus == PanOtpStatus.sending,

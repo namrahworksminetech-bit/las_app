@@ -197,7 +197,20 @@ class EligibilityState extends Equatable {
     this.hasUnsavedFundChanges = false,
     this.panEmail,
     this.panEmailError,
+ 
+this.pledgeOtp = '',
+this.pledgeOtpError,
+this.agreedToTerms = false,
+
   });
+  final bool agreedToTerms;
+
+  final bool pledgeChecked;
+final String? pledgePhoneNumber;
+
+final String pledgeOtp;
+final String? pledgeOtpError;
+
   final String? panLiveError;
   final bool isOtpVisible;
   final bool hasUnsavedFundChanges;
@@ -313,8 +326,7 @@ class EligibilityState extends Equatable {
   final bool isPennyDropPolling;
   final bool shouldNavigateToOtp;
   final bool pledgeOtpSubmitting;
-  final bool pledgeChecked;
-  final String? pledgePhoneNumber;
+
 
   EligibilityState copyWith({
     bool? isOtpVisible,
@@ -346,6 +358,7 @@ class EligibilityState extends Equatable {
     String? panDobError,
     Map<String, double>? editedFundAmounts,
     PanVerificationStatus? panStatus,
+bool? agreedToTerms,
 
     bool? isStep2Loading,
     String? savingLenderId,
@@ -416,8 +429,14 @@ class EligibilityState extends Equatable {
     bool? isInsuranceSubmitting,
     String? panEmail,
     String? panEmailError,
+    String? pledgeOtp,
+String? pledgeOtpError,
   }) {
     return EligibilityState(
+      pledgeOtp: pledgeOtp ?? this.pledgeOtp,
+pledgeOtpError: pledgeOtpError ?? this.pledgeOtpError,
+agreedToTerms: agreedToTerms ?? this.agreedToTerms,
+
       panLiveError: panLiveError ?? this.panLiveError,
       isOtpVisible: isOtpVisible ?? this.isOtpVisible,
       hasUnsavedFundChanges:
@@ -558,6 +577,13 @@ class EligibilityState extends Equatable {
     shareError,
     shareSuccess,
 
+    pledgeOtpSubmitting,
+pledgeChecked,
+pledgePhoneNumber,
+pledgeOtp,
+pledgeOtpError,
+
+
     // ===== INSURANCE FLOW =====
     insurers, // list of companies
     insurerCode, // selected code
@@ -606,6 +632,8 @@ class EligibilityState extends Equatable {
     panStatus,
     otpStatus,
     snackbarMessage,
+    agreedToTerms,
+
     kycUrl,
     kycLoading,
     kycError,
