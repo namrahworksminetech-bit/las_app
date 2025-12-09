@@ -6,6 +6,7 @@ import 'package:las_app/common_widgets/c_input.dart';
 import 'package:las_app/common_widgets/c_snackbar.dart';
 import 'package:las_app/common_widgets/c_text.dart';
 import 'package:las_app/common_widgets/drop_dwon.dart';
+import 'package:las_app/core/extensions/formatted_date_ext.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
@@ -24,7 +25,7 @@ class _StepInsuranceDetailsPageState extends State<StepInsuranceDetailsPage> {
   final policyController = TextEditingController();
   final nameController = TextEditingController();
   final dobController = TextEditingController();
-
+String? backendDob;
   bool accepted = false;
 
   @override
@@ -186,7 +187,7 @@ class _StepInsuranceDetailsPageState extends State<StepInsuranceDetailsPage> {
         insurerCode: insurer,
         policyNumber: policy,
         name: name,
-        dob: dob,
+        dob: backendDob ?? dob,
       ),
     );
 
@@ -228,7 +229,8 @@ class _StepInsuranceDetailsPageState extends State<StepInsuranceDetailsPage> {
     );
 
     if (picked != null) {
-      dobController.text = "${picked.day}/${picked.month}/${picked.year}";
+      dobController.text = picked.toformattedDDMMYYYY;
+       backendDob= picked.toBackendDDMMYYYY;
     }
   }
 }

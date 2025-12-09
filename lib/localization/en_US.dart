@@ -59,7 +59,7 @@ final Map<String, String> enUS = {
   'nameAsPerPanLabel': 'Name as Per PAN',
   'nameAsPerPanHint': 'Enter Full Name',
   'dateOfBirthLabel': 'Date of Birth',
-  'dateOfBirthHint': 'DD/MM/YYYY',
+  'dateOfBirthHint': 'MM/DD/YYYY',
   'checking': 'Checking...',
   'checkLoanEligibility': 'Check Loan Eligibility',
 

@@ -9,6 +9,7 @@ import 'package:las_app/common_widgets/c_input.dart';
 import 'package:las_app/common_widgets/c_snackbar.dart';
 import 'package:las_app/common_widgets/c_text.dart';
 import 'package:las_app/core/app_state_provider.dart';
+import 'package:las_app/core/extensions/formatted_date_ext.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
@@ -75,23 +76,22 @@ Future<void> _selectDate(BuildContext context) async {
 
   final DateTime? picked = await showDatePicker(
     context: context,
+    locale: const Locale('en', 'IN'),
     initialDate: DateTime(2000, 1, 1),
     firstDate: DateTime(1920),
     lastDate: DateTime.now(),
   );
 
   if (picked != null) {
-    // backend expects: dd-mm-yyyy
-    final backendDate =
-        "${picked.day.toString().padLeft(2, '0')}-"
-        "${picked.month.toString().padLeft(2, '0')}-"
-        "${picked.year}";
+    // UI: MM-DD-YYYY
+    _dobController.text = picked.toformattedDDMMYYYY;
 
-    // controller should show same format
-    _dobController.text = backendDate;
+    // Backend: DD-MM-YYYY
+    final backendDate = picked.toBackendDDMMYYYY;
 
-    // send to bloc
-    context.read<EligibilityBloc>().add(PanDobUpdated(backendDate));
+    context.read<EligibilityBloc>().add(
+      PanDobUpdated(backendDate), // send backend format
+    );
   }
 }
 
@@ -114,7 +114,7 @@ Future<void> _selectDate(BuildContext context) async {
       bloc.add(
         VerifyPanPressed(
           pan: _panController.text.trim(),
-          dob: _dobController.text.trim(),
+           dob: state.formData.panDob ?? "",   
           name: _nameController.text.trim(),
     email: _emailController.text.trim(),           
         ),
@@ -222,7 +222,7 @@ String _formatDobForDisplay(String backend) {
             return Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(15.0, 9.0, 5.0, 0.0),
+                  padding: const EdgeInsets.fromLTRB(15.0, 15.0, 5.0, 0.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
@@ -263,10 +263,15 @@ CInput(
   focusNode: _panFocus,
   enabled: !showOtpField,
   textInputAction: TextInputAction.next,
+
+  inputFormatters: [
+    LengthLimitingTextInputFormatter(10),      // 🔥 MAX 10 characters
+    FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')), // optional: restrict to PAN-valid chars
+  ],
+
   onChanged: (value) {
     final upper = value.toUpperCase();
 
-    // keep field always uppercase
     if (_panController.text != upper) {
       final pos = _panController.selection;
       _panController.value = TextEditingValue(
@@ -278,12 +283,12 @@ CInput(
     context.read<EligibilityBloc>().add(PanNumberUpdated(upper));
   },
 
-  // show only error from bloc
   errorText: state.panLiveError != null &&
           state.panLiveError != "Valid PAN"
       ? state.panLiveError
       : null,
-),
+)
+,
 
 // small “valid” line below input (if valid)
 if (state.panLiveError == "Valid PAN")
@@ -400,13 +405,22 @@ BlocBuilder<EligibilityBloc, EligibilityState>(
         children: [
           Checkbox(
             value: state.agreedToTerms,
-            activeColor: AppColors.bPrimaryColor,
+            activeColor: AppColors.bPrimaryColor, // your primary color
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4), // BR.cXSmall
+            ),
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: const VisualDensity(
+              vertical: -4,
+              horizontal: -4,
+            ),
             onChanged: (val) {
               context.read<EligibilityBloc>().add(
                 TermsAgreementToggled(val ?? false),
               );
             },
           ),
+
           Expanded(
             child: GestureDetector(
               onTap: () {
@@ -418,7 +432,7 @@ BlocBuilder<EligibilityBloc, EligibilityState>(
                 "I agree with the Terms and Conditions of this app",
                 style: AppTypography.bodySmall.copyWith(
                   color: AppColors.white,
-                  height: 1.5,
+                  height: 2,
                 ),
               ),
             ),
@@ -427,7 +441,7 @@ BlocBuilder<EligibilityBloc, EligibilityState>(
       ),
     );
   },
-),
+)
 
                       ],
                     ),
