@@ -20,6 +20,7 @@ import 'package:las_app/features/new_user/view/widgets/three_kyc_verification/st
 import 'package:las_app/helper_widgets/fetching_overlay.dart';
 import '../../../common_widgets/webview_screen.dart';
 import '../../../core/network/api_client.dart';
+import '../../home/view_home.dart';
 import '../bloc/login_bloc.dart';
 import '../repository/login_repository.dart';
 import '../../new_user/view/eligibility_form.dart';
@@ -186,6 +187,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: PledgeFundsOtpScreen(mobileNumber: ''),
                       ),
                     ),
+                  );
+                }
+              });
+            } else if (status == 'loan_disbursed' || status == 'loan_closed') {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (ModalRoute.of(context)?.isCurrent ?? true) {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const Home()),
                   );
                 }
               });
