@@ -406,10 +406,10 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
   String title;
 
   if (currentView == LenderSelectionView.portfolioBreakdown) {
-    title = 'portfolioBreakdown'.tr;
+    title = 'Portfolio Breakdown';
   } 
   else if (currentView == LenderSelectionView.pledgeableDetail) {
-    title = 'portfolioBreakdownPledgeableFunds'.tr;
+    title = 'Portfolio Breakdown > PledgeableFunds';
   }
   else {
     // 🌟 NEW: Non-pledgeable detail title
@@ -459,13 +459,31 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
       const SizedBox(height: 16),
 
       // 📌 Title BELOW refresh button
-      Padding(
-        padding: const EdgeInsets.only(bottom: 8.0),
-        child: CText(
-          title,
-          style: AppTypography.caption,
+     Padding(
+  padding: const EdgeInsets.only(bottom: 8.0),
+  child: RichText(
+    text: TextSpan(
+      children: [
+        TextSpan(
+          text: title.contains('>') 
+              ? title.split('>').first + ' > ' 
+              : title,
+          style: AppTypography.caption.copyWith(
+            color: AppColors.white, // normal color
+          ),
         ),
-      ),
+        if (title.contains('>'))
+          TextSpan(
+            text: title.split('>').last.trim(),
+            style: AppTypography.caption.copyWith(
+              color: AppColors.bPrimaryColor, // ⭐ highlight color
+            ),
+          ),
+      ],
+    ),
+  ),
+),
+
     ],
   );
 }

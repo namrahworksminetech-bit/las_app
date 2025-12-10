@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:las_app/common_widgets/c_button.dart';
 import 'package:las_app/common_widgets/c_drop_down.dart';
@@ -121,25 +122,31 @@ String? backendDob;
 
                   const SizedBox(height: 18),
 
-                  CInput(
-                    labelText: "Policy Number",
-                    hintText: 'Enter valid policy number',
-                    controller: policyController,
-                  ),
+            CInput(
+  labelText: "Policy Number",
+  hintText: 'Enter valid policy number',
+  controller: policyController,
+  inputFormatters: [
+    FilteringTextInputFormatter.digitsOnly,
+    LengthLimitingTextInputFormatter(15),
+  ],
+),
 
                   const SizedBox(height: 18),
 
-                  CInput(
-                    labelText: "Name",
-                    hintText: 'Enter your name',
-                    controller: nameController,
-                  ),
-
+                CInput(
+  labelText: "Name",
+  hintText: 'Enter your name',
+  controller: nameController,
+  inputFormatters: [
+    FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z ]')),
+  ],
+),
                   const SizedBox(height: 18),
 
                   CInput(
                     labelText: "Date of Birth",
-                    hintText: "DOB",
+                    hintText: "MM/DD/YYYY",
                     controller: dobController,
                     readOnly: true,
                     onTap: () => _selectDate(context),
