@@ -69,11 +69,12 @@ void _onToggleOtpVisibility(
     } else {
       emit(
         state.copyWith(
-          snackbarMessage: response.message ?? 'Failed to send OTP.',
+          snackbarMessage:  'Server down Please try again in some time',
         ),
       );
     }
   }
+
 
 Future<void> _onVerifyOtpPressed(
   LoginVerifyOtpPressed event,

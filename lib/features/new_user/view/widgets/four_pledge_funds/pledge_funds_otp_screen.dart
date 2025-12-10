@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
@@ -275,7 +276,7 @@ Future<bool> _showExitConfirmDialog() async {
         title: const Text("Exit Application?"),
         content: const Text(
           "Are you sure you want to exit this step and go back to the Dashboard?",
-        ),
+       style: TextStyle( color: kIsWeb ? AppColors.black : AppColors.white,), ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),

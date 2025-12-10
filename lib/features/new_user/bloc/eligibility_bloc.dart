@@ -939,7 +939,12 @@ Future<void> _onVerifyPanPressed(
       }
 
       getIt<AppStateProvider>().setReqId(reqId);
+getIt<AppStateProvider>().setName(event.name);
+getIt<AppStateProvider>().setEmail(event.email);
+getIt<AppStateProvider>().setPan(event.pan);
 
+print("Saved Name: ${getIt<AppStateProvider>().name}");
+print("Saved Email: ${getIt<AppStateProvider>().email}");
       final otpResult = await repository.generateOtp();
 
       otpResult.when(

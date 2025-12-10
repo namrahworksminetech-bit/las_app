@@ -1,9 +1,11 @@
 // step1_pan_page.dart
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
+import 'package:las_app/app.dart';
 import 'package:las_app/common_widgets/c_button.dart';
 import 'package:las_app/common_widgets/c_input.dart';
 import 'package:las_app/common_widgets/c_snackbar.dart';
@@ -165,6 +167,7 @@ String _formatDobForDisplay(String backend) {
           title: const Text("Exit Application?"),
           content: const Text(
             "Are you sure you want to exit this step and go back to the Dashboard?",
+             style: TextStyle( color: kIsWeb ? AppColors.black : AppColors.white,),
           ),
           actions: [
             TextButton(
@@ -281,6 +284,7 @@ CInput(
     }
 
     context.read<EligibilityBloc>().add(PanNumberUpdated(upper));
+      getIt<AppStateProvider>().setName(value.trim());
   },
 
   errorText: state.panLiveError != null &&
@@ -331,6 +335,7 @@ CInput(
           state.otpStatus == PanOtpStatus.failed,
   onChanged: (value) {
     context.read<EligibilityBloc>().add(PanEmailUpdated(value.trim()));
+      getIt<AppStateProvider>().setEmail(value.trim());
   },
 
   errorText: state.panEmailError,

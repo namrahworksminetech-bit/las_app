@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
+import 'package:las_app/common_widgets/c_button.dart';
 import 'package:las_app/common_widgets/c_text.dart';
 import 'package:las_app/core/app_state_provider.dart';
 import 'package:las_app/core/extensions/string_ext.dart';
@@ -9,12 +10,13 @@ import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/utils/assets.dart';
 import 'package:las_app/features/dashboard/model_dashboard.dart';
 import 'package:las_app/features/portfolio/model_portfolio.dart';
+import 'package:las_app/features/portfolio/repository/statement_repo.dart';
 
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../dashboard/repository_dashboard.dart';
 import 'bloc/bloc_portfolio.dart';
-import 'repository_portfolio.dart';
+import 'repository/repository_portfolio.dart';
 
 class Portfolio extends StatefulWidget {
   const Portfolio({super.key});
@@ -142,71 +144,96 @@ class _PortfolioState extends State<Portfolio> {
                       ),
                       Gaps.hXxl,
                       cardLayout(snapData),
-                      SizedBox(height: 16),
-                      Column(
-                        children: [
-                          Container(
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                bottom: BorderSide(color: Color(0x75666666)),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Increase Limit',
-                                  style: AppTypography.regularTxt.copyWith(
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                Ast.svg.ic_next.load(),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                bottom: BorderSide(color: Color(0x75666666)),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'De-Pledge Funds',
-                                  style: AppTypography.regularTxt.copyWith(
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                Ast.svg.ic_next.load(),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                bottom: BorderSide(color: Color(0x75666666)),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Portfolio Overview',
-                                  style: AppTypography.regularTxt.copyWith(
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                Ast.svg.ic_next.load(),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                    
+                     
+
+SizedBox(height: 24),
+CButton(
+  text: "Holding Statement",
+  type: ButtonType.secondary,
+  suffixIcon: const Icon(Icons.download),
+  onPressed: () {
+    context.read<PortfolioBloc>().add(DownloadHoldingStatement());
+  },
+),
+
+SizedBox(height: 12),
+
+CButton(
+  text: "Client Statement",
+  type: ButtonType.secondary,
+  suffixIcon: const Icon(Icons.download),
+  onPressed: () {
+    context.read<PortfolioBloc>().add(DownloadClientStatement());
+  },
+),
+
+
+
+                      // Column(
+                      //   children: [
+                      //     Container(
+                      //       padding: EdgeInsets.symmetric(vertical: 16),
+                      //       decoration: BoxDecoration(
+                      //         border: Border(
+                      //           bottom: BorderSide(color: Color(0x75666666)),
+                      //         ),
+                      //       ),
+                      //       child: Row(
+                      //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      //         children: [
+                      //           Text(
+                      //             'Increase Limit',
+                      //             style: AppTypography.regularTxt.copyWith(
+                      //               fontSize: 16,
+                      //             ),
+                      //           ),
+                      //           Ast.svg.ic_next.load(),
+                      //         ],
+                      //       ),
+                      //     ),
+                      //     Container(
+                      //       padding: EdgeInsets.symmetric(vertical: 16),
+                      //       decoration: BoxDecoration(
+                      //         border: Border(
+                      //           bottom: BorderSide(color: Color(0x75666666)),
+                      //         ),
+                      //       ),
+                      //       child: Row(
+                      //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      //         children: [
+                      //           Text(
+                      //             'De-Pledge Funds',
+                      //             style: AppTypography.regularTxt.copyWith(
+                      //               fontSize: 16,
+                      //             ),
+                      //           ),
+                      //           Ast.svg.ic_next.load(),
+                      //         ],
+                      //       ),
+                      //     ),
+                      //     Container(
+                      //       padding: EdgeInsets.symmetric(vertical: 16),
+                      //       decoration: BoxDecoration(
+                      //         border: Border(
+                      //           bottom: BorderSide(color: Color(0x75666666)),
+                      //         ),
+                      //       ),
+                      //       child: Row(
+                      //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      //         children: [
+                      //           Text(
+                      //             'Portfolio Overview',
+                      //             style: AppTypography.regularTxt.copyWith(
+                      //               fontSize: 16,
+                      //             ),
+                      //           ),
+                      //           Ast.svg.ic_next.load(),
+                      //         ],
+                      //       ),
+                      //     ),
+                      //   ],
+                      // ),
                     ],
                   ),
                 ),
@@ -352,30 +379,28 @@ class _PortfolioState extends State<Portfolio> {
                         ),
                       ),
                       onPressed: () {
-                        showModalBottomSheet(
-                          context: context,
-                          useRootNavigator: true,
-                          isScrollControlled: true,
-                          backgroundColor: AppColors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadiusGeometry.only(
-                              topLeft: Radius.circular(24),
-                              topRight: Radius.circular(24),
-                            ),
-                          ),
-                          builder: (context) {
-                            return BlocProvider(
-                              create: (context) => PortfolioBloc(),
-                              child: BlocBuilder<PortfolioBloc, PortfolioState>(
-                                builder: (context, state) {
-                                  return (state.isTutorial ?? false)
-                                      ? paymentLayout(context)
-                                      : repayLayout(context);
-                                },
-                              ),
-                            );
-                          },
-                        );
+                       showModalBottomSheet(
+  context: context,
+  useRootNavigator: true,
+  isScrollControlled: true,
+  backgroundColor: AppColors.white,
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.only(
+      topLeft: Radius.circular(24),
+      topRight: Radius.circular(24),
+    ),
+  ),
+  builder: (context) {
+    return BlocBuilder<PortfolioBloc, PortfolioState>(
+      builder: (context, state) {
+        return (state.isTutorial ?? false)
+            ? paymentLayout(context)
+            : repayLayout(context);
+      },
+    );
+  },
+);
+
                       },
                       child: Row(
                         mainAxisSize: MainAxisSize.min,

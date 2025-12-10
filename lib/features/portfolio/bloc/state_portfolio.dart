@@ -12,6 +12,7 @@ class PortfolioState extends Equatable {
   EmType selectedTab;
 
   bool? isTutorial;
+bool isDownloading;
 
   TextEditingController? amountCtrl;
 
@@ -19,17 +20,21 @@ class PortfolioState extends Equatable {
     this.selectedTab = EmType.laMf,
     this.isTutorial = false,
     this.amountCtrl,
+       this.isDownloading = false,
   });
 
   PortfolioState copyWith({
     EmType? type,
     bool? isTutorial,
     String? amount,
+    bool? isDownloading,
   }) {
     return PortfolioState(
       selectedTab: type ?? selectedTab,
       isTutorial: isTutorial,
       amountCtrl: TextEditingController(text: amount),
+            isDownloading: isDownloading ?? this.isDownloading,
+
     );
   }
 
@@ -38,5 +43,6 @@ class PortfolioState extends Equatable {
     selectedTab,
     isTutorial ?? false,
     amountCtrl ?? '0',
+           isDownloading,
   ];
 }

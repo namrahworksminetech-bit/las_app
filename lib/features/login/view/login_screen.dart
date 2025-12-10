@@ -139,7 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               );
 
-              ///pledge_completed
+              //pledge_completed
             } else if (status == 'pledge_completed') {
               // For other advanced statuses go to KYC
               Navigator.pushReplacement(

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:las_app/common_widgets/c_snackbar.dart';
@@ -7,7 +6,6 @@ import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/common_widgets/c_text.dart';
-import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
 import 'package:las_app/models/funds/mf_details_response_model.dart';
 import 'package:las_app/models/funds/pledgeable_model.dart';
 
@@ -36,8 +34,8 @@ class PortfolioBreakdownView extends StatelessWidget {
       decimalDigits: 2,
     );
 
-    final isRefreshing =
-        context.watch<EligibilityBloc>().state.isPortfolioRefreshing;
+    // final isRefreshing =
+    //     context.watch<EligibilityBloc>().state.isPortfolioRefreshing;
 
     // Extract data
     final List<PledgeableFund> pledgeableFunds =

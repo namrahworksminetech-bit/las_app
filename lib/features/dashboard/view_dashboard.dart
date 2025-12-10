@@ -40,6 +40,20 @@ class Dashboard extends StatefulWidget {
 
 class _DashboardState extends State<Dashboard> {
   DashboardBloc? bloc;
+String? savedName;
+
+@override
+void initState() {
+  super.initState();
+  _loadStoredName();
+}
+
+Future<void> _loadStoredName() async {
+  final prefs = await SharedPreferences.getInstance();
+  setState(() {
+    savedName = prefs.getString("name") ?? prefs.getString("pan_full_name");
+  });
+}
 
   Future<void> _onCancelApplicationPressed(BuildContext context) async {
     // show loader
@@ -373,7 +387,7 @@ class _DashboardState extends State<Dashboard> {
 
   Widget appBarLayout() {
     return Container(
-      padding: EdgeInsets.fromLTRB(16, 32, 16, 16),
+      padding: EdgeInsets.fromLTRB(16, 50, 16, 16),
       decoration: BoxDecoration(
         color: Colors.black,
         boxShadow: [
@@ -390,13 +404,16 @@ class _DashboardState extends State<Dashboard> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Ast.svg.logo.load(),
-              Gaps.wMd,
-              CText('Welcome Himanshu'),
-            ],
-          ),
+  mainAxisSize: MainAxisSize.min,
+  children: [
+    Ast.svg.logo.load(),
+    Gaps.wMd,
+    CText(
+      "Welcome ${GetIt.instance<AppStateProvider>().name ?? savedName ?? "Guest"}",
+    ),
+  ],
+)
+,
           Ast.svg.feedback.load(),
         ],
       ),
@@ -442,7 +459,7 @@ class _DashboardState extends State<Dashboard> {
 
                   Gaps.hMd,
 
-                  alertLayout(),
+                  // alertLayout(),
                   // transactionLayout(),
                 ],
               ),
@@ -524,7 +541,7 @@ class _DashboardState extends State<Dashboard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Available Balance',
+                      'Balance',
                       style: AppTypography.regularTxt.copyWith(
                         fontSize: 12,
                         color: Color(0x80EFEFEF),
@@ -562,33 +579,33 @@ class _DashboardState extends State<Dashboard> {
     );
   }
 
-  Widget alertLayout() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.kPrimaryColor,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      // child: Row(
-      //   children: [
-      //     Icon(Icons.notifications_none_sharp),
-      //     Gaps.wMd,
-      //     Expanded(child: Text('Next EMI due in 5 days.')),
-      //     ElevatedButton(
-      //       style: ElevatedButton.styleFrom(
-      //         minimumSize: Size.zero,
-      //         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      //         shape: RoundedRectangleBorder(
-      //           borderRadius: BorderRadiusGeometry.circular(4),
-      //         ),
-      //       ),
-      //       onPressed: () {},
-      //       child: Text('Pay Now'),
-      //     ),
-      //   ],
-      // ),
-    );
-  }
+  // Widget alertLayout() {
+  //   return Container(
+  //     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+  //     decoration: BoxDecoration(
+  //       color: AppColors.kPrimaryColor,
+  //       borderRadius: BorderRadius.circular(4),
+  //     ),
+  //     // child: Row(
+  //     //   children: [
+  //     //     Icon(Icons.notifications_none_sharp),
+  //     //     Gaps.wMd,
+  //     //     Expanded(child: Text('Next EMI due in 5 days.')),
+  //     //     ElevatedButton(
+  //     //       style: ElevatedButton.styleFrom(
+  //     //         minimumSize: Size.zero,
+  //     //         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+  //     //         shape: RoundedRectangleBorder(
+  //     //           borderRadius: BorderRadiusGeometry.circular(4),
+  //     //         ),
+  //     //       ),
+  //     //       onPressed: () {},
+  //     //       child: Text('Pay Now'),
+  //     //     ),
+  //     //   ],
+  //     // ),
+  //   );
+  // }
 
   Widget transactionLayout() {
     return Column(

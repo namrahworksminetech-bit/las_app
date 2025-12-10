@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
@@ -37,7 +38,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
       return AlertDialog(
         title: const Text('Exit to Home?'),
         content: const Text(
-            'Are you sure you want to leave this flow and go back to the home screen?'),
+            'Are you sure you want to leave this flow and go back to the home screen?', style: TextStyle( color: kIsWeb ? AppColors.black : AppColors.white,),),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
