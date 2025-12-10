@@ -309,7 +309,7 @@ class _LenderCardState extends State<LenderCard> {
               children: [
                 Flexible(
                   child: _buildDetailColumn(
-                    'Interest Rate',
+                    'ROI',
                     '${widget.lender.interestRate}%',
                   ),
                 ),

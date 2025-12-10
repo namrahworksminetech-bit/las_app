@@ -168,9 +168,9 @@ void _onTermsAgreementToggled(
     PanEmailUpdated event,
     Emitter<EligibilityState> emit,
   ) {
+
     final email = event.email.trim();
     String? error;
-
     final emailRegex = RegExp(r'^[\w\.\-]+@[\w\-]+\.[a-zA-Z]{2,}$');
 
     if (email.isEmpty) {
@@ -399,41 +399,65 @@ Future<void> _onFetchPledgePhoneNumber(
   }
 
   /// ========== 5️⃣ FINAL SUBMIT API ================
-  Future<void> _onSubmitInsuranceDetails(
-    SubmitInsuranceDetails event,
-    Emitter<EligibilityState> emit,
-  ) async {
-    print("🚀 SUBMIT INSURANCE CLICKED");
+Future<void> _onSubmitInsuranceDetails(
+  SubmitInsuranceDetails event,
+  Emitter<EligibilityState> emit,
+) async {
+  print("🚀 SUBMIT INSURANCE CLICKED");
 
-    if (state.unitKey == null || state.policyKey == null) {
-      emit(state.copyWith(insuranceError: "Upload both documents first"));
-      return;
-    }
-
-    emit(state.copyWith(isSubmittingInsurance: true, insuranceError: null));
-
-    final res = await _insuranceRepo.submitInsurance(
-      insurerCode: state.insurerCode!,
-      policyNumber: state.insurancePolicyNo!,
-      name: state.insuranceName!,
-      dob: state.insuranceDob!,
-      unitFileKey: state.unitKey!,
-      policyFileKey: state.policyKey!,
-    );
-
-    res.when(
-      success: (_) {
-        print("🎉 INSURANCE POLICY SUBMITTED");
-        emit(
-          state.copyWith(isSubmittingInsurance: false, insuranceSuccess: true),
-        );
-      },
-      failure: (err) {
-        print("❌ SUBMIT FAILED → $err");
-        emit(state.copyWith(isSubmittingInsurance: false, insuranceError: err));
-      },
-    );
+  // Validation: both files must be uploaded
+  if (state.unitKey == null || state.policyKey == null) {
+    emit(state.copyWith(
+      insuranceError: "Upload both documents first",
+      snackbarMessage: "Upload both documents first", // 🔥 Show snackbar
+    ));
+    return;
   }
+
+  emit(state.copyWith(
+    isSubmittingInsurance: true,
+    insuranceError: null,
+    snackbarMessage: null,
+  ));
+
+  final res = await _insuranceRepo.submitInsurance(
+    insurerCode: state.insurerCode!,
+    policyNumber: state.insurancePolicyNo!,
+    name: state.insuranceName!,
+    dob: state.insuranceDob!,
+    unitFileKey: state.unitKey!,
+    policyFileKey: state.policyKey!,
+  );
+
+  res.when(
+    success: (_) {
+      print("🎉 INSURANCE POLICY SUBMITTED");
+
+      emit(
+        state.copyWith(
+          isSubmittingInsurance: false,
+          insuranceSuccess: true,
+
+          // 🔥 repo returns bool → use custom success message
+          snackbarMessage: "Insurance submitted successfully!",
+        ),
+      );
+    },
+    failure: (err) {
+      print("❌ SUBMIT FAILED → $err");
+
+      emit(
+        state.copyWith(
+          isSubmittingInsurance: false,
+          insuranceError: err,
+
+          // 🔥 Show backend error in snackbar
+          snackbarMessage: err.toString(),
+        ),
+      );
+    },
+  );
+}
 
   void _onSetLenderSelectionView(
     SetLenderSelectionView event,
@@ -838,86 +862,101 @@ Future<void> _onFetchPledgePhoneNumber(
     );
   }
 
-  Future<void> _onVerifyPanPressed(
-    VerifyPanPressed event,
-    Emitter<EligibilityState> emit,
-  ) async {
+Future<void> _onVerifyPanPressed(
+  VerifyPanPressed event,
+  Emitter<EligibilityState> emit,
+) async {
+  emit(
+    state.copyWith(
+      panStatus: PanVerificationStatus.verifying,
+      generalErrorMessage: null,
+      snackbarMessage: null, // optional reset
+    ),
+  );
+
+  final reqId = getIt<AppStateProvider>().reqId;
+
+  if (reqId == null || reqId.isEmpty) {
     emit(
       state.copyWith(
-        panStatus: PanVerificationStatus.verifying,
-        generalErrorMessage: null,
+        panStatus: PanVerificationStatus.failed,
+        generalErrorMessage: 'Missing reqId. Please login again.',
+        snackbarMessage: 'Missing reqId. Please login again.', // 🔥
       ),
     );
-    final reqId = getIt<AppStateProvider>().reqId;
+    return;
+  }
 
-    if (reqId == null || reqId.isEmpty) {
-      emit(
-        state.copyWith(
-          panStatus: PanVerificationStatus.failed,
-          generalErrorMessage: 'Missing reqId. Please login again.',
-        ),
-      );
-      return;
-    }
+  final result = await repository.verifyPan(
+    reqId: reqId,
+    pan: event.pan,
+    dob: event.dob,
+    name: event.name,
+    email: event.email,
+  );
 
-    final result = await repository.verifyPan(
-      reqId: reqId,
-      // ✅ safe now
-      pan: event.pan,
-      dob: event.dob,
-      name: event.name,
-      email: event.email,
-    );
+  await result.when(
+    success: (panResponse) async {
+      // 🔥 SHOW SERVER SUCCESS/VALIDATION MESSAGE
+      emit(state.copyWith(
+        snackbarMessage: panResponse.message, // <<< 🔥 THIS SHOWS YOUR MESSAGE
+      ));
 
-    await result.when(
-      success: (panResponse) async {
-        final reqId = panResponse.reqId;
+      final reqId = panResponse.reqId;
 
-        if (reqId == null) {
-          emit(
-            state.copyWith(
-              panStatus: PanVerificationStatus.failed,
-              generalErrorMessage: 'Missing reqId in response.',
-            ),
-          );
-          return;
-        }
-
-        getIt<AppStateProvider>().setReqId(reqId);
-
-        final otpResult = await repository.generateOtp();
-
-        otpResult.when(
-          success: (otpResponse) {
-            emit(
-              state.copyWith(
-                panStatus: PanVerificationStatus.verified,
-                otpStatus: PanOtpStatus.sent,
-                generalErrorMessage:
-                    otpResponse.message ?? 'OTP sent successfully.',
-              ),
-            );
-          },
-          failure: (error) {
-            emit(
-              state.copyWith(
-                otpStatus: PanOtpStatus.failed,
-                generalErrorMessage: error,
-              ),
-            );
-          },
-        );
-      },
-      failure: (error) {
+      if (reqId == null) {
         emit(
           state.copyWith(
             panStatus: PanVerificationStatus.failed,
-            generalErrorMessage: error,
+            generalErrorMessage: 'Missing reqId in response.',
+            snackbarMessage: 'Missing reqId in response.', // 🔥
           ),
         );
-      },
-    );
-  }
+        return;
+      }
+
+      getIt<AppStateProvider>().setReqId(reqId);
+
+      final otpResult = await repository.generateOtp();
+
+      otpResult.when(
+        success: (otpResponse) {
+          emit(
+            state.copyWith(
+              panStatus: PanVerificationStatus.verified,
+              otpStatus: PanOtpStatus.sent,
+
+              // 🔥 SHOW OTP SENT MESSAGE
+              snackbarMessage: otpResponse.message ?? 'OTP sent successfully.',
+
+              generalErrorMessage:
+                  otpResponse.message ?? 'OTP sent successfully.',
+            ),
+          );
+        },
+        failure: (error) {
+          emit(
+            state.copyWith(
+              otpStatus: PanOtpStatus.failed,
+              generalErrorMessage: error,
+              snackbarMessage: error, // 🔥
+            ),
+          );
+        },
+      );
+    },
+
+    failure: (error) {
+      emit(
+        state.copyWith(
+          panStatus: PanVerificationStatus.failed,
+          generalErrorMessage: error,
+          snackbarMessage: error, // 🔥 SHOW ERROR IN SNACKBAR
+        ),
+      );
+    },
+  );
+}
 
   Future<void> _onSendPanOtpPressed(
     SendPanOtpPressed event,

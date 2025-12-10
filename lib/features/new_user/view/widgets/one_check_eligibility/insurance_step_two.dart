@@ -12,14 +12,25 @@ class StepInsuranceUploadPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
- return WillPopScope(
+return WillPopScope(
   onWillPop: () async {
+    final bloc = context.read<EligibilityBloc>();
+    final state = bloc.state;
+
+    // 🚫 BLOCK BACK when loader is active
+    if (state.isUploadingUnit || state.isUploadingPolicy || state.isSubmittingInsurance) {
+      return false; // stops system back completely
+    }
+
+    // ✅ Custom back only when NOT uploading/submitting
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<EligibilityBloc>().add(JumpToPage(1));
+      bloc.add(JumpToPage(1));
     });
-    return false;
+
+    return false; // do not let system pop automatically
   },
   child: Scaffold(
+
     backgroundColor: AppColors.black,
     body: BlocConsumer<EligibilityBloc, EligibilityState>(
       listener: (context, state) {

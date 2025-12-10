@@ -17,10 +17,10 @@ import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/ste
 import 'package:las_app/helper_widgets/fetched_overlay.dart';
 import 'package:las_app/helper_widgets/fetching_overlay.dart';
 import 'package:percent_indicator/percent_indicator.dart';
+
 import '../bloc/eligibility_bloc.dart';
 
 class EligibilityScreen extends StatefulWidget {
-  
   final bool startWithMfFetch;
 
   const EligibilityScreen({super.key, this.startWithMfFetch = false});
@@ -29,12 +29,10 @@ class EligibilityScreen extends StatefulWidget {
   State<EligibilityScreen> createState() => _EligibilityScreenState();
 }
 
-
 class _EligibilityScreenState extends State<EligibilityScreen> {
   final PageController _pageController = PageController();
   PersistentBottomSheetController? _bottomSheetController;
   bool _isOverlayOpen = false;
-
 
   @override
   void dispose() {
@@ -43,7 +41,7 @@ class _EligibilityScreenState extends State<EligibilityScreen> {
   }
 
   void _showOverlay(BuildContext context, EligibilityOverlayType type) {
-    if (_isOverlayOpen) return; // prevent multiple opens
+    if (_isOverlayOpen) return;
 
     _isOverlayOpen = true;
 
@@ -52,7 +50,6 @@ class _EligibilityScreenState extends State<EligibilityScreen> {
 
       final scaffoldState = Scaffold.maybeOf(context);
       if (scaffoldState == null || !scaffoldState.mounted) {
-        debugPrint("⚠️ Scaffold not ready, skipping overlay");
         _isOverlayOpen = false;
         return;
       }
@@ -74,9 +71,7 @@ class _EligibilityScreenState extends State<EligibilityScreen> {
 
       _bottomSheetController?.closed.whenComplete(() {
         if (mounted) {
-          setState(() {
-            _isOverlayOpen = false;
-          });
+          setState(() => _isOverlayOpen = false);
         } else {
           _isOverlayOpen = false;
         }
@@ -84,7 +79,7 @@ class _EligibilityScreenState extends State<EligibilityScreen> {
     });
   }
 
-   @override
+  @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) {
@@ -95,12 +90,11 @@ class _EligibilityScreenState extends State<EligibilityScreen> {
         );
 
         if (widget.startWithMfFetch) {
-          // schedule immediately after creation so the bloc is ready
           Future.microtask(() {
             try {
               bloc.add(const StartFetchingFromLogin());
             } catch (e) {
-              print('Failed to dispatch StartFetchingFromLogin: $e');
+              debugPrint('Failed to dispatch StartFetchingFromLogin: $e');
             }
           });
         }
@@ -109,9 +103,12 @@ class _EligibilityScreenState extends State<EligibilityScreen> {
       },
       child: Scaffold(
         backgroundColor: AppColors.black,
+
+        // 🔥 FIX FOR YOUR ISSUE — keyboard won't push content up
+        resizeToAvoidBottomInset: true,
+
         body: BlocConsumer<EligibilityBloc, EligibilityState>(
           listener: (context, state) {
-            // animate page when bloc pageIndex changes
             if (state.pageIndex != (_pageController.page?.round() ?? 0)) {
               _pageController.animateToPage(
                 state.pageIndex,
@@ -120,7 +117,6 @@ class _EligibilityScreenState extends State<EligibilityScreen> {
               );
             }
 
-            // overlay handling
             if (state.currentOverlay != EligibilityOverlayType.none) {
               _showOverlay(context, state.currentOverlay);
             } else {
@@ -131,186 +127,170 @@ class _EligibilityScreenState extends State<EligibilityScreen> {
               }
             }
           },
-         builder: (context, state) {
-  Widget step1Page;
-  Widget step2Page;
 
-  if (state.formData.investmentType == InvestmentType.insurancePolicy) {
-    // Insurance flow
-    step1Page = const StepInsuranceDetailsPage();   // index 1
-    step2Page = const StepInsuranceUploadPage();    // index 2
-  } else if (state.formData.investmentType == InvestmentType.shares) {
-    // Shares flow
-    step1Page = const StepSharesDetailsPage();      // index 1
-    step2Page = Center(child: CText("Step 2.1"));   // TODO: replace with actual next step for shares
-  } else {
-    // Mutual fund (default) flow
-    step1Page = const Step1PanPage();               // index 1
-    step2Page = Center(child: CText("Step 2.1"));   // existing MF flow step
-  }
+          builder: (context, state) {
+            // ---------------- PAGE SELECTION ----------------
+            Widget step1Page;
+            Widget step2Page;
 
-  final List<Widget> allStepPages = [
-    const Step1InvestmentPage(), // index 0
+            if (state.formData.investmentType == InvestmentType.insurancePolicy) {
+              step1Page = const StepInsuranceDetailsPage();
+              step2Page = const StepInsuranceUploadPage();
+            } else if (state.formData.investmentType == InvestmentType.shares) {
+              step1Page = const StepSharesDetailsPage();
+              step2Page = Center(child: CText("Step 2.1"));
+            } else {
+              step1Page = const Step1PanPage();
+              step2Page = Center(child: CText("Step 2.1"));
+            }
 
-    step1Page,                   // index 1: depends on type
-    step2Page,                   // index 2: depends on type
+            final pages = [
+              const Step1InvestmentPage(),
+              step1Page,
+              step2Page,
+              Center(child: CText("Step 2.2")),
+              Center(child: CText("Step 3.1")),
+              Center(child: CText("Step 4.1")),
+            ];
 
-    Center(child: CText("Step 2.2")),  // index 3
-    Center(child: CText("Step 3.1")),  // index 4
-    Center(child: CText("Step 4.1")),  // index 5
-  ];
-
-  // 🔹 decide when to show the global CTA + footer
-  final bool isInsuranceFlow =
-      state.formData.investmentType == InvestmentType.insurancePolicy;
-
-  // hide on insurance pages 1 & 2
-  final bool hideGlobalCtaOnThisPage =
-      isInsuranceFlow && (state.pageIndex == 1 || state.pageIndex == 2);
-
-  return SafeArea(
-  child: Stack(
-    children: [
-      Column(
-        children: [
-          if (state.majorStep == 1) ...[
-            Gaps.hXl,
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
+            return SafeArea(
+              child: Stack(
                 children: [
-                  Image.asset('assets/images/sliQ.png', height: 50),
+                  Column(
+                    children: [
+                      if (state.majorStep == 1) ...[
+                        Gaps.hXl,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Row(
+                            children: [
+                              Image.asset('assets/images/sliQ.png', height: 50),
+                            ],
+                          ),
+                        ),
+                        Gaps.hXl,
+                        const Divider(
+                          thickness: 1.5,
+                          color: AppColors.bSecondaryColor,
+                        ),
+                      ],
+
+                      Gaps.hXl,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Row(
+                          children: [
+                            CircularPercentIndicator(
+                              radius: 35,
+                              lineWidth: 8,
+                              percent: state.majorStep / 4,
+                              center: CText(
+                                "${state.majorStep}/4",
+                                style: AppTypography.bodyWhite.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              progressColor: AppColors.bPrimaryColor,
+                              backgroundColor: AppColors.bSecondaryColor,
+                              circularStrokeCap: CircularStrokeCap.round,
+                            ),
+                            Gaps.wMd,
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CText(
+                                  'CheckEligibility'.tr,
+                                  style: AppTypography.h2.copyWith(
+                                    color: AppColors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Gaps.hXs,
+                                CText(
+                                  'NextLenderSelection'.tr,
+                                  style: AppTypography.body.copyWith(
+                                    color: AppColors.bSecondaryColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      Expanded(
+                        child: PageView(
+                          controller: _pageController,
+                          physics: const NeverScrollableScrollPhysics(),
+                          children: pages,
+                        ),
+                      ),
+
+                      if (state.pageIndex != 1) ...[
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                          child: CButton(
+                            text: state.isLoading
+                                ? 'Submitting'.tr
+                                : (state.majorStep == 4
+                                    ? 'Submit'.tr
+                                    : 'Confirm&Continue'.tr),
+                            onPressed: state.isLoading || state.isSubmittingInsurance
+                                ? null
+                                : () {
+                                    final isInsurance =
+                                        state.formData.investmentType ==
+                                            InvestmentType.insurancePolicy;
+
+                                    if (isInsurance && state.pageIndex == 2) {
+                                      context.read<EligibilityBloc>().add(SubmitInsuranceDetails());
+                                      return;
+                                    }
+
+                                    context.read<EligibilityBloc>().add(NextStepPressed());
+                                  },
+                            type: ButtonType.primaryWhite,
+                            suffixIcon: state.isLoading
+                                ? null
+                                : const Icon(Icons.arrow_forward, color: AppColors.black),
+                          ),
+                        ),
+
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 24),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CText(
+                                'Powered by',
+                                style: AppTypography.caption.copyWith(
+                                  color: AppColors.bSecondaryColor,
+                                ),
+                              ),
+                              Gaps.wXs,
+                              Image.asset(
+                                'assets/images/value_enable_logo.png',
+                                height: 20,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+
+                  if (state.isSubmittingInsurance)
+                    Container(
+                      color: Colors.black.withOpacity(0.6),
+                      child: const Center(
+                        child: CircularProgressIndicator(color: AppColors.bPrimaryColor),
+                      ),
+                    ),
                 ],
               ),
-            ),
-            Gaps.hXl,
-            const Divider(
-              thickness: 1.5,
-              color: AppColors.bSecondaryColor,
-            ),
-          ],
-
-          Gaps.hXl,
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Row(
-              children: [
-                CircularPercentIndicator(
-                  radius: 35.0,
-                  lineWidth: 8.0,
-                  percent: state.majorStep / 4.0,
-                  center: CText(
-                    "${state.majorStep}/4",
-                    style: AppTypography.bodyWhite.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  progressColor: AppColors.bPrimaryColor,
-                  backgroundColor: AppColors.bSecondaryColor,
-                  circularStrokeCap: CircularStrokeCap.round,
-                ),
-                Gaps.wMd,
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CText(
-                      'CheckEligibility'.tr,
-                      style: AppTypography.h2.copyWith(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Gaps.hXs,
-                    CText(
-                      'NextLenderSelection'.tr,
-                      style: AppTypography.body.copyWith(
-                        color: AppColors.bSecondaryColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              children: allStepPages,
-            ),
-          ),
-
-          if (state.pageIndex != 1) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 0),
-              child: CButton(
-                text: state.isLoading
-                    ? 'Submitting'.tr
-                    : (state.majorStep == 4 ? 'Submit'.tr : 'Confirm&Continue'.tr),
-                onPressed: state.isLoading || state.isSubmittingInsurance
-                    ? null
-                    : () {
-                        final inInsuranceFlow =
-                            state.formData.investmentType ==
-                                InvestmentType.insurancePolicy;
-
-                        if (inInsuranceFlow && state.pageIndex == 2) {
-                          print("🔥 SUBMIT INSURANCE CALLED");
-                          context.read<EligibilityBloc>().add(SubmitInsuranceDetails());
-                          return; 
-                        }
-
-                        context.read<EligibilityBloc>().add(NextStepPressed());
-                      },
-                type: ButtonType.primaryWhite,
-                suffixIcon: state.isLoading
-                    ? null
-                    : const Icon(
-                        Icons.arrow_forward,
-                        color: AppColors.black,
-                        size: 18,
-                      ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CText(
-                    'Powered by',
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.bSecondaryColor,
-                    ),
-                  ),
-                  Gaps.wXs,
-                  Image.asset(
-                    'assets/images/value_enable_logo.png',
-                    height: 20,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-
-      // 🔥 FULLSCREEN LOADER FOR INSURANCE SUBMIT
-      if (state.isSubmittingInsurance)
-        Container(
-          color: Colors.black.withOpacity(0.6),
-          child: const Center(
-            child: CircularProgressIndicator(
-              color: AppColors.bPrimaryColor,
-            ),
-          ),
-        ),
-    ],
-  ),
-);          },
+            );
+          },
         ),
       ),
     );

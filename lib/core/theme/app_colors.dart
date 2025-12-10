@@ -24,7 +24,7 @@ class AppColors {
       static const Color bPrimaryColor = Color(0xFFFF6600);
             static const Color borderPrimaryColor = Color(0xFFFF8D41);
 
-      static const Color bSecondaryColor=Color(0xFF333333);
+      static const Color bSecondaryColor=Color(0xFF4D4D4D);
   
   
   static const Color success = Color(0xFF13C27A);

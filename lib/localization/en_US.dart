@@ -69,7 +69,7 @@ final Map<String, String> enUS = {
   'Nolendersavailable': 'No lenders available.',
 
   'yourSelection': 'Your Selection',
-  'interestRate': 'Interest Rate',
+  'interestRate': 'ROI',
   'loanAmount': 'Loan Amount',
   'pledgeableMFs': 'Pledgeable MFs',
   'chooseFundsHint': 'Choose the Funds you wish to pledge, click to edit',

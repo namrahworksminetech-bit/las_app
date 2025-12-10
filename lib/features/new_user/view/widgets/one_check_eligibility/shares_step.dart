@@ -147,7 +147,7 @@ class _StepSharesDetailsPageState extends State<StepSharesDetailsPage> {
 
                       if (state.shareUploadPath != null)
                         CText(
-                          "Uploaded ✓ (${state.shareUploadPath})",
+                          "Uploaded ✓",
                           style: AppTypography.caption.copyWith(color: Colors.green),
                         ),
 

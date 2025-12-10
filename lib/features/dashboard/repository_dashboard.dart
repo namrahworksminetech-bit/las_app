@@ -73,6 +73,7 @@ class DashboardRepository {
     try {
       /// Get token from AppState (same as RtaRepository)
       final token = _appState.token;
+      final reqId = _appState.reqId;
 
       if (token == null || token.isEmpty) {
         throw Exception('Missing auth token');

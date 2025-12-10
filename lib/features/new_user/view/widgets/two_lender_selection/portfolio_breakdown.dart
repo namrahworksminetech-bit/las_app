@@ -121,19 +121,18 @@ class PortfolioBreakdownView extends StatelessWidget {
             value: formatCurrency.format(unapprovedFunds),
             amount: unapprovedFunds,
             onTap: () => onCategoryTapped('unapproved'),
-            showBorder: false,
+           
           ),
         ],
       ),
     );
   }
 Widget _buildBreakdownRow({
-    required BuildContext context,
+  required BuildContext context,
   required String title,
   required String value,
   required double amount,
   required VoidCallback onTap,
-  bool showBorder = true,
 }) {
   return InkWell(
     onTap: () {
@@ -143,56 +142,54 @@ Widget _buildBreakdownRow({
           "No funds available under $title",
           isError: true,
         );
-        return; // ❌ prevent navigation
+        return;
       }
-
-      onTap(); // ✅ navigate only when amount > 0
+      onTap();
     },
     child: Container(
-      padding: const EdgeInsets.symmetric(vertical: 16.0),
+      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        border: showBorder
-            ? const Border(
-                bottom: BorderSide(
-                  color: AppColors.bSecondaryColor,
-                  width: 0.5,
-                ),
-              )
-            : null,
+        color: AppColors.black,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: AppColors.bSecondaryColor.withOpacity(0.4),
+          width: 1,
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Flexible(
-            child: CText(title, style: AppTypography.bodyWhite),
+          CText(
+            title,
+            style: AppTypography.bodyWhite.copyWith(fontSize: 14),
           ),
-          Flexible(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: CText(
-                    value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.bodyWhite.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CText(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.bodyWhite.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
                 ),
-                Gaps.wXs,
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  color: AppColors.bSecondaryColor,
-                  size: 14,
-                ),
-              ],
-            ),
+              ),
+              Gaps.wSm,
+              const Icon(
+                Icons.arrow_forward_ios,
+                color: AppColors.bSecondaryColor,
+                size: 14,
+              ),
+            ],
           ),
         ],
       ),
     ),
   );
 }
+
 
 }
