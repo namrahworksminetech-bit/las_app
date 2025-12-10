@@ -26,8 +26,8 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   void initState() {
     super.initState();
 
-    /// Check pledge status on screen load
-    context.read<EligibilityBloc>().add(const CheckPledgeStatus());
+    /// Check pledge status on screen load with context
+    context.read<EligibilityBloc>().add(CheckPledgeStatus(context: context));
   }
   Future<bool> _showExitConfirmDialog() async {
   final res = await showDialog<bool>(
@@ -88,15 +88,19 @@ void _navigateHome() {
                 current.kycStepChecks.length > 1 && current.kycStepChecks[1];
             final isKycDone = current.currentKycStatus == 'kyc_done';
             final notTriggered = !current.hasTriggeredDigio;
+            
+            // Also check if WebView was just closed (kycUrl changed from non-null to null)
+            final webViewJustClosed = previous.kycUrl != null && current.kycUrl == null;
 
             debugPrint('🔍 Digio Listener Check:');
             debugPrint('  step0Done: $step0Done, step1Done: $step1Done');
             debugPrint('  isKycDone: $isKycDone, notTriggered: $notTriggered');
+            debugPrint('  webViewJustClosed: $webViewJustClosed');
 
             return step0Done && step1Done && isKycDone && notTriggered;
           },
           listener: (context, state) async {
-            debugPrint('🔔 kyc_done detected - triggering Digio SDK');
+            debugPrint('🔔 kyc_done detected - triggering Digio SDK automatically');
 
             await Future.delayed(const Duration(milliseconds: 500));
 
@@ -109,7 +113,7 @@ void _navigateHome() {
           },
         ),
 
-        /// 🌐 Listener 2: WebView controller - Opens/Closes WebView based on kycUrl changes
+        /// 🌐 Listener 3: WebView controller - Opens/Closes WebView based on kycUrl changes
         BlocListener<EligibilityBloc, EligibilityState>(
           listenWhen: (previous, current) => previous.kycUrl != current.kycUrl,
           listener: (context, state) async {
@@ -132,6 +136,8 @@ void _navigateHome() {
             }
           },
         ),
+        
+
       ],
     child: WillPopScope(
   onWillPop: () async {
@@ -224,9 +230,24 @@ void _navigateHome() {
                     builder: (context, state) {
                       // Show loader when initial loading or KYC API calling
                       if (state.isLoading || state.kycLoading) {
-                        return const Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.bPrimaryColor,
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const CircularProgressIndicator(
+                                color: AppColors.bPrimaryColor,
+                              ),
+                              const SizedBox(height: 16),
+                              CText(
+                                state.kycLoading && state.currentKycStatus == 'kyc_done'
+                                    ? 'Processing verification...\nPlease wait'
+                                    : 'Loading...',
+                                style: AppTypography.bodyWhite.copyWith(
+                                  fontSize: 14,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
                         );
                       }
