@@ -19,7 +19,7 @@ class LenderCard extends StatefulWidget {
   final String? lastSaveMessage;
   final ValueChanged<double> onAmountSaved;
   final VoidCallback onContinue;
-
+  final VoidCallback onEditDialog;
   const LenderCard({
     super.key,
     required this.lender,
@@ -31,6 +31,8 @@ class LenderCard extends StatefulWidget {
     required this.lastSaveMessage,
     required this.onAmountSaved,
     required this.onContinue,
+
+    required this.onEditDialog,
   });
 
   @override
@@ -230,9 +232,9 @@ class _LenderCardState extends State<LenderCard> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                  color: Colors.black, 
+                    color: Colors.black,
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: const Color(0xFF1A1A1A))
+                    border: Border.all(color: const Color(0xFF1A1A1A)),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: widget.lender.logoAsset.isNotEmpty
@@ -376,7 +378,8 @@ class _LenderCardState extends State<LenderCard> {
                                         ),
                                       ),
                                     ),
-                                    onSubmitted: (_) => _stopEditing(save: true),
+                                    onSubmitted: (_) =>
+                                        _stopEditing(save: true),
                                   ),
                                 ),
                               )
@@ -399,7 +402,7 @@ class _LenderCardState extends State<LenderCard> {
 
                 Flexible(
                   child: _buildDetailColumn(
-                    'Pledgeable MFs',
+                    'Total MFs',
                     '${widget.lender.pledgeableMFs ?? ''}',
                   ),
                 ),
@@ -417,14 +420,11 @@ class _LenderCardState extends State<LenderCard> {
                         children: [
                           Expanded(
                             child: CButton(
-                              text: _isEditing
-                                  ? 'Save Amount'
-                                  : 'Edit Loan Amount',
+                              text: "Edit Loan Amount",
                               onPressed: widget.isSavingLoan
                                   ? null
-                                  : (_isEditing
-                                        ? () => _stopEditing(save: true)
-                                        : _startEditing),
+                                  : widget.onEditDialog,
+
                               type: ButtonType.secondaryGrey,
                             ),
                           ),

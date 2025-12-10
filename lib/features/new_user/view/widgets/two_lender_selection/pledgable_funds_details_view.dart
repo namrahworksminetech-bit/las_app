@@ -35,40 +35,6 @@ class PledgeableFundsDetailView extends StatelessWidget {
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 8.0),
-          child: SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: onRefresh,
-              icon: isRefreshing
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.bSecondaryColor,
-                      ),
-                    )
-                  : const Icon(
-                      Icons.refresh,
-                      color: AppColors.bSecondaryColor,
-                      size: 20,
-                    ),
-              label: CText(
-                'refreshPortfolio'.tr,
-                style: AppTypography.bodySecondary,
-              ),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.bSecondaryColor),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-            ),
-          ),
-        ),
 
         // ✅ Handle empty or data state
         if (funds.isEmpty)

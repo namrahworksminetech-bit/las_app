@@ -396,33 +396,79 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
                                     );
                                   }
 
-                                  if (currentView ==
-                                          LenderSelectionView
-                                              .portfolioBreakdown ||
-                                      currentView ==
-                                          LenderSelectionView
-                                              .pledgeableDetail) {
-                                    return Align(
-                                      key: const ValueKey('breakdown_title'),
-                                      alignment: Alignment.centerLeft,
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(
-                                          top: 24.0,
-                                          bottom: 8.0,
-                                        ),
-                                        child: CText(
-                                          currentView ==
-                                                  LenderSelectionView
-                                                      .portfolioBreakdown
-                                              ? 'portfolioBreakdown'.tr
-                                              : 'portfolioBreakdownPledgeableFunds'
-                                                    .tr,
-                                          style: AppTypography.caption,
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                  return const SizedBox.shrink(
+                      if (currentView == LenderSelectionView.portfolioBreakdown ||
+    currentView == LenderSelectionView.pledgeableDetail ||
+    currentView == LenderSelectionView.nonPledgeableDetail) {
+  
+  // 💬 Determine title for each view
+  String title;
+
+  if (currentView == LenderSelectionView.portfolioBreakdown) {
+    title = 'portfolioBreakdown'.tr;
+  } 
+  else if (currentView == LenderSelectionView.pledgeableDetail) {
+    title = 'portfolioBreakdownPledgeableFunds'.tr;
+  }
+  else {
+    // 🌟 NEW: Non-pledgeable detail title
+    title = 'Portfolio Breakdown > Non-pledgeable Funds';
+  }
+
+  return Column(
+    key: const ValueKey('breakdown_title_section'),
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      
+      // 🔄 Refresh Portfolio button ABOVE title
+      SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: () => context
+              .read<EligibilityBloc>()
+              .add(RefreshPortfolioPressed()),
+          icon: state.isPortfolioRefreshing == true
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.bSecondaryColor,
+                  ),
+                )
+              : const Icon(
+                  Icons.refresh,
+                  color: AppColors.bSecondaryColor,
+                  size: 20,
+                ),
+          label: CText(
+            'refreshPortfolio'.tr,
+            style: AppTypography.bodySecondary,
+          ),
+          style: OutlinedButton.styleFrom(
+            side: const BorderSide(color: AppColors.bSecondaryColor),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+        ),
+      ),
+
+      const SizedBox(height: 16),
+
+      // 📌 Title BELOW refresh button
+      Padding(
+        padding: const EdgeInsets.only(bottom: 8.0),
+        child: CText(
+          title,
+          style: AppTypography.caption,
+        ),
+      ),
+    ],
+  );
+}
+
+            return const SizedBox.shrink(
                                     key: ValueKey('empty'),
                                   );
                                 }(),

@@ -59,39 +59,9 @@ class PortfolioBreakdownView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Refresh Button
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: onRefresh,
-              icon: isRefreshing
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.bSecondaryColor,
-                      ),
-                    )
-                  : const Icon(
-                      Icons.refresh,
-                      color: AppColors.bSecondaryColor,
-                      size: 20,
-                    ),
-              label: CText(
-                'refreshPortfolio'.tr,
-                style: AppTypography.bodySecondary,
-              ),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.bSecondaryColor),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-            ),
-          ),
+        
 
-          Gaps.hXl,
+        
 
           // Breakdown Rows
           _buildBreakdownRow(
