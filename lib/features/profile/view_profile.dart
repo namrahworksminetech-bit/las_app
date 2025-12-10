@@ -5,6 +5,7 @@ import 'package:las_app/core/app_state_provider.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/features/login/view/login_screen.dart';
+import 'package:las_app/features/profile/contact_us_page.dart';
 import 'package:las_app/features/profile/faq_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -227,19 +228,28 @@ Future<void> _loadStoredProfile() async {
   ),
 ),
 
-              Container(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Color(0x75565656))),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Contact Support', style: AppTypography.regularTxt),
-                    Ast.svg.ic_next.load(),
-                  ],
-                ),
-              ),
+            GestureDetector(
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ContactUsPage()),
+    );
+  },
+  child: Container(
+    padding: EdgeInsets.symmetric(vertical: 16),
+    decoration: BoxDecoration(
+      border: Border(bottom: BorderSide(color: Color(0x75565656))),
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text('Contact Support', style: AppTypography.regularTxt),
+        Ast.svg.ic_next.load(),
+      ],
+    ),
+  ),
+),
+
               // Container(
               //   padding: EdgeInsets.symmetric(vertical: 16),
               //   decoration: BoxDecoration(
@@ -303,17 +313,28 @@ Future<void> _loadStoredProfile() async {
       ],
     );
   }
+Widget profileIcon() {
+  // 1️⃣ Get name from state OR saved profile
+  String? name = GetIt.instance<AppStateProvider>().name ?? savedName;
 
-  Widget profileIcon() {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        color: AppColors.kPrimaryColor,
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: Text('H', style: AppTypography.regularTxt.copyWith(fontSize: 14)),
-    );
-  }
+  // 2️⃣ Extract first letter or fallback to 'G'
+  String firstLetter = (name != null && name.isNotEmpty)
+      ? name.trim()[0].toUpperCase()
+      : 'G';
+
+  return Container(
+    width: 48,
+    height: 48,
+    decoration: BoxDecoration(
+      color: AppColors.kPrimaryColor,
+      shape: BoxShape.circle,
+    ),
+    alignment: Alignment.center,
+    child: Text(
+      firstLetter,
+      style: AppTypography.regularTxt.copyWith(fontSize: 20),
+    ),
+  );
+}
+
 }
