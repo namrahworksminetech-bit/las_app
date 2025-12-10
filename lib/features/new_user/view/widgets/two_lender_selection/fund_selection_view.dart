@@ -227,15 +227,14 @@ class FundSelectionView extends StatelessWidget {
   }
 
   void _goBackToLenderSelection(BuildContext context) {
-  final bloc = context.read<EligibilityBloc>();
+    final bloc = context.read<EligibilityBloc>();
 
-  // update bloc state (pageIndex = 2)
-  bloc.add(const JumpToPage(2));
+    // update bloc state (pageIndex = 2)
+    bloc.add(const JumpToPage(2));
 
-  // pop back to previous screen (Lender Selection)
-  Navigator.of(context).pop();
-}
-
+    // pop back to previous screen (Lender Selection)
+    Navigator.of(context).pop();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -516,7 +515,8 @@ class FundSelectionView extends StatelessWidget {
                         BlocBuilder<EligibilityBloc, EligibilityState>(
                           buildWhen: (previous, current) =>
                               previous.selectedFundIds !=
-                              current.selectedFundIds,
+                              current.selectedFundIds ||
+    previous.pledgeableFunds != current.pledgeableFunds,
                           builder: (context, state) {
                             return ListView.builder(
                               shrinkWrap: true,
@@ -533,9 +533,18 @@ class FundSelectionView extends StatelessWidget {
                                   ),
                                   fund: fund,
                                   isSelected: isSelected,
-                                  onToggle: () => context
-                                      .read<EligibilityBloc>()
-                                      .add(ToggleFundSelection(fund.fundCode)),
+
+                                  onToggle: () {
+                                    context.read<EligibilityBloc>().add(
+                                      ToggleFundSelection(fund.fundCode),
+                                    );
+                                  },
+
+                                  onEditAmount: (newValue) {
+                                    context.read<EligibilityBloc>().add(
+                                      UpdateFundAmount(fund.fundCode, newValue),
+                                    );
+                                  },
                                 );
                               },
                             );
@@ -548,78 +557,78 @@ class FundSelectionView extends StatelessWidget {
               ),
 
               // --- Continue Button ---
-           Padding(
-  padding: const EdgeInsets.symmetric(
-    horizontal: 24.0,
-    vertical: 16.0,
-  ),
-  child: Column(
-    mainAxisSize: MainAxisSize.min,
-    children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24.0,
+                  vertical: 16.0,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    /// 🔥 Show Save Changes button ONLY when there are unsaved changes
+                    if (state.hasUnsavedFundChanges)
+                      CButton(
+                        text: "Save Changes",
+                        type: ButtonType.primaryWhite,
+                        onPressed: () {
+                          context.read<EligibilityBloc>().add(
+                            ConfirmFundSelection(),
+                          );
+                        },
+                      ),
 
-      /// 🔥 Show Save Changes button ONLY when there are unsaved changes
-      if (state.hasUnsavedFundChanges)
-        CButton(
-          text: "Save Changes",
-          type: ButtonType.primaryWhite,
-          onPressed: () {
-            context.read<EligibilityBloc>().add(ConfirmFundSelection());
-          },
-        ),
+                    if (state.hasUnsavedFundChanges) Gaps.hMd,
 
-      if (state.hasUnsavedFundChanges) Gaps.hMd,
+                    /// 🚀 Continue Button (NO confirm fund selection here)
+                    CButton(
+                      text: 'continueWith'.trParams({
+                        'lenderName': selectedLender.name,
+                      }),
+                      onPressed: () {
+                        // DIRECT NAVIGATION TO KYC
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => BlocProvider.value(
+                              value: eligibilityBloc,
+                              child: KycVerificationScreen(),
+                            ),
+                          ),
+                        );
+                      },
+                      type: ButtonType.primaryWhite,
+                      suffixIcon: const Icon(
+                        Icons.arrow_forward,
+                        color: AppColors.black,
+                        size: 18,
+                      ),
+                    ),
 
-      /// 🚀 Continue Button (NO confirm fund selection here)
-      CButton(
-        text: 'continueWith'.trParams({
-          'lenderName': selectedLender.name,
-        }),
-        onPressed: () {
-          // DIRECT NAVIGATION TO KYC
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => BlocProvider.value(
-                value: eligibilityBloc,
-                child: KycVerificationScreen(),
+                    Gaps.hSm,
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: CText(
+                            'Powered by',
+                            style: AppTypography.bodySecondary.copyWith(
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        Gaps.wSm,
+                        Flexible(
+                          child: Image.asset(
+                            'assets/images/value_enable_logo.png',
+                            height: 20,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
-        type: ButtonType.primaryWhite,
-        suffixIcon: const Icon(
-          Icons.arrow_forward,
-          color: AppColors.black,
-          size: 18,
-        ),
-      ),
-
-      Gaps.hSm,
-
-      Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(
-            child: CText(
-              'Powered by',
-              style: AppTypography.bodySecondary.copyWith(
-                fontSize: 12,
-              ),
-            ),
-          ),
-          Gaps.wSm,
-          Flexible(
-            child: Image.asset(
-              'assets/images/value_enable_logo.png',
-              height: 20,
-            ),
-          ),
-        ],
-      ),
-    ],
-  ),
-),
-
             ],
           );
         },

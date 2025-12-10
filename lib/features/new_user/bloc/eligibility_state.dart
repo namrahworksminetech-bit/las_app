@@ -202,8 +202,12 @@ this.pledgeOtp = '',
 this.pledgeOtpError,
 this.agreedToTerms = false,
 
+  this.lastEditedFundCode,
+  this.lastEditedFundAmount,
   });
   final bool agreedToTerms;
+  final String? lastEditedFundCode;
+final double? lastEditedFundAmount;
 
   final bool pledgeChecked;
 final String? pledgePhoneNumber;
@@ -431,8 +435,12 @@ bool? agreedToTerms,
     String? panEmailError,
     String? pledgeOtp,
 String? pledgeOtpError,
+  String? lastEditedFundCode,
+  double? lastEditedFundAmount,
   }) {
     return EligibilityState(
+         lastEditedFundCode: lastEditedFundCode ?? this.lastEditedFundCode,
+    lastEditedFundAmount: lastEditedFundAmount ?? this.lastEditedFundAmount,
       pledgeOtp: pledgeOtp ?? this.pledgeOtp,
 pledgeOtpError: pledgeOtpError ?? this.pledgeOtpError,
 agreedToTerms: agreedToTerms ?? this.agreedToTerms,
@@ -576,6 +584,7 @@ agreedToTerms: agreedToTerms ?? this.agreedToTerms,
     shareUploadPath,
     shareError,
     shareSuccess,
+    lastEditedFundCode, lastEditedFundAmount, 
 
     pledgeOtpSubmitting,
 pledgeChecked,

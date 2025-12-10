@@ -141,8 +141,31 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     on<ToggleOtpVisibility>(_onToggleOtpVisibility);
     on<PledgeOtpChanged>(_onPledgeOtpChanged);
     on<TermsAgreementToggled>(_onTermsAgreementToggled);
+    on<UpdateFundAmount>(_onUpdateFundAmount);
+
 
   }
+
+
+ void _onUpdateFundAmount(
+  UpdateFundAmount event,
+  Emitter<EligibilityState> emit,
+) {
+  final updatedFunds = state.pledgeableFunds.map((fund) {
+    if (fund.fundCode == event.fundCode) {
+      return fund.copyWith(updatedFundAmount: event.amount);
+    }
+    return fund;
+  }).toList();
+
+  emit(state.copyWith(
+    pledgeableFunds: updatedFunds,
+    lastEditedFundCode: event.fundCode,     // ⭐ store code
+    lastEditedFundAmount: event.amount,     // ⭐ store edited value
+    hasUnsavedFundChanges: true,
+  ));
+}
+
 void _onPledgeOtpChanged(PledgeOtpChanged event, Emitter<EligibilityState> emit) {
   emit(state.copyWith(
     pledgeOtp: event.otp,
@@ -1285,7 +1308,7 @@ Future<void> _onVerifyPanPressed(
       // helpers & results
       final List<String> isinAdd = [];
       final List<String> isinRemove = [];
-      final List<String> isinModify = []; // ALWAYS keep empty per backend rule
+      final List<String> isinModify = [];
       final List<String> skipped = [];
 
       PledgeableFund? findFund(String code) =>
@@ -1348,7 +1371,25 @@ Future<void> _onVerifyPanPressed(
       debugPrint(
         '📤 ISIN_REMOVE (${filteredIsinRemove.length}): $filteredIsinRemove',
       );
-      debugPrint('📤 ISIN_MODIFY (always empty): $isinModify');
+      // ⭐ BUILD ISIN_MODIFY LIST FOR EDITED FUND VALUES
+// ⭐ Only include the last edited fund
+if (state.lastEditedFundCode != null &&
+    state.lastEditedFundAmount != null) {
+
+  final fund = state.pledgeableFunds.firstWhereOrNull(
+      (f) => f.fundCode == state.lastEditedFundCode);
+
+  if (fund != null) {
+    final modifyEntry =
+        "${fund.fundCode}:${fund.folioNo}:${state.lastEditedFundAmount}";
+    isinModify.add(modifyEntry);
+
+    debugPrint("🔧 FINAL ISIN MODIFY ENTRY -> $modifyEntry");
+  }
+}
+
+
+debugPrint('📤 ISIN_MODIFY (${isinModify.length}): $isinModify');
       if (skipped.isNotEmpty) debugPrint('⚠️ Skipped entries: $skipped');
 
       // Determine loan_amount to send as nullable double:
@@ -1404,11 +1445,20 @@ Future<void> _onVerifyPanPressed(
               tag: '',
             );
           }).toList();
+// ⭐ Merge backend response with last edited fund's updated amount
+final mergedFunds = updatedData.pledgeableFunds.map((apiFund) {
+  if (apiFund.fundCode == state.lastEditedFundCode) {
+    return apiFund.copyWith(
+      updatedFundAmount: state.lastEditedFundAmount,
+    );
+  }
+  return apiFund;
+}).toList();
 
           emit(
             state.copyWith(
               mfDetailsResponse: updatedData,
-              pledgeableFunds: updatedData.pledgeableFunds,
+              pledgeableFunds: mergedFunds,
               lenders: updatedLenders,
               isLoading: false,
               hasUnsavedFundChanges: false,
@@ -1423,7 +1473,7 @@ Future<void> _onVerifyPanPressed(
         },
       );
     } catch (e, st) {
-      debugPrint('💥 Unexpected exception in _onConfirmFundSelection: $e\n$st');
+      debugPrint('Server down please try again in some time');
       emit(state.copyWith(isLoading: false, generalErrorMessage: e.toString()));
     }
   }

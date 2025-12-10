@@ -12,6 +12,7 @@ class PledgeableFund extends Equatable {
   final String schemeCode;
   final String folioNo;
   final String rtaName;
+ final double? updatedFundAmount;
 
   const PledgeableFund({
     required this.fundName,
@@ -25,6 +26,7 @@ class PledgeableFund extends Equatable {
     required this.schemeCode,
     required this.folioNo,
     required this.rtaName,
+    this.updatedFundAmount,
   });
 
   /// --- JSON Parsing Helpers ---
@@ -48,22 +50,23 @@ class PledgeableFund extends Equatable {
       schemeCode: json['schemeCode'] ?? '',
       folioNo: json['folioNo']?.toString() ?? '',
       rtaName: json['rtaName'] ?? '',
+      updatedFundAmount: null,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'fund_name': fundName,
-        'fund_value': fundValue,
-        'fund_code': fundCode,
-        'lienEligibleUnits': lienEligibleUnits,
-        'nav': nav,
-        'availableAmount': availableAmount,
-        'availableUnits': availableUnits,
-        'amcCode': amcCode,
-        'schemeCode': schemeCode,
-        'folioNo': folioNo,
-        'rtaName': rtaName,
-      };
+    'fund_name': fundName,
+    'fund_value': fundValue,
+    'fund_code': fundCode,
+    'lienEligibleUnits': lienEligibleUnits,
+    'nav': nav,
+    'availableAmount': availableAmount,
+    'availableUnits': availableUnits,
+    'amcCode': amcCode,
+    'schemeCode': schemeCode,
+    'folioNo': folioNo,
+    'rtaName': rtaName,
+  };
 
   /// --- Copy helper ---
   PledgeableFund copyWith({
@@ -78,6 +81,7 @@ class PledgeableFund extends Equatable {
     String? schemeCode,
     String? folioNo,
     String? rtaName,
+    double? updatedFundAmount,
   }) {
     return PledgeableFund(
       fundName: fundName ?? this.fundName,
@@ -91,35 +95,37 @@ class PledgeableFund extends Equatable {
       schemeCode: schemeCode ?? this.schemeCode,
       folioNo: folioNo ?? this.folioNo,
       rtaName: rtaName ?? this.rtaName,
+      updatedFundAmount: updatedFundAmount ?? this.updatedFundAmount,
     );
   }
 
   @override
   List<Object?> get props => [
-        fundName,
-        fundValue,
-        fundCode,
-        lienEligibleUnits,
-        nav,
-        availableAmount,
-        availableUnits,
-        amcCode,
-        schemeCode,
-        folioNo,
-        rtaName,
-      ];
+    fundName,
+    fundValue,
+    fundCode,
+    lienEligibleUnits,
+    nav,
+    availableAmount,
+    availableUnits,
+    amcCode,
+    schemeCode,
+    folioNo,
+    rtaName,
+    updatedFundAmount,
+  ];
 
-      factory PledgeableFund.empty() => const PledgeableFund(
-        fundName: '',
-        fundValue: 0.0,
-        fundCode: '',
-        lienEligibleUnits: 0.0,
-        nav: 0.0,
-        availableAmount: 0.0,
-        availableUnits: 0.0,
-        amcCode: '',
-        schemeCode: '',
-        folioNo: '',
-        rtaName: '',
-      );
+  factory PledgeableFund.empty() => const PledgeableFund(
+    fundName: '',
+    fundValue: 0.0,
+    fundCode: '',
+    lienEligibleUnits: 0.0,
+    nav: 0.0,
+    availableAmount: 0.0,
+    availableUnits: 0.0,
+    amcCode: '',
+    schemeCode: '',
+    folioNo: '',
+    rtaName: '',
+  );
 }

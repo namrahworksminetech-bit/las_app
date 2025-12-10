@@ -217,6 +217,16 @@ class ConfirmFundSelection extends EligibilityEvent {
   const ConfirmFundSelection();
 }
 
+class UpdateFundAmount extends EligibilityEvent {
+  final String fundCode;
+  final double amount;
+
+  const UpdateFundAmount(this.fundCode, this.amount);
+
+  @override
+  List<Object?> get props => [fundCode, amount];
+}
+
 class PanEmailUpdated extends EligibilityEvent {
   final String email;
   PanEmailUpdated(this.email);
