@@ -8,6 +8,7 @@ import 'package:las_app/core/app_state_provider.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
+import 'package:las_app/features/home/view_home.dart';
 import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
 import 'package:las_app/common_widgets/webview_screen.dart';
 import 'package:las_app/features/new_user/view/widgets/four_pledge_funds/pledge_funds_otp_screen.dart';
@@ -28,6 +29,38 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     /// Check pledge status on screen load
     context.read<EligibilityBloc>().add(const CheckPledgeStatus());
   }
+  Future<bool> _showExitConfirmDialog() async {
+  final res = await showDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (ctx) {
+      return AlertDialog(
+        title: const Text('Exit to Home?'),
+        content: const Text(
+            'Are you sure you want to leave this flow and go back to the home screen?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Confirm'),
+          ),
+        ],
+      );
+    },
+  );
+  return res ?? false;
+}
+
+void _navigateHome() {
+  Navigator.of(context).pushAndRemoveUntil(
+    MaterialPageRoute(builder: (_) => const Home()),
+    (route) => false,
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -100,7 +133,15 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
           },
         ),
       ],
-      child: Scaffold(
+    child: WillPopScope(
+  onWillPop: () async {
+    final confirm = await _showExitConfirmDialog();
+    if (confirm) {
+      _navigateHome();
+    }
+    return false; // Prevent automatic pop
+  },
+  child: Scaffold(
         backgroundColor: AppColors.black,
         body: SafeArea(
           child: Padding(
@@ -147,11 +188,11 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                 Gaps.hMd,
 
                 GestureDetector(
-                  // onTap: () {
-                  //   context.read<EligibilityBloc>().add(
-                  //     ExitKycScreen(context: context),
-                  //   );
-                  // },
+                  onTap: () async {
+  final confirm = await _showExitConfirmDialog();
+  if (confirm) _navigateHome();
+},
+
                   child: Row(
                     children: [
                       const Icon(
@@ -376,6 +417,6 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
           ),
         ),
       ),
-    );
+     ), );
   }
 }

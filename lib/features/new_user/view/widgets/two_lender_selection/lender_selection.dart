@@ -19,8 +19,6 @@ import 'package:las_app/features/new_user/view/widgets/two_lender_selection/lend
 import 'package:las_app/features/new_user/view/widgets/two_lender_selection/pledgable_funds_details_view.dart';
 import 'package:las_app/features/new_user/view/widgets/two_lender_selection/portfolio_breakdown.dart';
 
-
-
 class LenderSelectionScreen extends StatefulWidget {
   const LenderSelectionScreen({super.key});
 
@@ -30,7 +28,7 @@ class LenderSelectionScreen extends StatefulWidget {
 
 class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
   DateTime? lastBackPress;
-  
+
   Future<bool> _showExitConfirmDialog() async {
     final res = await showDialog<bool>(
       context: context,
@@ -39,7 +37,8 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
         return AlertDialog(
           title: const Text('Exit to Home?'),
           content: const Text(
-              'Are you sure you want to leave this flow and go back to the home screen?'),
+            'Are you sure you want to leave this flow and go back to the home screen?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
@@ -81,36 +80,44 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
     }
 
     return WillPopScope(
-  onWillPop: () async {
-  final bloc = context.read<EligibilityBloc>();
-  final view = bloc.state.lenderSelectionView;
+      onWillPop: () async {
+        final bloc = context.read<EligibilityBloc>();
+        final view = bloc.state.lenderSelectionView;
 
-  // CASE 1: In Fund Selection → go back to Lender List
-  if (view == LenderSelectionView.fundSelection) {
-    bloc.add(const SetLenderSelectionView(LenderSelectionView.lenderList));
-    return false;
-  }
+        // CASE 1: In Fund Selection → go back to Lender List
+        if (view == LenderSelectionView.fundSelection) {
+          bloc.add(
+            const SetLenderSelectionView(LenderSelectionView.lenderList),
+          );
+          return false;
+        }
 
-  // CASE 2: In Breakdown or Pledgeable → go back to Lender List
+        if (view == LenderSelectionView.pledgeableDetail ||
+            view == LenderSelectionView.nonPledgeableDetail ||
+            view == LenderSelectionView.dematDetail) {
+          bloc.add(
+            const SetLenderSelectionView(
+              LenderSelectionView.portfolioBreakdown,
+            ),
+          );
+          return false;
+        }
 
-if (view == LenderSelectionView.portfolioBreakdown ||
-    view == LenderSelectionView.pledgeableDetail ||
-    view == LenderSelectionView.nonPledgeableDetail ||
-    view == LenderSelectionView.dematDetail) {
+        if (view == LenderSelectionView.portfolioBreakdown) {
+          bloc.add(
+            const SetLenderSelectionView(LenderSelectionView.lenderList),
+          );
+          return false;
+        }
 
-  bloc.add(const SetLenderSelectionView(LenderSelectionView.lenderList));
-  return false;
-}
+        // CASE 3: Already in lender list → show exit dialog
+        final confirm = await _showExitConfirmDialog();
+        if (confirm) {
+          _navigateToDashboard();
+        }
 
-
-  // CASE 3: Already in lender list → show exit dialog
-  final confirm = await _showExitConfirmDialog();
-  if (confirm) {
-    _navigateToDashboard();
-  }
-
-  return false;
-},
+        return false;
+      },
       child: Scaffold(
         backgroundColor: AppColors.black,
         body: SafeArea(
@@ -126,13 +133,15 @@ if (view == LenderSelectionView.portfolioBreakdown ||
               }
             },
             builder: (context, state) {
-            final bool showFullHeader =
-      state.lenderSelectionView == LenderSelectionView.lenderList ||
-      state.lenderSelectionView == LenderSelectionView.portfolioBreakdown ||
-      state.lenderSelectionView == LenderSelectionView.pledgeableDetail ||
-      state.lenderSelectionView == LenderSelectionView.nonPledgeableDetail ||
-      state.lenderSelectionView == LenderSelectionView.dematDetail;
-
+              final bool showFullHeader =
+                  state.lenderSelectionView == LenderSelectionView.lenderList ||
+                  state.lenderSelectionView ==
+                      LenderSelectionView.portfolioBreakdown ||
+                  state.lenderSelectionView ==
+                      LenderSelectionView.pledgeableDetail ||
+                  state.lenderSelectionView ==
+                      LenderSelectionView.nonPledgeableDetail ||
+                  state.lenderSelectionView == LenderSelectionView.dematDetail;
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,11 +191,15 @@ if (view == LenderSelectionView.portfolioBreakdown ||
                         ),
                         Gaps.hXl,
                         const Divider(
-                            thickness: 1.5, color: AppColors.bSecondaryColor),
+                          thickness: 1.5,
+                          color: AppColors.bSecondaryColor,
+                        ),
                         Gaps.hMd,
                         Padding(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 24.0, vertical: 16.0),
+                            horizontal: 24.0,
+                            vertical: 16.0,
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
@@ -196,29 +209,48 @@ if (view == LenderSelectionView.portfolioBreakdown ||
                                 children: [
                                   // Robust Go Back:
                                   GestureDetector(
-                                  onTap: () {
-  final bloc = context.read<EligibilityBloc>();
-  final view = bloc.state.lenderSelectionView;
+                                    onTap: () {
+                                      final bloc = context
+                                          .read<EligibilityBloc>();
+                                      final view =
+                                          bloc.state.lenderSelectionView;
 
-  // CASE 1: In Fund Selection → back to lender list
-  if (view == LenderSelectionView.fundSelection) {
-    bloc.add(const SetLenderSelectionView(LenderSelectionView.lenderList));
-    return;
-  }
+                                      // CASE 1: In Fund Selection → back to lender list
+                                      if (view ==
+                                          LenderSelectionView.fundSelection || view ==
+                                              LenderSelectionView
+                                                  .portfolioBreakdown ) {
+                                        bloc.add(
+                                          const SetLenderSelectionView(
+                                            LenderSelectionView.lenderList,
+                                          ),
+                                        );
+                                        return;
+                                      }
 
-  // CASE 2: In Breakdown / Pledgeable → back to lender list
-  if (view == LenderSelectionView.portfolioBreakdown ||
-      view == LenderSelectionView.pledgeableDetail ||
-      view == LenderSelectionView.nonPledgeableDetail || view == LenderSelectionView.dematDetail) {
-    bloc.add(const SetLenderSelectionView(LenderSelectionView.lenderList));
-    return;
-  }
+                                      // CASE 2: In Breakdown / Pledgeable → back to lender list
+                                      if (
+                                          view ==
+                                              LenderSelectionView
+                                                  .pledgeableDetail ||
+                                          view ==
+                                              LenderSelectionView
+                                                  .nonPledgeableDetail ||
+                                          view ==
+                                              LenderSelectionView.dematDetail) {
+                                        bloc.add(
+                                          const SetLenderSelectionView(
+                                            LenderSelectionView.portfolioBreakdown,
+                                          ),
+                                        );
+                                        return;
+                                      }
 
-  // CASE 3: Already at Lender List → ask to exit
-  _showExitConfirmDialog().then((confirm) {
-    if (confirm) _navigateToDashboard();
-  });
-},
+                                      // CASE 3: Already at Lender List → ask to exit
+                                      _showExitConfirmDialog().then((confirm) {
+                                        if (confirm) _navigateToDashboard();
+                                      });
+                                    },
 
                                     child: Row(
                                       children: [
@@ -232,9 +264,9 @@ if (view == LenderSelectionView.portfolioBreakdown ||
                                           'Go Back',
                                           style: AppTypography.bodyWhite
                                               .copyWith(
-                                            decoration:
-                                                TextDecoration.underline,
-                                          ),
+                                                decoration:
+                                                    TextDecoration.underline,
+                                              ),
                                         ),
                                       ],
                                     ),
@@ -244,7 +276,8 @@ if (view == LenderSelectionView.portfolioBreakdown ||
                                     text: TextSpan(
                                       children: [
                                         TextSpan(
-                                          text: (state.lenderSelectionView ==
+                                          text:
+                                              (state.lenderSelectionView ==
                                                       LenderSelectionView
                                                           .portfolioBreakdown ||
                                                   state.lenderSelectionView ==
@@ -252,12 +285,13 @@ if (view == LenderSelectionView.portfolioBreakdown ||
                                                           .pledgeableDetail)
                                               ? 'viewLenders'.tr
                                               : 'viewYourMfDetails'.tr,
-                                          style:
-                                              AppTypography.bodyWhite.copyWith(
-                                            decoration:
-                                                TextDecoration.underline,
-                                            decorationColor: AppColors.white,
-                                          ),
+                                          style: AppTypography.bodyWhite
+                                              .copyWith(
+                                                decoration:
+                                                    TextDecoration.underline,
+                                                decorationColor:
+                                                    AppColors.white,
+                                              ),
                                           recognizer: TapGestureRecognizer()
                                             ..onTap = () {
                                               // safe add of toggle event
@@ -271,7 +305,8 @@ if (view == LenderSelectionView.portfolioBreakdown ||
                                             color: AppColors.white,
                                             size: 12,
                                           ),
-                                          alignment: PlaceholderAlignment.middle,
+                                          alignment:
+                                              PlaceholderAlignment.middle,
                                         ),
                                       ],
                                     ),
@@ -280,26 +315,28 @@ if (view == LenderSelectionView.portfolioBreakdown ||
                               ),
                               if (showFullHeader) ...[
                                 Gaps.hXl,
-                                CText('eligibleCreditLimit'.tr,
-                                    style: AppTypography.bodyWhite),
+                                CText(
+                                  'eligibleCreditLimit'.tr,
+                                  style: AppTypography.bodyWhite,
+                                ),
                                 Gaps.hSm,
                                 Builder(
                                   builder: (_) {
-                                    final totalPledgeable = state
-                                            .mfDetailsResponse
-                                            ?.pledgeableFunds
+                                    final totalPledgeable =
+                                        state.mfDetailsResponse?.pledgeableFunds
                                             .fold<double>(
-                                                0,
-                                                (sum, fund) =>
-                                                    sum +
-                                                    (fund.availableAmount ??
-                                                        0)) ??
+                                              0,
+                                              (sum, fund) =>
+                                                  sum +
+                                                  (fund.availableAmount ?? 0),
+                                            ) ??
                                         0.0;
 
                                     return CText(
                                       formatCurrency.format(totalPledgeable),
                                       style: AppTypography.h1.copyWith(
-                                          color: AppColors.bPrimaryColor),
+                                        color: AppColors.bPrimaryColor,
+                                      ),
                                     );
                                   },
                                 ),
@@ -307,37 +344,38 @@ if (view == LenderSelectionView.portfolioBreakdown ||
                                 CText(
                                   'totalPortfolioValue'.trParams({
                                     'value': formatCurrency.format(
-                                        state.mfDetailsResponse
-                                                ?.eligiblePortfolio ??
-                                            0),
+                                      state
+                                              .mfDetailsResponse
+                                              ?.eligiblePortfolio ??
+                                          0,
+                                    ),
                                   }),
                                   style: AppTypography.caption,
                                 ),
                                 Gaps.hXl,
                               ],
                               AnimatedSwitcher(
-                                duration:
-                                    const Duration(milliseconds: 300),
-                                transitionBuilder:
-                                    (child, animation) =>
-                                        FadeTransition(
-                                            opacity: animation,
-                                            child: child),
+                                duration: const Duration(milliseconds: 300),
+                                transitionBuilder: (child, animation) =>
+                                    FadeTransition(
+                                      opacity: animation,
+                                      child: child,
+                                    ),
                                 child: () {
                                   final currentView = state.lenderSelectionView;
                                   if (currentView ==
                                       LenderSelectionView.lenderList) {
                                     return Container(
                                       key: const ValueKey('info_box'),
-                                      margin:
-                                          const EdgeInsets.only(top: 24.0),
+                                      margin: const EdgeInsets.only(top: 24.0),
                                       width: double.infinity,
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 16.0, vertical: 18.0),
+                                        horizontal: 16.0,
+                                        vertical: 18.0,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: const Color(0xFF1F2937),
-                                        borderRadius:
-                                            BorderRadius.circular(8),
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Row(
                                         children: [
@@ -350,8 +388,7 @@ if (view == LenderSelectionView.portfolioBreakdown ||
                                           Expanded(
                                             child: CText(
                                               'selectLenderInfo'.tr,
-                                              style:
-                                                  AppTypography.bodyWhite,
+                                              style: AppTypography.bodyWhite,
                                             ),
                                           ),
                                         ],
@@ -359,33 +396,81 @@ if (view == LenderSelectionView.portfolioBreakdown ||
                                     );
                                   }
 
-                                  if (currentView ==
-                                          LenderSelectionView
-                                              .portfolioBreakdown ||
-                                      currentView ==
-                                          LenderSelectionView
-                                              .pledgeableDetail) {
-                                    return Align(
-                                      key:
-                                          const ValueKey('breakdown_title'),
-                                      alignment: Alignment.centerLeft,
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(
-                                            top: 24.0, bottom: 8.0),
-                                        child: CText(
-                                          currentView ==
-                                                  LenderSelectionView
-                                                      .portfolioBreakdown
-                                              ? 'portfolioBreakdown'.tr
-                                              : 'portfolioBreakdownPledgeableFunds'
-                                                  .tr,
-                                          style: AppTypography.caption,
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                  return const SizedBox.shrink(
-                                      key: ValueKey('empty'));
+                      if (currentView == LenderSelectionView.portfolioBreakdown ||
+    currentView == LenderSelectionView.pledgeableDetail ||
+    currentView == LenderSelectionView.nonPledgeableDetail) {
+  
+  // 💬 Determine title for each view
+  String title;
+
+  if (currentView == LenderSelectionView.portfolioBreakdown) {
+    title = 'portfolioBreakdown'.tr;
+  } 
+  else if (currentView == LenderSelectionView.pledgeableDetail) {
+    title = 'portfolioBreakdownPledgeableFunds'.tr;
+  }
+  else {
+    // 🌟 NEW: Non-pledgeable detail title
+    title = 'Portfolio Breakdown > Non-pledgeable Funds';
+  }
+
+  return Column(
+    key: const ValueKey('breakdown_title_section'),
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      
+      // 🔄 Refresh Portfolio button ABOVE title
+      SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: () => context
+              .read<EligibilityBloc>()
+              .add(RefreshPortfolioPressed()),
+          icon: state.isPortfolioRefreshing == true
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.bSecondaryColor,
+                  ),
+                )
+              : const Icon(
+                  Icons.refresh,
+                  color: AppColors.bSecondaryColor,
+                  size: 20,
+                ),
+          label: CText(
+            'refreshPortfolio'.tr,
+            style: AppTypography.bodySecondary,
+          ),
+          style: OutlinedButton.styleFrom(
+            side: const BorderSide(color: AppColors.bSecondaryColor),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+        ),
+      ),
+
+      const SizedBox(height: 16),
+
+      // 📌 Title BELOW refresh button
+      Padding(
+        padding: const EdgeInsets.only(bottom: 8.0),
+        child: CText(
+          title,
+          style: AppTypography.caption,
+        ),
+      ),
+    ],
+  );
+}
+
+            return const SizedBox.shrink(
+                                    key: ValueKey('empty'),
+                                  );
                                 }(),
                               ),
                             ],
@@ -398,17 +483,22 @@ if (view == LenderSelectionView.portfolioBreakdown ||
                     child: AnimatedSwitcher(
                       duration: const Duration(milliseconds: 300),
                       transitionBuilder: (child, animation) {
-                        final offsetAnimation = Tween<Offset>(
-                          begin: const Offset(0.0, 0.1),
-                          end: Offset.zero,
-                        ).animate(CurvedAnimation(
-                          parent: animation,
-                          curve: Curves.easeInOut,
-                        ));
+                        final offsetAnimation =
+                            Tween<Offset>(
+                              begin: const Offset(0.0, 0.1),
+                              end: Offset.zero,
+                            ).animate(
+                              CurvedAnimation(
+                                parent: animation,
+                                curve: Curves.easeInOut,
+                              ),
+                            );
                         return SlideTransition(
                           position: offsetAnimation,
-                          child:
-                              FadeTransition(opacity: animation, child: child),
+                          child: FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          ),
                         );
                       },
                       child: _buildCurrentView(context, state),
@@ -423,107 +513,108 @@ if (view == LenderSelectionView.portfolioBreakdown ||
     );
   }
 
- Widget _buildCurrentView(BuildContext context, EligibilityState state) {
-  Widget _noDataView({required bool isLoading}) {
-    if (isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(AppColors.bPrimaryColor),
+  Widget _buildCurrentView(BuildContext context, EligibilityState state) {
+    Widget _noDataView({required bool isLoading}) {
+      if (isLoading) {
+        return const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.bPrimaryColor),
+          ),
+        );
+      }
+
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              "No details available. Please try again later.",
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () {
+                context.read<EligibilityBloc>().add(RefreshPortfolioPressed());
+              },
+              icon: const Icon(Icons.refresh, color: Colors.white, size: 18),
+              label: const Text("Retry", style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.bPrimaryColor,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ],
         ),
       );
     }
 
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text(
-            "No details available. Please try again later.",
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () {
-              context.read<EligibilityBloc>().add(RefreshPortfolioPressed());
-            },
-            icon: const Icon(Icons.refresh, color: Colors.white, size: 18),
-            label: const Text("Retry", style: TextStyle(color: Colors.white)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.bPrimaryColor,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    switch (state.lenderSelectionView) {
+      case LenderSelectionView.lenderList:
+        return const LenderListView(key: ValueKey('lender_list'));
+
+      case LenderSelectionView.portfolioBreakdown:
+        if (state.mfDetailsResponse == null) {
+          return _noDataView(isLoading: state.isLoading);
+        }
+        return PortfolioBreakdownView(
+          key: const ValueKey('breakdown_view'),
+          mfDetailsResponse: state.mfDetailsResponse!,
+          onCategoryTapped: (categoryId) {
+            context.read<EligibilityBloc>().add(
+              BreakdownCategoryTapped(categoryId),
+            );
+          },
+          onRefresh: () =>
+              context.read<EligibilityBloc>().add(RefreshPortfolioPressed()),
+        );
+
+      case LenderSelectionView.pledgeableDetail:
+        if (state.mfDetailsResponse == null ||
+            state.mfDetailsResponse?.pledgeableFunds.isEmpty == true) {
+          return _noDataView(isLoading: state.isLoading);
+        }
+        return PledgeableFundsDetailView(
+          key: const ValueKey('pledgeable_detail_view'),
+          onRefresh: () =>
+              context.read<EligibilityBloc>().add(RefreshPortfolioPressed()),
+        );
+
+
+      case LenderSelectionView.nonPledgeableDetail:
+        if (state.mfDetailsResponse == null ||
+            state.mfDetailsResponse!.nonPledgeableFunds.isEmpty) {
+          return _noDataView(isLoading: state.isLoading);
+        }
+        return NonPledgeableFundsDetailView(
+          key: const ValueKey('nonpledgeable_detail_view'),
+          onRefresh: () =>
+              context.read<EligibilityBloc>().add(RefreshPortfolioPressed()),
+        );
+
+      /// 🚀 NEW — DEMAT FUNDS VIEW
+      case LenderSelectionView.dematDetail:
+        if (state.mfDetailsResponse == null ||
+            state.mfDetailsResponse!.dematFunds.isEmpty) {
+          return _noDataView(isLoading: state.isLoading);
+        }
+        return DematFundsDetailView(
+          key: const ValueKey('demat_detail_view'),
+          onRefresh: () =>
+              context.read<EligibilityBloc>().add(RefreshPortfolioPressed()),
+        );
+
+      case LenderSelectionView.fundSelection:
+        return const FundSelectionView(key: ValueKey('fund_selection_view'));
+
+      default:
+        return const LenderListView(key: ValueKey('lender_list'));
+    }
   }
-
-  switch (state.lenderSelectionView) {
-
-    case LenderSelectionView.lenderList:
-      return const LenderListView(key: ValueKey('lender_list'));
-
-    case LenderSelectionView.portfolioBreakdown:
-      if (state.mfDetailsResponse == null) {
-        return _noDataView(isLoading: state.isLoading);
-      }
-      return PortfolioBreakdownView(
-        key: const ValueKey('breakdown_view'),
-        mfDetailsResponse: state.mfDetailsResponse!,
-        onCategoryTapped: (categoryId) {
-          context.read<EligibilityBloc>().add(
-            BreakdownCategoryTapped(categoryId)
-          );
-        },
-        onRefresh: () =>
-            context.read<EligibilityBloc>().add(RefreshPortfolioPressed()),
-      );
-
-    case LenderSelectionView.pledgeableDetail:
-      if (state.mfDetailsResponse == null ||
-          state.mfDetailsResponse?.pledgeableFunds.isEmpty == true) {
-        return _noDataView(isLoading: state.isLoading);
-      }
-      return PledgeableFundsDetailView(
-        key: const ValueKey('pledgeable_detail_view'),
-        onRefresh: () =>
-            context.read<EligibilityBloc>().add(RefreshPortfolioPressed()),
-      );
-
-    /// 🚀 NEW — NON-PLEDGEABLE FUNDS VIEW
-    case LenderSelectionView.nonPledgeableDetail:
-      if (state.mfDetailsResponse == null ||
-          state.mfDetailsResponse!.nonPledgeableFunds.isEmpty) {
-        return _noDataView(isLoading: state.isLoading);
-      }
-      return NonPledgeableFundsDetailView(
-        key: const ValueKey('nonpledgeable_detail_view'),
-        onRefresh: () =>
-            context.read<EligibilityBloc>().add(RefreshPortfolioPressed()),
-      );
-
-    /// 🚀 NEW — DEMAT FUNDS VIEW
-    case LenderSelectionView.dematDetail:
-      if (state.mfDetailsResponse == null ||
-          state.mfDetailsResponse!.dematFunds.isEmpty) {
-        return _noDataView(isLoading: state.isLoading);
-      }
-      return DematFundsDetailView(
-        key: const ValueKey('demat_detail_view'),
-        onRefresh: () =>
-            context.read<EligibilityBloc>().add(RefreshPortfolioPressed()),
-      );
-
-    case LenderSelectionView.fundSelection:
-      return const FundSelectionView(key: ValueKey('fund_selection_view'));
-
-    default:
-      return const LenderListView(key: ValueKey('lender_list'));
-  }
-}
-
 }

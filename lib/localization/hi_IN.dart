@@ -71,7 +71,7 @@ final Map<String, String> hiIN = {
   'Nolendersavailable': 'कोई ऋणदाता उपलब्ध नहीं है।',
 
   'yourSelection': 'आपका चयन',
-  'interestRate': 'ब्याज दर',
+  'interestRate': 'ब्याज',
   'loanAmount': 'ऋण राशि',
   'pledgeableMFs': 'गिरवी रखने योग्य एमएफ',
   'chooseFundsHint':

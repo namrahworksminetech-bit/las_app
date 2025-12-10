@@ -14,7 +14,7 @@ class LoginRepository {
     try {
       final response = await _apiClient.post(
         '/customer/send-otp',
-        data: {'phone_number': phoneNumber},
+        data: {'phone_number': '+91$phoneNumber'},
         options: Options(
           sendTimeout: const Duration(minutes: 1),
           receiveTimeout: const Duration(minutes: 1),

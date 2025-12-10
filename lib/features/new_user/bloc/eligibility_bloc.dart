@@ -139,8 +139,47 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     on<FetchPledgePhoneNumber>(_onFetchPledgePhoneNumber);
     on<SubmitPledgeOtp>(_onSubmitPledgeOtp);
     on<ToggleOtpVisibility>(_onToggleOtpVisibility);
+    on<PledgeOtpChanged>(_onPledgeOtpChanged);
+    on<TermsAgreementToggled>(_onTermsAgreementToggled);
+    on<UpdateFundAmount>(_onUpdateFundAmount);
+
+
   }
-  
+
+
+
+ void _onUpdateFundAmount(
+  UpdateFundAmount event,
+  Emitter<EligibilityState> emit,
+) {
+  final updatedFunds = state.pledgeableFunds.map((fund) {
+    if (fund.fundCode == event.fundCode) {
+      return fund.copyWith(updatedFundAmount: event.amount);
+    }
+    return fund;
+  }).toList();
+
+  emit(state.copyWith(
+    pledgeableFunds: updatedFunds,
+    lastEditedFundCode: event.fundCode,     // ⭐ store code
+    lastEditedFundAmount: event.amount,     // ⭐ store edited value
+    hasUnsavedFundChanges: true,
+  ));
+}
+
+void _onPledgeOtpChanged(PledgeOtpChanged event, Emitter<EligibilityState> emit) {
+  emit(state.copyWith(
+    pledgeOtp: event.otp,
+    pledgeOtpError: null,
+  ));
+}
+
+void _onTermsAgreementToggled(
+  TermsAgreementToggled event,
+  Emitter<EligibilityState> emit,
+) {
+  emit(state.copyWith(agreedToTerms: event.agreed));
+}
   void _onToggleOtpVisibility(
     ToggleOtpVisibility event,
     Emitter<EligibilityState> emit,
@@ -152,9 +191,9 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     PanEmailUpdated event,
     Emitter<EligibilityState> emit,
   ) {
+
     final email = event.email.trim();
     String? error;
-
     final emailRegex = RegExp(r'^[\w\.\-]+@[\w\-]+\.[a-zA-Z]{2,}$');
 
     if (email.isEmpty) {
@@ -188,65 +227,60 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     emit(state.copyWith(shouldNavigateToOtp: true));
   }
 
-  Future<void> _onFetchPledgePhoneNumber(
-    FetchPledgePhoneNumber event,
-    Emitter<EligibilityState> emit,
-  ) async {
-    final reqId = getIt<AppStateProvider>().reqId;
-    final token = getIt<AppStateProvider>().token;
+Future<void> _onFetchPledgePhoneNumber(
+  FetchPledgePhoneNumber event,
+  Emitter<EligibilityState> emit,
+) async {
+  final reqId = getIt<AppStateProvider>().reqId;
+  final token = getIt<AppStateProvider>().token;
 
-    if (reqId == null || token == null) {
-      emit(state.copyWith(pledgeChecked: true));
-      return;
-    }
-
-    try {
-      final pledgeRepo = PledgeStatusRepository(getIt<ApiClient>());
-      final result = await pledgeRepo.checkPledgeMfStatus(
-        reqId: reqId,
-        type: "pledge",
-        authToken: token,
-      );
-
-      result.when(
-        success: (data) {
-          String? phoneFromResp;
-          final inner = data['data'];
-
-          if (inner is List && inner.isNotEmpty) {
-            final first = inner[0];
-            if (first is Map && first['phone'] != null) {
-              phoneFromResp = first['phone'].toString();
-            }
-          } else if (inner is Map && inner['phone'] != null) {
-            phoneFromResp = inner['phone'].toString();
-          }
-
-          if (phoneFromResp != null &&
-              phoneFromResp.isNotEmpty &&
-              !phoneFromResp.contains('*')) {
-            var normalized = phoneFromResp.replaceAll(RegExp(r'[\s\-]'), '');
-            if (!normalized.startsWith('+')) {
-              normalized = normalized.startsWith('91')
-                  ? '+$normalized'
-                  : '+91$normalized';
-            }
-            emit(
-              state.copyWith(
-                pledgePhoneNumber: normalized,
-                pledgeChecked: true,
-              ),
-            );
-          } else {
-            emit(state.copyWith(pledgeChecked: true));
-          }
-        },
-        failure: (_) => emit(state.copyWith(pledgeChecked: true)),
-      );
-    } catch (e) {
-      emit(state.copyWith(pledgeChecked: true));
-    }
+  if (reqId == null || token == null) {
+    emit(state.copyWith(pledgeChecked: true));
+    return;
   }
+
+  try {
+    final pledgeRepo = PledgeStatusRepository(getIt<ApiClient>());
+    final result = await pledgeRepo.checkPledgeMfStatus(
+      reqId: reqId,
+      type: "pledge",
+      authToken: token,
+    );
+
+    result.when(
+      success: (data) {
+        String? phoneFromResp;
+
+        final inner = data['data'];
+        if (inner is List && inner.isNotEmpty) {
+          phoneFromResp = inner[0]['phone']?.toString();
+        } else if (inner is Map) {
+          phoneFromResp = inner['phone']?.toString();
+        }
+
+        if (phoneFromResp != null && phoneFromResp.isNotEmpty) {
+          String normalized = phoneFromResp.replaceAll(RegExp(r'[\s\-]'), '');
+
+          if (!normalized.startsWith('+')) {
+            normalized = normalized.startsWith('91')
+                ? '+$normalized'
+                : '+91$normalized';
+          }
+
+          emit(state.copyWith(
+            pledgePhoneNumber: normalized,
+            pledgeChecked: true,
+          ));
+        } else {
+          emit(state.copyWith(pledgeChecked: true));
+        }
+      },
+      failure: (_) => emit(state.copyWith(pledgeChecked: true)),
+    );
+  } catch (e) {
+    emit(state.copyWith(pledgeChecked: true));
+  }
+}
 
   Future<void> _onSubmitPledgeOtp(
     SubmitPledgeOtp event,
@@ -388,41 +422,65 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
   }
 
   /// ========== 5️⃣ FINAL SUBMIT API ================
-  Future<void> _onSubmitInsuranceDetails(
-    SubmitInsuranceDetails event,
-    Emitter<EligibilityState> emit,
-  ) async {
-    print("🚀 SUBMIT INSURANCE CLICKED");
+Future<void> _onSubmitInsuranceDetails(
+  SubmitInsuranceDetails event,
+  Emitter<EligibilityState> emit,
+) async {
+  print("🚀 SUBMIT INSURANCE CLICKED");
 
-    if (state.unitKey == null || state.policyKey == null) {
-      emit(state.copyWith(insuranceError: "Upload both documents first"));
-      return;
-    }
-
-    emit(state.copyWith(isSubmittingInsurance: true, insuranceError: null));
-
-    final res = await _insuranceRepo.submitInsurance(
-      insurerCode: state.insurerCode!,
-      policyNumber: state.insurancePolicyNo!,
-      name: state.insuranceName!,
-      dob: state.insuranceDob!,
-      unitFileKey: state.unitKey!,
-      policyFileKey: state.policyKey!,
-    );
-
-    res.when(
-      success: (_) {
-        print("🎉 INSURANCE POLICY SUBMITTED");
-        emit(
-          state.copyWith(isSubmittingInsurance: false, insuranceSuccess: true),
-        );
-      },
-      failure: (err) {
-        print("❌ SUBMIT FAILED → $err");
-        emit(state.copyWith(isSubmittingInsurance: false, insuranceError: err));
-      },
-    );
+  // Validation: both files must be uploaded
+  if (state.unitKey == null || state.policyKey == null) {
+    emit(state.copyWith(
+      insuranceError: "Upload both documents first",
+      snackbarMessage: "Upload both documents first", // 🔥 Show snackbar
+    ));
+    return;
   }
+
+  emit(state.copyWith(
+    isSubmittingInsurance: true,
+    insuranceError: null,
+    snackbarMessage: null,
+  ));
+
+  final res = await _insuranceRepo.submitInsurance(
+    insurerCode: state.insurerCode!,
+    policyNumber: state.insurancePolicyNo!,
+    name: state.insuranceName!,
+    dob: state.insuranceDob!,
+    unitFileKey: state.unitKey!,
+    policyFileKey: state.policyKey!,
+  );
+
+  res.when(
+    success: (_) {
+      print("🎉 INSURANCE POLICY SUBMITTED");
+
+      emit(
+        state.copyWith(
+          isSubmittingInsurance: false,
+          insuranceSuccess: true,
+
+          // 🔥 repo returns bool → use custom success message
+          snackbarMessage: "Insurance submitted successfully!",
+        ),
+      );
+    },
+    failure: (err) {
+      print("❌ SUBMIT FAILED → $err");
+
+      emit(
+        state.copyWith(
+          isSubmittingInsurance: false,
+          insuranceError: err,
+
+          // 🔥 Show backend error in snackbar
+          snackbarMessage: err.toString(),
+        ),
+      );
+    },
+  );
+}
 
   void _onSetLenderSelectionView(
     SetLenderSelectionView event,
@@ -827,86 +885,101 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     );
   }
 
-  Future<void> _onVerifyPanPressed(
-    VerifyPanPressed event,
-    Emitter<EligibilityState> emit,
-  ) async {
+Future<void> _onVerifyPanPressed(
+  VerifyPanPressed event,
+  Emitter<EligibilityState> emit,
+) async {
+  emit(
+    state.copyWith(
+      panStatus: PanVerificationStatus.verifying,
+      generalErrorMessage: null,
+      snackbarMessage: null, // optional reset
+    ),
+  );
+
+  final reqId = getIt<AppStateProvider>().reqId;
+
+  if (reqId == null || reqId.isEmpty) {
     emit(
       state.copyWith(
-        panStatus: PanVerificationStatus.verifying,
-        generalErrorMessage: null,
+        panStatus: PanVerificationStatus.failed,
+        generalErrorMessage: 'Missing reqId. Please login again.',
+        snackbarMessage: 'Missing reqId. Please login again.', // 🔥
       ),
     );
-    final reqId = getIt<AppStateProvider>().reqId;
+    return;
+  }
 
-    if (reqId == null || reqId.isEmpty) {
-      emit(
-        state.copyWith(
-          panStatus: PanVerificationStatus.failed,
-          generalErrorMessage: 'Missing reqId. Please login again.',
-        ),
-      );
-      return;
-    }
+  final result = await repository.verifyPan(
+    reqId: reqId,
+    pan: event.pan,
+    dob: event.dob,
+    name: event.name,
+    email: event.email,
+  );
 
-    final result = await repository.verifyPan(
-      reqId: reqId,
-      // ✅ safe now
-      pan: event.pan,
-      dob: event.dob,
-      name: event.name,
-      email: event.email,
-    );
+  await result.when(
+    success: (panResponse) async {
+      // 🔥 SHOW SERVER SUCCESS/VALIDATION MESSAGE
+      emit(state.copyWith(
+        snackbarMessage: panResponse.message, // <<< 🔥 THIS SHOWS YOUR MESSAGE
+      ));
 
-    await result.when(
-      success: (panResponse) async {
-        final reqId = panResponse.reqId;
+      final reqId = panResponse.reqId;
 
-        if (reqId == null) {
-          emit(
-            state.copyWith(
-              panStatus: PanVerificationStatus.failed,
-              generalErrorMessage: 'Missing reqId in response.',
-            ),
-          );
-          return;
-        }
-
-        getIt<AppStateProvider>().setReqId(reqId);
-
-        final otpResult = await repository.generateOtp();
-
-        otpResult.when(
-          success: (otpResponse) {
-            emit(
-              state.copyWith(
-                panStatus: PanVerificationStatus.verified,
-                otpStatus: PanOtpStatus.sent,
-                generalErrorMessage:
-                    otpResponse.message ?? 'OTP sent successfully.',
-              ),
-            );
-          },
-          failure: (error) {
-            emit(
-              state.copyWith(
-                otpStatus: PanOtpStatus.failed,
-                generalErrorMessage: error,
-              ),
-            );
-          },
-        );
-      },
-      failure: (error) {
+      if (reqId == null) {
         emit(
           state.copyWith(
             panStatus: PanVerificationStatus.failed,
-            generalErrorMessage: error,
+            generalErrorMessage: 'Missing reqId in response.',
+            snackbarMessage: 'Missing reqId in response.', // 🔥
           ),
         );
-      },
-    );
-  }
+        return;
+      }
+
+      getIt<AppStateProvider>().setReqId(reqId);
+
+      final otpResult = await repository.generateOtp();
+
+      otpResult.when(
+        success: (otpResponse) {
+          emit(
+            state.copyWith(
+              panStatus: PanVerificationStatus.verified,
+              otpStatus: PanOtpStatus.sent,
+
+              // 🔥 SHOW OTP SENT MESSAGE
+              snackbarMessage: otpResponse.message ?? 'OTP sent successfully.',
+
+              generalErrorMessage:
+                  otpResponse.message ?? 'OTP sent successfully.',
+            ),
+          );
+        },
+        failure: (error) {
+          emit(
+            state.copyWith(
+              otpStatus: PanOtpStatus.failed,
+              generalErrorMessage: error,
+              snackbarMessage: error, // 🔥
+            ),
+          );
+        },
+      );
+    },
+
+    failure: (error) {
+      emit(
+        state.copyWith(
+          panStatus: PanVerificationStatus.failed,
+          generalErrorMessage: error,
+          snackbarMessage: error, // 🔥 SHOW ERROR IN SNACKBAR
+        ),
+      );
+    },
+  );
+}
 
   Future<void> _onSendPanOtpPressed(
     SendPanOtpPressed event,
@@ -1235,7 +1308,7 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
       // helpers & results
       final List<String> isinAdd = [];
       final List<String> isinRemove = [];
-      final List<String> isinModify = []; // ALWAYS keep empty per backend rule
+      final List<String> isinModify = [];
       final List<String> skipped = [];
 
       PledgeableFund? findFund(String code) =>
@@ -1298,7 +1371,25 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
       debugPrint(
         '📤 ISIN_REMOVE (${filteredIsinRemove.length}): $filteredIsinRemove',
       );
-      debugPrint('📤 ISIN_MODIFY (always empty): $isinModify');
+      // ⭐ BUILD ISIN_MODIFY LIST FOR EDITED FUND VALUES
+// ⭐ Only include the last edited fund
+if (state.lastEditedFundCode != null &&
+    state.lastEditedFundAmount != null) {
+
+  final fund = state.pledgeableFunds.firstWhereOrNull(
+      (f) => f.fundCode == state.lastEditedFundCode);
+
+  if (fund != null) {
+    final modifyEntry =
+        "${fund.fundCode}:${fund.folioNo}:${state.lastEditedFundAmount}";
+    isinModify.add(modifyEntry);
+
+    debugPrint("🔧 FINAL ISIN MODIFY ENTRY -> $modifyEntry");
+  }
+}
+
+
+debugPrint('📤 ISIN_MODIFY (${isinModify.length}): $isinModify');
       if (skipped.isNotEmpty) debugPrint('⚠️ Skipped entries: $skipped');
 
       // Determine loan_amount to send as nullable double:
@@ -1354,11 +1445,20 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
               tag: '',
             );
           }).toList();
+// ⭐ Merge backend response with last edited fund's updated amount
+final mergedFunds = updatedData.pledgeableFunds.map((apiFund) {
+  if (apiFund.fundCode == state.lastEditedFundCode) {
+    return apiFund.copyWith(
+      updatedFundAmount: state.lastEditedFundAmount,
+    );
+  }
+  return apiFund;
+}).toList();
 
           emit(
             state.copyWith(
               mfDetailsResponse: updatedData,
-              pledgeableFunds: updatedData.pledgeableFunds,
+              pledgeableFunds: mergedFunds,
               lenders: updatedLenders,
               isLoading: false,
               hasUnsavedFundChanges: false,
@@ -1373,7 +1473,7 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
         },
       );
     } catch (e, st) {
-      debugPrint('💥 Unexpected exception in _onConfirmFundSelection: $e\n$st');
+      debugPrint('Server down please try again in some time');
       emit(state.copyWith(isLoading: false, generalErrorMessage: e.toString()));
     }
   }

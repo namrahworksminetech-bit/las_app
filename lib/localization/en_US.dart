@@ -59,7 +59,7 @@ final Map<String, String> enUS = {
   'nameAsPerPanLabel': 'Name as Per PAN',
   'nameAsPerPanHint': 'Enter Full Name',
   'dateOfBirthLabel': 'Date of Birth',
-  'dateOfBirthHint': 'DD/MM/YYYY',
+  'dateOfBirthHint': 'MM/DD/YYYY',
   'checking': 'Checking...',
   'checkLoanEligibility': 'Check Loan Eligibility',
 
@@ -69,9 +69,9 @@ final Map<String, String> enUS = {
   'Nolendersavailable': 'No lenders available.',
 
   'yourSelection': 'Your Selection',
-  'interestRate': 'Interest Rate',
+  'interestRate': 'ROI',
   'loanAmount': 'Loan Amount',
-  'pledgeableMFs': 'Pledgeable MFs',
+  'pledgeableMFs': 'Total MFs',
   'chooseFundsHint': 'Choose the Funds you wish to pledge, click to edit',
   'cancel': 'Cancel',
   'confirm': 'Confirm',

@@ -197,7 +197,24 @@ class EligibilityState extends Equatable {
     this.hasUnsavedFundChanges = false,
     this.panEmail,
     this.panEmailError,
+ 
+this.pledgeOtp = '',
+this.pledgeOtpError,
+this.agreedToTerms = false,
+
+  this.lastEditedFundCode,
+  this.lastEditedFundAmount,
   });
+  final bool agreedToTerms;
+  final String? lastEditedFundCode;
+final double? lastEditedFundAmount;
+
+  final bool pledgeChecked;
+final String? pledgePhoneNumber;
+
+final String pledgeOtp;
+final String? pledgeOtpError;
+
   final String? panLiveError;
   final bool isOtpVisible;
   final bool hasUnsavedFundChanges;
@@ -313,8 +330,7 @@ class EligibilityState extends Equatable {
   final bool isPennyDropPolling;
   final bool shouldNavigateToOtp;
   final bool pledgeOtpSubmitting;
-  final bool pledgeChecked;
-  final String? pledgePhoneNumber;
+
 
   EligibilityState copyWith({
     bool? isOtpVisible,
@@ -346,6 +362,7 @@ class EligibilityState extends Equatable {
     String? panDobError,
     Map<String, double>? editedFundAmounts,
     PanVerificationStatus? panStatus,
+bool? agreedToTerms,
 
     bool? isStep2Loading,
     String? savingLenderId,
@@ -416,8 +433,18 @@ class EligibilityState extends Equatable {
     bool? isInsuranceSubmitting,
     String? panEmail,
     String? panEmailError,
+    String? pledgeOtp,
+String? pledgeOtpError,
+  String? lastEditedFundCode,
+  double? lastEditedFundAmount,
   }) {
     return EligibilityState(
+         lastEditedFundCode: lastEditedFundCode ?? this.lastEditedFundCode,
+    lastEditedFundAmount: lastEditedFundAmount ?? this.lastEditedFundAmount,
+      pledgeOtp: pledgeOtp ?? this.pledgeOtp,
+pledgeOtpError: pledgeOtpError ?? this.pledgeOtpError,
+agreedToTerms: agreedToTerms ?? this.agreedToTerms,
+
       panLiveError: panLiveError ?? this.panLiveError,
       isOtpVisible: isOtpVisible ?? this.isOtpVisible,
       hasUnsavedFundChanges:
@@ -557,6 +584,14 @@ class EligibilityState extends Equatable {
     shareUploadPath,
     shareError,
     shareSuccess,
+    lastEditedFundCode, lastEditedFundAmount, 
+
+    pledgeOtpSubmitting,
+pledgeChecked,
+pledgePhoneNumber,
+pledgeOtp,
+pledgeOtpError,
+
 
     // ===== INSURANCE FLOW =====
     insurers, // list of companies
@@ -606,6 +641,8 @@ class EligibilityState extends Equatable {
     panStatus,
     otpStatus,
     snackbarMessage,
+    agreedToTerms,
+
     kycUrl,
     kycLoading,
     kycError,

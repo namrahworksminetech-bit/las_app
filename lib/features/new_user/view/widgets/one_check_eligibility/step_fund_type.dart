@@ -73,7 +73,10 @@ class _Step1InvestmentPageState extends State<Step1InvestmentPage> {
                   fontSize: 13,
                 ),
                 children: [
-                  TextSpan(text: 'selectInvestmentTitlePart1'.tr),
+                  TextSpan(text: 'selectInvestmentTitlePart1'.tr,style: AppTypography.bodyWhite.copyWith(
+                      color: AppColors.bSecondaryColor,
+                      fontWeight: FontWeight.w600,
+                    ),),
                   TextSpan(
                     text: 'selectInvestmentTitlePart2'.tr,
                     style: AppTypography.bodyWhite.copyWith(
