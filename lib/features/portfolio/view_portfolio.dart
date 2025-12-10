@@ -3,11 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:las_app/common_widgets/c_button.dart';
+import 'package:las_app/common_widgets/c_snackbar.dart';
 import 'package:las_app/common_widgets/c_text.dart';
 import 'package:las_app/core/app_state_provider.dart';
 import 'package:las_app/core/extensions/string_ext.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/utils/assets.dart';
+import 'package:las_app/core/utils/enums.dart';
 import 'package:las_app/features/dashboard/model_dashboard.dart';
 import 'package:las_app/features/portfolio/model_portfolio.dart';
 import 'package:las_app/features/portfolio/repository/statement_repo.dart';
@@ -107,37 +109,44 @@ class _PortfolioState extends State<Portfolio> {
                           shrinkWrap: true,
                           scrollDirection: Axis.horizontal,
                           itemCount: state?.tabList.length ?? 0,
-                          itemBuilder: (context, index) {
-                            var v = state?.tabList[index];
-                            var isSelected = state?.selectedTab == v?.type;
-                            return InkWell(
-                              onTap: () {},
-                              // onTap: () => context.read<PortfolioBloc>().add(
-                              //   OnClickTab(type: v?.type),
-                              // ),
-                              child: Container(
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  border: Border(
-                                    bottom: isSelected
-                                        ? BorderSide(
-                                            color: AppColors.kPrimaryColor,
-                                          )
-                                        : BorderSide(color: Colors.transparent),
-                                  ),
-                                ),
-                                child: Text(
-                                  v?.name ?? '',
-                                  style: AppTypography.regularTxt.copyWith(
-                                    color: isSelected
-                                        ? AppColors.kPrimaryColor
-                                        : AppColors.white50,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                          separatorBuilder: (context, index) {
+                         itemBuilder: (context, index) {
+  var v = state?.tabList[index];
+  var isSelected = state?.selectedTab == v?.type;
+
+  return InkWell(
+    onTap: () {
+      // If Shares or Insurance
+      if (v?.type == EmType.laS || v?.type == EmType.laIp) {
+        CSnackBar.show(context, "Coming Soon");
+        return;
+      }
+
+      // Active: Mutual Funds
+      context.read<PortfolioBloc>().add(
+        OnClickTab(type: v?.type),
+      );
+    },
+    child: Container(
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: isSelected
+              ? BorderSide(color: AppColors.kPrimaryColor)
+              : BorderSide(color: Colors.transparent),
+        ),
+      ),
+      child: Text(
+        v?.name ?? '',
+        style: AppTypography.regularTxt.copyWith(
+          color: isSelected
+              ? AppColors.kPrimaryColor
+              : AppColors.white50,
+        ),
+      ),
+    ),
+  );
+},
+separatorBuilder: (context, index) {
                             return SizedBox(width: 12);
                           },
                         ),
