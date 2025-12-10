@@ -1,5 +1,6 @@
 // step_shares_details_page.dart
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:las_app/common_widgets/c_button.dart';
@@ -39,7 +40,8 @@ class _StepSharesDetailsPageState extends State<StepSharesDetailsPage> {
       builder: (ctx) => AlertDialog(
         title: const Text("Exit to Home?"),
         content: const Text(
-          "If you leave this page, entered details will be lost.\nDo you want to continue?"
+          "If you leave this page, entered details will be lost.\nDo you want to continue?",
+           style: TextStyle( color: kIsWeb ? AppColors.black : AppColors.white,),
         ),
         actions: [
           TextButton(onPressed: ()=> Navigator.pop(ctx,false), child: const Text("Cancel")),

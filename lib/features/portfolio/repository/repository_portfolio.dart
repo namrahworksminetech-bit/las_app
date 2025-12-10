@@ -17,12 +17,12 @@ class PortfolioRepository {
       if (token == null || token.isEmpty) {
         throw Exception("Missing auth token");
       }
-
+final reqId =_appState.reqId;
   
       final response = await ApiClient().post(
         '/customer-portal/withDrawl',
         data: {
-          'req_id': data['reqId'],
+          'req_id': reqId,
           "disbursement_amount": data['amount']
         },
         options: Options(
@@ -45,7 +45,7 @@ class PortfolioRepository {
     try {
    
       final token = _appState.token;
-
+final reqId =_appState.reqId;
       if (token == null || token.isEmpty) {
         throw Exception("Missing auth token");
       }
@@ -53,7 +53,7 @@ class PortfolioRepository {
 
       final response = await ApiClient().post(
         '/customer-portal/repayment',
-        data: {'req_id': data['reqId']},
+        data: {'req_id':reqId},
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',

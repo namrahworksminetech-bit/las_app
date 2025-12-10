@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -38,6 +39,7 @@ class _LenderSelectionScreenState extends State<LenderSelectionScreen> {
           title: const Text('Exit to Home?'),
           content: const Text(
             'Are you sure you want to leave this flow and go back to the home screen?',
+             style: TextStyle( color: kIsWeb ? AppColors.black : AppColors.white,),
           ),
           actions: [
             TextButton(

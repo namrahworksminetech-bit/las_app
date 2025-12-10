@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:las_app/common_widgets/c_button.dart';
@@ -43,6 +44,7 @@ String? backendDob;
             title: const Text("Exit to Home?"),
             content: const Text(
               "If you leave this step, entered details will be lost.\nDo you want to continue?",
+               style: TextStyle( color: kIsWeb ? AppColors.black : AppColors.white,),
             ),
             actions: [
               TextButton(

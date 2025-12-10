@@ -5,6 +5,7 @@ import 'package:las_app/features/login/repository/login_repository.dart';
 import 'package:las_app/features/new_user/repository/insurance_repo.dart';
 import 'package:las_app/features/new_user/repository/pan_veirfy_repo.dart';
 import 'package:las_app/features/new_user/digio_service.dart';
+import 'package:las_app/features/portfolio/repository/statement_repo.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final getIt = GetIt.instance;
@@ -13,6 +14,7 @@ Future<void> initDependencies() async {
   // ✅ Core singletons
   getIt.registerLazySingleton<ApiClient>(() => ApiClient());
   getIt.registerLazySingleton<AppStateProvider>(() => AppStateProvider());
+
 
   // ✅ Feature repositories
   getIt.registerLazySingleton<LoginRepository>(

@@ -7,6 +7,10 @@ abstract class PortfolioEvent extends Equatable {
   List<Object?> get props => [];
 }
 
+class DownloadClientStatement extends PortfolioEvent {}
+
+class DownloadHoldingStatement extends PortfolioEvent {}
+
 class OnClickTab extends PortfolioEvent {
   final EmType? type;
 

@@ -5,6 +5,7 @@ import 'package:las_app/core/app_state_provider.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_typography.dart';
 import 'package:las_app/features/login/view/login_screen.dart';
+import 'package:las_app/features/profile/faq_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/theme/app_spacing.dart';
@@ -20,15 +21,19 @@ class Profile extends StatefulWidget {
 
 class _ProfileState extends State<Profile> {
   ProfileBloc? bloc;
+
+  
   Future<void> _logoutUser(BuildContext context) async {
   final prefs = await SharedPreferences.getInstance();
+
+
+
 
   // Clear SharedPreferences
   await prefs.remove("api_token");
   await prefs.remove("api_refresh_token");
   await prefs.remove("req_id");
-  await prefs.remove("user_name");
-  await prefs.remove("mobile_number");
+
 
   // Clear global state
   GetIt.instance<AppStateProvider>().clear();
@@ -42,6 +47,28 @@ class _ProfileState extends State<Profile> {
       ),
     );
   }
+}
+String? savedName;
+String? savedEmail;
+String? savedMobile;
+String? savedPan;
+
+@override
+void initState() {
+  super.initState();
+  _loadStoredProfile();
+}
+
+Future<void> _loadStoredProfile() async {
+  final prefs = await SharedPreferences.getInstance();
+
+  setState(() {
+    savedName   = prefs.getString("pan_full_name");
+    savedEmail  = prefs.getString("pan_email");
+    savedMobile = prefs.getString("mobile_number");
+    savedPan = prefs.getString("pan_number");
+
+  });
 }
 
 
@@ -85,10 +112,13 @@ class _ProfileState extends State<Profile> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Full Name', style: AppTypography.regularTxt),
-                        Text(
-                          'Himanshu Pandey',
-                          style: AppTypography.regularTxt,
-                        ),
+                       Text(
+  GetIt.instance<AppStateProvider>().name 
+      ?? savedName 
+      ?? "-",
+  style: AppTypography.regularTxt,
+),
+
                       ],
                     ),
                     SizedBox(height: 6),
@@ -98,10 +128,13 @@ class _ProfileState extends State<Profile> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Email', style: AppTypography.regularTxt),
-                        Text(
-                       GetIt.instance<AppStateProvider>().email ?? "",
-                          style: AppTypography.regularTxt,
-                        ),
+                       Text(
+  GetIt.instance<AppStateProvider>().email 
+      ?? savedEmail 
+      ?? "-",
+  style: AppTypography.regularTxt,
+),
+
                       ],
                     ),
                     SizedBox(height: 6),
@@ -111,10 +144,13 @@ class _ProfileState extends State<Profile> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Mobile', style: AppTypography.regularTxt),
-                        Text(
-                          '+91 89388 23026',
-                          style: AppTypography.regularTxt,
-                        ),
+                       Text(
+  GetIt.instance<AppStateProvider>().mobileNumber 
+      ?? savedMobile 
+      ?? "-",
+  style: AppTypography.regularTxt,
+),
+
                       ],
                     ),
                     SizedBox(height: 6),
@@ -124,58 +160,73 @@ class _ProfileState extends State<Profile> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('PAN', style: AppTypography.regularTxt),
-                        Text('XXXXX1234X', style: AppTypography.regularTxt),
+                       Text(
+  GetIt.instance<AppStateProvider>().pan 
+      ?? savedPan 
+      ?? "-",
+  style: AppTypography.regularTxt,
+),
+
                       ],
                     ),
                     SizedBox(height: 6),
                     Container(height: 1, color: Color(0x75565656)),
+                    // SizedBox(height: 6),
+                    // Row(
+                    //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    //   children: [
+                    //     Text('Aadhar', style: AppTypography.regularTxt),
+                    //     Row(
+                    //       mainAxisSize: MainAxisSize.min,
+                    //       children: [
+                    //         Text('Verified', style: AppTypography.regularTxt),
+                    //         SizedBox(width: 8),
+                    //         Ast.svg.ic_verify.load(),
+                    //       ],
+                    //     ),
+                    //   ],
+                    // ),
                     SizedBox(height: 6),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Aadhar', style: AppTypography.regularTxt),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text('Verified', style: AppTypography.regularTxt),
-                            SizedBox(width: 8),
-                            Ast.svg.ic_verify.load(),
-                          ],
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 6),
-                    Container(height: 1, color: Color(0x75565656)),
-                    SizedBox(height: 6),
+                    // Container(height: 1, color: Color(0x75565656)),
+                    // SizedBox(height: 6),
                   ],
                 ),
               ),
-              Container(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Color(0x75565656))),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Your Loan Accounts', style: AppTypography.regularTxt),
-                    Ast.svg.ic_next.load(),
-                  ],
-                ),
-              ),
-              Container(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Color(0x75565656))),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Help & FAQs', style: AppTypography.regularTxt),
-                    Ast.svg.ic_next.load(),
-                  ],
-                ),
-              ),
+              // Container(
+              //   padding: EdgeInsets.symmetric(vertical: 16),
+              //   decoration: BoxDecoration(
+              //     border: Border(bottom: BorderSide(color: Color(0x75565656))),
+              //   ),
+              //   child: Row(
+              //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              //     children: [
+              //       Text('Your Loan Accounts', style: AppTypography.regularTxt),
+              //       Ast.svg.ic_next.load(),
+              //     ],
+              //   ),
+              // ),
+              GestureDetector(
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) =>  FAQPage()),
+    );
+  },
+  child: Container(
+    padding: EdgeInsets.symmetric(vertical: 16),
+    decoration: BoxDecoration(
+      border: Border(bottom: BorderSide(color: Color(0x75565656))),
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text('Help & FAQs', style: AppTypography.regularTxt),
+        Ast.svg.ic_next.load(),
+      ],
+    ),
+  ),
+),
+
               Container(
                 padding: EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(
@@ -189,19 +240,19 @@ class _ProfileState extends State<Profile> {
                   ],
                 ),
               ),
-              Container(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Color(0x75565656))),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Terms & Conditions', style: AppTypography.regularTxt),
-                    Ast.svg.ic_link.load(),
-                  ],
-                ),
-              ),
+              // Container(
+              //   padding: EdgeInsets.symmetric(vertical: 16),
+              //   decoration: BoxDecoration(
+              //     border: Border(bottom: BorderSide(color: Color(0x75565656))),
+              //   ),
+              //   child: Row(
+              //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              //     children: [
+              //       Text('Terms & Conditions', style: AppTypography.regularTxt),
+              //       Ast.svg.ic_link.load(),
+              //     ],
+              //   ),
+              // ),
              GestureDetector(
   onTap: () async {
     await _logoutUser(context);

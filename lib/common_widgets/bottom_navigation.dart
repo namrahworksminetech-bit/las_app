@@ -54,12 +54,12 @@ class BottomNavigation extends StatelessWidget {
                 selectedIcon: Ast.svg.ic_bn_portfolio_fill,
                 page: EmPage.portfolio,
               ),
-              itemBtn(
-                name: 'Transactions',
-                icon: Ast.svg.ic_bn_transaction,
-                selectedIcon: Ast.svg.ic_bn_transaction_fill,
-                page: EmPage.transaction,
-              ),
+              // itemBtn(
+              //   name: 'Transactions',
+              //   icon: Ast.svg.ic_bn_transaction,
+              //   selectedIcon: Ast.svg.ic_bn_transaction_fill,
+              //   page: EmPage.transaction,
+              // ),
               itemBtn(
                 name: 'Profile',
                 icon: Ast.svg.ic_bn_profile,

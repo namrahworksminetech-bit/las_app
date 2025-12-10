@@ -1,4 +1,5 @@
 // step1_investment_page.dart
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
@@ -25,7 +26,8 @@ class _Step1InvestmentPageState extends State<Step1InvestmentPage> {
         return AlertDialog(
           title: const Text("Exit Application?"),
           content: const Text(
-              "Are you sure you want to exit this step and go back to the Dashboard?"),
+              "Are you sure you want to exit this step and go back to the Dashboard?", style: TextStyle( color: kIsWeb ? AppColors.black : AppColors.white,),),
+              
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppStateProvider extends ChangeNotifier {
   String? _token;
@@ -17,11 +18,40 @@ class AppStateProvider extends ChangeNotifier {
   String? _email;
   String? get email => _email;
 
-  void setEmail(String email) {
-     print("📲 AppStateProvider → email saved: $email"); // ← ADD THIS
+
+  void setEmail(String email) async {
+    print("📩 Saving Email to AppState + SharedPrefs: $email");
+
     _email = email;
     notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString("email", email);
   }
+String? _pan;
+String? get pan => _pan;
+
+void setPan(String pan) async {
+  _pan = pan;
+  notifyListeners();
+  
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString("pan_number", pan);
+}
+
+  // -----------------------------
+  // SAVE NAME
+  // -----------------------------
+  void setName(String name) async {
+    print("👤 Saving Name to AppState + SharedPrefs: $name");
+
+    _name = name;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString("name", name);
+  }
+
 
   void setToken(String token) {
     _token = token;
@@ -33,10 +63,7 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setName(String name) {
-    _name = name;
-    notifyListeners();
-  }
+ 
 
   void setLenderCode(String lenderCode) {
     _lenderCode = lenderCode;
