@@ -7,8 +7,8 @@ part 'state_dashboard.dart';
 
 class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
   DashboardBloc() : super(const DashboardState()) {
-    on<OnClickTab>(onTabEvent);
+    on<OnClickTab2>(onTabEvent);
   }
 
-  onTabEvent(OnClickTab event, Emitter<DashboardState> emit) {}
+  onTabEvent(OnClickTab2 event, Emitter<DashboardState> emit) {}
 }

@@ -1,14 +1,14 @@
 part of 'bloc_home.dart';
 
-class DashboardState extends Equatable {
+class HomeState extends Equatable {
   EmPage page;
 
   List<EmPage> routeList;
 
-  DashboardState({this.page = EmPage.dashboard, required this.routeList});
+  HomeState({this.page = EmPage.dashboard, required this.routeList});
 
-  DashboardState copyWith({EmPage? page, List<EmPage>? routeList}) {
-    return DashboardState(
+  HomeState copyWith({EmPage? page, List<EmPage>? routeList}) {
+    return HomeState(
       page: page ?? this.page,
       routeList: routeList ?? this.routeList,
     );

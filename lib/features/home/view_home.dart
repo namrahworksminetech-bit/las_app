@@ -23,7 +23,7 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => HomeBloc(),
-      child: BlocBuilder<HomeBloc, DashboardState>(
+      child: BlocBuilder<HomeBloc, HomeState>(
         builder: (context, state) {
           bloc = context.read<HomeBloc>();
           return Scaffold(

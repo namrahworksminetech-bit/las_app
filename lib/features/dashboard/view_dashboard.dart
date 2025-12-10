@@ -12,6 +12,7 @@ import 'package:las_app/core/network/api_client.dart';
 import 'package:las_app/core/results/result.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/utils/assets.dart';
+import 'package:las_app/core/utils/enums.dart';
 import 'package:las_app/features/dashboard/model_dashboard.dart';
 import 'package:las_app/features/dashboard/repository_dashboard.dart';
 import 'package:las_app/features/login/repository/cancel_application_repo.dart';
@@ -29,6 +30,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../home/bloc/bloc_home.dart';
 import 'bloc/bloc_dashboard.dart';
 
 class Dashboard extends StatefulWidget {
@@ -40,20 +42,20 @@ class Dashboard extends StatefulWidget {
 
 class _DashboardState extends State<Dashboard> {
   DashboardBloc? bloc;
-String? savedName;
+  String? savedName;
 
-@override
-void initState() {
-  super.initState();
-  _loadStoredName();
-}
+  @override
+  void initState() {
+    super.initState();
+    _loadStoredName();
+  }
 
-Future<void> _loadStoredName() async {
-  final prefs = await SharedPreferences.getInstance();
-  setState(() {
-    savedName = prefs.getString("name") ?? prefs.getString("pan_full_name");
-  });
-}
+  Future<void> _loadStoredName() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      savedName = prefs.getString("name") ?? prefs.getString("pan_full_name");
+    });
+  }
 
   Future<void> _onCancelApplicationPressed(BuildContext context) async {
     // show loader
@@ -404,16 +406,15 @@ Future<void> _loadStoredName() async {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
-  mainAxisSize: MainAxisSize.min,
-  children: [
-    Ast.svg.logo.load(),
-    Gaps.wMd,
-    CText(
-      "Welcome ${GetIt.instance<AppStateProvider>().name ?? savedName ?? "Guest"}",
-    ),
-  ],
-)
-,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Ast.svg.logo.load(),
+              Gaps.wMd,
+              CText(
+                "Welcome ${GetIt.instance<AppStateProvider>().name ?? savedName ?? "Guest"}",
+              ),
+            ],
+          ),
           Ast.svg.feedback.load(),
         ],
       ),
@@ -435,27 +436,28 @@ Future<void> _loadStoredName() async {
                 children: [
                   cardLayout(snapData),
                   Gaps.hMd,
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CButton(
-                          text: "Continue Application",
-                          type: ButtonType.primary,
-                          onPressed: () =>
-                              _onContinueApplicationPressed(context),
+                  if ((int.parse(snapData.data?.data?.availableCreditLimit ?? '0')) < 0)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CButton(
+                            text: "Continue Application",
+                            type: ButtonType.primary,
+                            onPressed: () =>
+                                _onContinueApplicationPressed(context),
+                          ),
                         ),
-                      ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: CButton(
-                          text: "Cancel Application",
-                          type: ButtonType.primaryWhite,
-                          onPressed: () => _onCancelApplicationPressed(context),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: CButton(
+                            text: "Cancel Application",
+                            type: ButtonType.primaryWhite,
+                            onPressed: () =>
+                                _onCancelApplicationPressed(context),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
 
                   Gaps.hMd,
 
@@ -507,10 +509,10 @@ Future<void> _loadStoredName() async {
                 style: AppTypography.semiTxt.copyWith(fontSize: 40),
               ),
               IconButton(
-                style: IconButton.styleFrom(
-                  backgroundColor: Color(0x1CFFFFFF),
+                style: IconButton.styleFrom(backgroundColor: Color(0x1CFFFFFF)),
+                onPressed: () => context.read<HomeBloc>().add(
+                  OnClickTab(page: EmPage.portfolio),
                 ),
-                onPressed: () {},
                 icon: Icon(Icons.navigate_next_sharp),
               ),
             ],
@@ -519,11 +521,12 @@ Future<void> _loadStoredName() async {
           Row(
             children: [
               Expanded(
+                flex: 4,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Utilized Amount',
+                      'Utilized Amt',
                       style: AppTypography.regularTxt.copyWith(
                         fontSize: 12,
                         color: Color(0x80EFEFEF),
@@ -537,6 +540,7 @@ Future<void> _loadStoredName() async {
                 ),
               ),
               Expanded(
+                flex: 3,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -555,6 +559,7 @@ Future<void> _loadStoredName() async {
                 ),
               ),
               Expanded(
+                flex: 3,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [

@@ -10,7 +10,6 @@ import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/utils/assets.dart';
 import 'package:las_app/features/dashboard/model_dashboard.dart';
 import 'package:las_app/features/portfolio/model_portfolio.dart';
-import 'package:las_app/features/portfolio/repository/statement_repo.dart';
 
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -86,11 +85,12 @@ class _PortfolioState extends State<Portfolio> {
   }
 
   Widget bodyLayout() {
-    final reqId = GetIt.I<AppStateProvider>().reqId ?? '';
     return SafeArea(
       child: SingleChildScrollView(
         child: FutureBuilder(
-          future: DashboardRepository().getDashboard(reqId),
+          future: DashboardRepository().getDashboard(
+            GetIt.I<AppStateProvider>().reqId ?? '',
+          ),
           builder: (context, snapData) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,31 +144,31 @@ class _PortfolioState extends State<Portfolio> {
                       ),
                       Gaps.hXxl,
                       cardLayout(snapData),
-                    
-                     
 
-SizedBox(height: 24),
-CButton(
-  text: "Holding Statement",
-  type: ButtonType.secondary,
-  suffixIcon: const Icon(Icons.download),
-  onPressed: () {
-    context.read<PortfolioBloc>().add(DownloadHoldingStatement());
-  },
-),
+                      SizedBox(height: 24),
+                      CButton(
+                        text: "Holding Statement",
+                        type: ButtonType.secondary,
+                        suffixIcon: const Icon(Icons.download),
+                        onPressed: () {
+                          context.read<PortfolioBloc>().add(
+                            DownloadHoldingStatement(),
+                          );
+                        },
+                      ),
 
-SizedBox(height: 12),
+                      SizedBox(height: 12),
 
-CButton(
-  text: "Client Statement",
-  type: ButtonType.secondary,
-  suffixIcon: const Icon(Icons.download),
-  onPressed: () {
-    context.read<PortfolioBloc>().add(DownloadClientStatement());
-  },
-),
-
-
+                      CButton(
+                        text: "Client Statement",
+                        type: ButtonType.secondary,
+                        suffixIcon: const Icon(Icons.download),
+                        onPressed: () {
+                          context.read<PortfolioBloc>().add(
+                            DownloadClientStatement(),
+                          );
+                        },
+                      ),
 
                       // Column(
                       //   children: [
@@ -250,6 +250,10 @@ CButton(
     var progress =
         (double.parse(v?.availableAmount ?? '0') /
         double.parse(v?.availableCreditLimit ?? '0'));
+    debugPrint('availableCreditLimit ::: ${v?.availableCreditLimit}');
+    debugPrint(
+      'Condition ::: ${(int.parse(v?.availableCreditLimit ?? '0')) > 0}',
+    );
     return Container(
       padding: EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -379,28 +383,27 @@ CButton(
                         ),
                       ),
                       onPressed: () {
-                       showModalBottomSheet(
-  context: context,
-  useRootNavigator: true,
-  isScrollControlled: true,
-  backgroundColor: AppColors.white,
-  shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.only(
-      topLeft: Radius.circular(24),
-      topRight: Radius.circular(24),
-    ),
-  ),
-  builder: (context) {
-    return BlocBuilder<PortfolioBloc, PortfolioState>(
-      builder: (context, state) {
-        return (state.isTutorial ?? false)
-            ? paymentLayout(context)
-            : repayLayout(context);
-      },
-    );
-  },
-);
-
+                        showModalBottomSheet(
+                          context: context,
+                          useRootNavigator: true,
+                          isScrollControlled: true,
+                          backgroundColor: AppColors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(24),
+                              topRight: Radius.circular(24),
+                            ),
+                          ),
+                          builder: (context) {
+                            return BlocBuilder<PortfolioBloc, PortfolioState>(
+                              builder: (context, state) {
+                                return (state.isTutorial ?? false)
+                                    ? paymentLayout(context)
+                                    : repayLayout(context);
+                              },
+                            );
+                          },
+                        );
                       },
                       child: Row(
                         mainAxisSize: MainAxisSize.min,

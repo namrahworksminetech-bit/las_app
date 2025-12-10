@@ -7,9 +7,9 @@ abstract class DashboardEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class OnClickTab extends DashboardEvent {
+class OnClickTab2 extends DashboardEvent {
   final EmPage? page;
-  const OnClickTab({this.page});
+  const OnClickTab2({this.page});
 
   @override
   List<Object?> get props => [page];

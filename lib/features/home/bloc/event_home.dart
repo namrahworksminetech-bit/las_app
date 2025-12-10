@@ -1,13 +1,13 @@
 part of 'bloc_home.dart';
 
-abstract class DashboardEvent extends Equatable {
-  const DashboardEvent();
+abstract class HomeEvent extends Equatable {
+  const HomeEvent();
 
   @override
   List<Object?> get props => [];
 }
 
-class OnClickBack extends DashboardEvent {
+class OnClickBack extends HomeEvent {
   final EmPage? page;
 
   const OnClickBack({this.page});
@@ -16,7 +16,7 @@ class OnClickBack extends DashboardEvent {
   List<Object?> get props => [page];
 }
 
-class OnClickTab extends DashboardEvent {
+class OnClickTab extends HomeEvent {
   final EmPage page;
   const OnClickTab({required this.page});
 
