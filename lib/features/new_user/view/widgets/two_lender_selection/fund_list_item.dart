@@ -13,7 +13,7 @@ class FundListItem extends StatefulWidget {
   final PledgeableFund fund;
   final bool isSelected;
   final VoidCallback onToggle;
-  final Function(double newValue) onEditAmount; // ⭐ NEW CALLBACK
+  final Function(double newValue) onEditAmount;
 
   const FundListItem({
     super.key,
@@ -59,11 +59,11 @@ void _editFundValue() async {
 
   if (newValue != null) {
     widget.onEditAmount(newValue); 
-      // 🔥 Ensures BLoC updates fund before calling API
+    
   Future.microtask(() {
     context.read<EligibilityBloc>().add(ConfirmFundSelection());
   });
-// ⭐ SEND UPWARDS
+
   }
 }
 
@@ -137,7 +137,7 @@ void _editFundValue() async {
   formatCurrencyInt.format(
     widget.fund.updatedFundAmount ?? widget.fund.availableAmount,
   ),
-  onEdit: _editFundValue, // ⭐ Enable editing
+  onEdit: _editFundValue, 
 ),
 
                        
@@ -170,14 +170,16 @@ Widget _buildDetailRow(String title, String value, {VoidCallback? onEdit}) {
             ),
           ),
           const SizedBox(width: 6),
-          GestureDetector(
-            onTap: onEdit,
-            child: const Icon(
-              Icons.edit_outlined,
-              color: AppColors.bSecondaryColor,
-              size: 16,
+
+          if (onEdit != null)
+            GestureDetector(
+              onTap: onEdit,
+              child: const Icon(
+                Icons.edit_outlined,
+                color: AppColors.bSecondaryColor,
+                size: 16,
+              ),
             ),
-          ),
         ],
       ),
     ],
