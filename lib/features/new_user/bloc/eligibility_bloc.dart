@@ -134,18 +134,18 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     on<CheckPledgeStatus>(_onCheckPledgeStatus);
     on<RequestLocationAndStartKyc>(_onRequestLocationAndStartKyc);
     on<KycStepTapped>(_onKycStepTapped);
-
+    on<PennyDropPollingCompleted>(_onPennyDropPollingCompleted);
+    on<NavigateToNextScreen>(_onNavigateToNextScreen);
+    on<FetchPledgePhoneNumber>(_onFetchPledgePhoneNumber);
+    on<SubmitPledgeOtp>(_onSubmitPledgeOtp);
     on<ToggleOtpVisibility>(_onToggleOtpVisibility);
   }
+  
   void _onToggleOtpVisibility(
     ToggleOtpVisibility event,
     Emitter<EligibilityState> emit,
   ) {
     emit(state.copyWith(isOtpVisible: !state.isOtpVisible));
-    on<PennyDropPollingCompleted>(_onPennyDropPollingCompleted);
-    on<NavigateToNextScreen>(_onNavigateToNextScreen);
-    on<FetchPledgePhoneNumber>(_onFetchPledgePhoneNumber);
-    on<SubmitPledgeOtp>(_onSubmitPledgeOtp);
   }
 
   void _onPanEmailUpdated(
