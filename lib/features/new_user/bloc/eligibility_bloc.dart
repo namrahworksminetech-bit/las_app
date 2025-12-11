@@ -143,6 +143,7 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     on<TermsAgreementToggled>(_onTermsAgreementToggled);
     on<UpdateFundAmount>(_onUpdateFundAmount);
     on<SetKycProcessing>(_onSetKycProcessing);
+    on<StopAllKycProcesses>(_onStopAllKycProcesses);
 
 
   }
@@ -159,6 +160,26 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     } catch (e) {
       debugPrint('❌ Error setting KYC processing state: $e');
     }
+  }
+
+  void _onStopAllKycProcesses(
+    StopAllKycProcesses event,
+    Emitter<EligibilityState> emit,
+  ) {
+    debugPrint('🛑 Stopping all KYC processes');
+    
+    // Stop polling
+    _digioRepository.stopPolling();
+    
+    // Cancel socket subscription
+    _socketSubscription?.cancel();
+    
+    // Reset all loading states
+    emit(state.copyWith(
+      kycLoading: false,
+      isPennyDropPolling: false,
+      isLoading: false,
+    ));
   }
 
  void _onUpdateFundAmount(
@@ -2666,6 +2687,12 @@ final mergedFunds = updatedData.pledgeableFunds.map((apiFund) {
     StartDigioKyc event,
     Emitter<EligibilityState> emit,
   ) async {
+    // Check if user cancelled previous session
+    if (_digioService.isUserCancelled) {
+      debugPrint('🚫 User cancelled previous session - not starting Digio');
+      return;
+    }
+    
     debugPrint('🚀 Starting Digio KYC');
     emit(
       state.copyWith(kycLoading: true, kycError: null, hasTriggeredDigio: true),
@@ -2764,7 +2791,9 @@ final mergedFunds = updatedData.pledgeableFunds.map((apiFund) {
                             onPollingComplete: () {
                               debugPrint('✅ Penny drop polling completed');
                               // Use add() instead of emit() in callback
-                              add(const PennyDropPollingCompleted());
+                              if (!isClosed) {
+                                add(const PennyDropPollingCompleted());
+                              }
                             },
                           );
                         } else {
@@ -2820,42 +2849,28 @@ final mergedFunds = updatedData.pledgeableFunds.map((apiFund) {
       await prefs.remove('pennydrop_done_$reqId');
       debugPrint('🧹 Cleared old pennydrop status');
 
-      // Wait for backend to process
-      await Future.delayed(const Duration(seconds: 2));
+      // Use existing docId from Digio completion
+      final existingDocId = await prefs.getString('docId$reqId');
+      if (existingDocId != null && existingDocId.isNotEmpty) {
+        debugPrint('✅ Using existing docId: $existingDocId');
+        debugPrint('🚀 Starting penny drop polling...');
 
-      // Fetch fresh config to get latest docId
-      debugPrint('🔄 Fetching fresh config for latest docId...');
-      final configResult = await _digioRepository.getDigioConfig(reqId: reqId);
+        emit(state.copyWith(isPennyDropPolling: true));
 
-      await configResult.when(
-        success: (config) async {
-          final newDocId = config['data']?['id']?.toString();
-          if (newDocId != null && newDocId.isNotEmpty) {
-            await prefs.setString('docId$reqId', newDocId);
-            debugPrint('✅ Stored docId: $newDocId');
-            debugPrint('🚀 Starting penny drop polling...');
-
-            emit(state.copyWith(isPennyDropPolling: true));
-
-            // Start polling - it will call penny drop API automatically every 5 seconds
-            _digioRepository.startPollingKycStatus(
-              null,
-              newDocId,
-              onPollingComplete: () {
-                debugPrint('✅ Polling completed successfully');
-                add(const PennyDropPollingCompleted());
-              },
-            );
-          } else {
-            debugPrint('❌ No docId found in config');
-            emit(state.copyWith(isPennyDropPolling: false));
-          }
-        },
-        failure: (err) {
-          debugPrint('❌ Config fetch error: $err');
-          emit(state.copyWith(isPennyDropPolling: false));
-        },
-      );
+        _digioRepository.startPollingKycStatus(
+          null,
+          existingDocId,
+          onPollingComplete: () {
+            debugPrint('✅ Polling completed successfully');
+            if (!isClosed) {
+              add(const PennyDropPollingCompleted());
+            }
+          },
+        );
+      } else {
+        debugPrint('❌ No existing docId found');
+        emit(state.copyWith(isPennyDropPolling: false));
+      }
     }
 
     add(const CheckPledgeStatus());
@@ -2982,9 +2997,12 @@ final mergedFunds = updatedData.pledgeableFunds.map((apiFund) {
                     if (event.context != null) {
                       Future.delayed(const Duration(milliseconds: 500), () {
                         try {
-                          if (!isClosed) {
+                          if (!isClosed && !state.hasTriggeredDigio) {
                             debugPrint('🚀 Triggering Digio SDK after kyc_done');
                             add(StartDigioKyc(reqId: reqId, context: event.context));
+                          } else {
+                            debugPrint('⚠️ Digio already triggered, skipping');
+                            add(const SetKycProcessing(false));
                           }
                         } catch (e) {
                           debugPrint('❌ Error triggering Digio SDK: $e');
@@ -3029,10 +3047,10 @@ final mergedFunds = updatedData.pledgeableFunds.map((apiFund) {
               initialStatus == 'pan_verified') {
             // Status: New user or PAN verified -> Start Step 0 (Fill Basic Info)
             await _startKycFlow(reqId);
-          } else if (initialStatus == 'kyc_done' && event.context != null) {
-            // Status: KYC done -> Auto-start Digio SDK
-            debugPrint('🚀 Auto-starting Digio SDK for kyc_done status');
-            add(StartDigioKyc(reqId: reqId, context: event.context!));
+          } else if (initialStatus == 'kyc_done') {
+            // Status: KYC done -> Check if Digio already completed
+            debugPrint('🔍 KYC done - checking if Digio already completed');
+            await _handleKycDoneStatus(reqId, event.context);
           } else if (initialStatus == 'penny_drop_done') {
             // Status: Penny drop done -> Start Step 3 (Agreement)
             await _startKycFlow(reqId);
@@ -3294,40 +3312,17 @@ final mergedFunds = updatedData.pledgeableFunds.map((apiFund) {
         debugPrint('❌ Error in KycStepTapped: $e');
       }
     }
-    // Step 2: Link Account - Start Digio SDK
+    // Step 2: Link Account - Check if Digio already completed
     else if (event.stepIndex == 2 && status == 'kyc_done') {
-      debugPrint('🚀 Starting Digio SDK for Link Account step');
-      // Clear all flags before starting
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('docId$reqId');
-      await prefs.remove('pennydrop_done_$reqId');
-      // Clear cancelled state for manual trigger
-      _digioService.clearCancelledState();
-      emit(state.copyWith(hasTriggeredDigio: false));
-      add(StartDigioKyc(reqId: reqId, context: event.context));
+      debugPrint('🔍 Step 2 tapped - checking Digio status');
+      await _handleKycDoneStatus(reqId, event.context);
     }
     // Step 3: Loan Agreement - Check penny drop first if kyc_done
     else if (event.stepIndex == 3) {
       if (status == 'kyc_done') {
-        // Digio complete but penny drop pending
-        debugPrint('💰 Checking penny drop before loan agreement...');
-        final prefs = await SharedPreferences.getInstance();
-        final docId = prefs.getString('docId$reqId');
-
-        if (docId != null && docId.isNotEmpty) {
-          final updateResult = await _digioRepository.updateKycStatus(
-            null,
-            docId,
-            onWebViewOpen: () {},
-          );
-          updateResult.when(
-            success: (link) {
-              debugPrint('✅ Penny drop success, refreshing status...');
-              add(const CheckPledgeStatus());
-            },
-            failure: (err) => debugPrint('❌ Penny drop error: $err'),
-          );
-        }
+        // KYC done but need to check/complete penny drop first
+        debugPrint('💰 Step 3 tapped with kyc_done - handling penny drop');
+        await _handleKycDoneStatus(reqId, event.context);
       } else if (status == 'penny_drop_done') {
         // Penny drop done, start loan agreement
         try {
@@ -3377,6 +3372,61 @@ final mergedFunds = updatedData.pledgeableFunds.map((apiFund) {
         );
       } catch (e) {
         debugPrint('❌ Error in Step 4: $e');
+      }
+    }
+  }
+
+  /// Handle kyc_done status - check if Digio completed or needs to start
+  Future<void> _handleKycDoneStatus(String reqId, BuildContext? context) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final docId = prefs.getString('docId$reqId');
+      final pennyDropDone = prefs.getBool('pennydrop_done_$reqId') ?? false;
+      
+      debugPrint('🔍 Checking Digio status: docId=$docId, pennyDropDone=$pennyDropDone');
+      
+      if (docId != null && docId.isNotEmpty) {
+        // Digio has been started before - check penny drop status
+        debugPrint('💰 Digio docId exists - calling update penny drop API');
+        emit(state.copyWith(kycLoading: true));
+        
+        final updateResult = await _digioRepository.updateKycStatus(
+          null,
+          docId,
+          onWebViewOpen: () {},
+        );
+        
+        await updateResult.when(
+          success: (link) async {
+            debugPrint('✅ Penny drop API success');
+            // Mark penny drop as done
+            await prefs.setBool('pennydrop_done_$reqId', true);
+            emit(state.copyWith(kycLoading: false, isPennyDropPolling: false));
+            // Refresh status to update UI
+            add(const CheckPledgeStatus());
+          },
+          failure: (err) {
+            debugPrint('❌ Penny drop API error: $err');
+            emit(state.copyWith(kycLoading: false, isPennyDropPolling: false));
+            // If API fails, still try to start Digio SDK for retry
+            if (context != null) {
+              debugPrint('🔄 Retrying Digio SDK due to penny drop failure');
+              add(StartDigioKyc(reqId: reqId, context: context));
+            }
+          },
+        );
+      } else {
+        // No docId found - Digio not started yet, start it
+        if (context != null) {
+          debugPrint('🚀 No docId found - starting Digio SDK for first time');
+          add(StartDigioKyc(reqId: reqId, context: context));
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error in _handleKycDoneStatus: $e');
+      // Fallback - try to start Digio SDK
+      if (context != null) {
+        add(StartDigioKyc(reqId: reqId, context: context));
       }
     }
   }

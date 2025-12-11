@@ -501,3 +501,10 @@ class SubmitPledgeOtp extends EligibilityEvent {
   @override
   List<Object> get props => [otp, phone];
 }
+
+class StopAllKycProcesses extends EligibilityEvent {
+  const StopAllKycProcesses();
+
+  @override
+  List<Object> get props => [];
+}
