@@ -59,6 +59,16 @@ class FundSelectionView extends StatelessWidget {
                   'Amount exceeds eligible limit (₹${eligibleLimit.toStringAsFixed(0)})',
                   isError: true,
                 );
+                
+                return;
+              }
+                if (enteredAmount < 25000) {
+                CSnackBar.show(
+                  blocContext,
+                  'Amount cannot be less than 25k',
+                  isError: true,
+                );
+                
                 return;
               }
 

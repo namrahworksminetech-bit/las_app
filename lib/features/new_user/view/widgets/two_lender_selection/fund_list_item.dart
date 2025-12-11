@@ -101,12 +101,15 @@ void _editFundValue() async {
         ),
       ),
       const SizedBox(width: Gaps.md),
-      CText(
-        formatCurrencyInt.format(widget.fund.fundValue ?? 0.0),
-        style: AppTypography.bodyWhite.copyWith(
-          fontWeight: FontWeight.w500,
-        ),
-      ),
+CText(
+  formatCurrencyInt.format(
+    widget.fund.updatedFundAmount ?? widget.fund.availableAmount,
+  ),
+  style: AppTypography.bodyWhite.copyWith(
+    fontWeight: FontWeight.w500,
+  ),
+),
+
     ],
   ),
 ),

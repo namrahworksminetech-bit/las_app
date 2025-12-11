@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
@@ -146,14 +145,16 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
 
   }
 
-
- void _onUpdateFundAmount(
+void _onUpdateFundAmount(
   UpdateFundAmount event,
   Emitter<EligibilityState> emit,
 ) {
   final updatedFunds = state.pledgeableFunds.map((fund) {
     if (fund.fundCode == event.fundCode) {
-      return fund.copyWith(updatedFundAmount: event.amount);
+      return fund.copyWith(
+        updatedFundAmount: event.amount,
+        availableAmount: event.amount, // ⭐ update display value also
+      );
     }
     return fund;
   }).toList();
@@ -2187,7 +2188,7 @@ final mergedFunds = updatedData.pledgeableFunds.map((apiFund) {
         );
         print('→ EMIT: success, isSavingLoan = false');
       } else if (result is Failure) {
-        final msg = "Failed to update loan amount";
+        final msg = "Loan amount should be more than 25000";
         emit(
           state.copyWith(
             isEditingLoan: false,
