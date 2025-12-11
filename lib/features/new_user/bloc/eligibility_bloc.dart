@@ -1452,27 +1452,38 @@ debugPrint('📤 ISIN_MODIFY (${isinModify.length}): $isinModify');
             );
           }).toList();
 // ⭐ Merge backend response with last edited fund's updated amount
-final mergedFunds = updatedData.pledgeableFunds.map((apiFund) {
-  if (apiFund.fundCode == state.lastEditedFundCode) {
-    return apiFund.copyWith(
-      updatedFundAmount: state.lastEditedFundAmount,
-    );
-  }
-  return apiFund;
-}).toList();
+final Map<String, double> existingEdits = {
+    for (var fund in state.pledgeableFunds)
+      if (fund.updatedFundAmount != null) 
+        fund.fundCode: fund.updatedFundAmount!
+  };
 
-          emit(
-            state.copyWith(
-              mfDetailsResponse: updatedData,
-              pledgeableFunds: mergedFunds,
-              lenders: updatedLenders,
-              isLoading: false,
-              hasUnsavedFundChanges: false,
-              generalErrorMessage: null,
-              previousSelectedFundIds: state.selectedFundIds,
-            ),
-          );
-        },
+  // 2. Merge backend response with ALL existing local edits
+  final mergedFunds = updatedData.pledgeableFunds.map((apiFund) {
+    // Check if we have a local edit for this specific fund
+    if (existingEdits.containsKey(apiFund.fundCode)) {
+      return apiFund.copyWith(
+        updatedFundAmount: existingEdits[apiFund.fundCode],
+        // You might want to update availableAmount too if your UI relies on it
+        availableAmount: existingEdits[apiFund.fundCode], 
+      );
+    }
+    // If no local edit, use the fresh data from API
+    return apiFund;
+  }).toList();
+
+  emit(
+    state.copyWith(
+      mfDetailsResponse: updatedData,
+      pledgeableFunds: mergedFunds, // <--- Use the fully merged list
+      lenders: updatedLenders,
+      isLoading: false,
+      hasUnsavedFundChanges: false,
+      generalErrorMessage: null,
+      previousSelectedFundIds: state.selectedFundIds,
+    ),
+  );
+ },
         failure: (error) {
           debugPrint('❌ editLoanAmount failed: $error');
           emit(state.copyWith(isLoading: false, generalErrorMessage: error));
