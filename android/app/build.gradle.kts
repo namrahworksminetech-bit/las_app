@@ -1,7 +1,6 @@
 import java.util.Properties
 import java.io.FileInputStream
 
-// Load keystore ONLY inside a top-level val
 val keystoreProperties: Properties by lazy {
     Properties().apply {
         val file = rootProject.file("key.properties")
@@ -14,14 +13,13 @@ val keystoreProperties: Properties by lazy {
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
     namespace = "com.valuenable.las"
     compileSdk = 36
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -35,7 +33,7 @@ android {
     defaultConfig {
         applicationId = "com.valuenable.las"
         minSdk = 26
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
