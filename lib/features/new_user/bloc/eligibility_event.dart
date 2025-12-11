@@ -427,6 +427,14 @@ class CheckPledgeStatus extends EligibilityEvent {
   List<Object?> get props => [context];
 }
 
+class SetKycProcessing extends EligibilityEvent {
+  final bool isProcessing;
+  const SetKycProcessing(this.isProcessing);
+  
+  @override
+  List<Object?> get props => [isProcessing];
+}
+
 class RequestLocationAndStartKyc extends EligibilityEvent {
   final BuildContext context;
 

@@ -15,6 +15,7 @@ class DigioService {
 
   KycWorkflow? _kycWorkflowPlugin;
   bool _isProcessing = false;
+  bool _userCancelled = false;
   String? _lastEventId;
 
   Future<Result<void>> initializeSDK(String environment) async {
@@ -68,12 +69,18 @@ class DigioService {
       return const Failure('KYC process already in progress');
     }
 
+    if (_userCancelled) {
+      print('⚠️ User cancelled previous session, ignoring auto-trigger');
+      return const Failure('User cancelled previous session');
+    }
+
     try {
       if (_kycWorkflowPlugin == null) {
         return const Failure('KYC SDK not initialized');
       }
 
       _isProcessing = true;
+      _userCancelled = false;
       HashMap<String, String> additionalData = HashMap<String, String>();
 
       print('🚀 Calling Digio SDK start...');
@@ -89,16 +96,34 @@ class DigioService {
 
       print('✅ Digio SDK completed with result: $result');
       
-      // Wait a bit to ensure SDK has fully closed
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Check if result indicates user cancellation
+      final resultStr = result.toString();
+      if (resultStr.contains('cancelled') || resultStr.contains('back') || resultStr.contains('closed')) {
+        _userCancelled = true;
+        print('🚫 User cancelled Digio SDK');
+      }
       
-      return Success(result.toString());
+      return Success(resultStr);
     } catch (e) {
       print('❌ Digio SDK error: $e');
+      _userCancelled = true;
       return Failure('Failed to start KYC: $e');
     } finally {
       _isProcessing = false;
       print('🏁 SDK processing flag cleared');
     }
   }
+  
+  void resetProcessingState() {
+    _isProcessing = false;
+    _userCancelled = true;
+    print('🔄 Processing state manually reset - user cancelled');
+  }
+  
+  void clearCancelledState() {
+    _userCancelled = false;
+    print('🔄 Cancelled state cleared - ready for new session');
+  }
+  
+  bool get isUserCancelled => _userCancelled;
 }
