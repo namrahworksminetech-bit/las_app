@@ -90,9 +90,7 @@ class _PortfolioState extends State<Portfolio> {
     return SafeArea(
       child: SingleChildScrollView(
         child: FutureBuilder(
-          future: DashboardRepository().getDashboard(
-            GetIt.I<AppStateProvider>().reqId ?? '',
-          ),
+          future: DashboardRepository().getDashboard(),
           builder: (context, snapData) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -109,44 +107,47 @@ class _PortfolioState extends State<Portfolio> {
                           shrinkWrap: true,
                           scrollDirection: Axis.horizontal,
                           itemCount: state?.tabList.length ?? 0,
-                         itemBuilder: (context, index) {
-  var v = state?.tabList[index];
-  var isSelected = state?.selectedTab == v?.type;
+                          itemBuilder: (context, index) {
+                            var v = state?.tabList[index];
+                            var isSelected = state?.selectedTab == v?.type;
 
-  return InkWell(
-    onTap: () {
-      // If Shares or Insurance
-      if (v?.type == EmType.laS || v?.type == EmType.laIp) {
-        CSnackBar.show(context, "Coming Soon");
-        return;
-      }
+                            return InkWell(
+                              onTap: () {
+                                // If Shares or Insurance
+                                if (v?.type == EmType.laS ||
+                                    v?.type == EmType.laIp) {
+                                  CSnackBar.show(context, "Coming Soon");
+                                  return;
+                                }
 
-      // Active: Mutual Funds
-      context.read<PortfolioBloc>().add(
-        OnClickTab(type: v?.type),
-      );
-    },
-    child: Container(
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: isSelected
-              ? BorderSide(color: AppColors.kPrimaryColor)
-              : BorderSide(color: Colors.transparent),
-        ),
-      ),
-      child: Text(
-        v?.name ?? '',
-        style: AppTypography.regularTxt.copyWith(
-          color: isSelected
-              ? AppColors.kPrimaryColor
-              : AppColors.white50,
-        ),
-      ),
-    ),
-  );
-},
-separatorBuilder: (context, index) {
+                                // Active: Mutual Funds
+                                context.read<PortfolioBloc>().add(
+                                  OnClickTab(type: v?.type),
+                                );
+                              },
+                              child: Container(
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  border: Border(
+                                    bottom: isSelected
+                                        ? BorderSide(
+                                            color: AppColors.kPrimaryColor,
+                                          )
+                                        : BorderSide(color: Colors.transparent),
+                                  ),
+                                ),
+                                child: Text(
+                                  v?.name ?? '',
+                                  style: AppTypography.regularTxt.copyWith(
+                                    color: isSelected
+                                        ? AppColors.kPrimaryColor
+                                        : AppColors.white50,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                          separatorBuilder: (context, index) {
                             return SizedBox(width: 12);
                           },
                         ),
@@ -723,13 +724,12 @@ separatorBuilder: (context, index) {
   }
 
   Widget withdrawLayout() {
-    final reqId = GetIt.I<AppStateProvider>().reqId ?? '';
     return BlocProvider(
       create: (context) => PortfolioBloc(),
       child: BlocBuilder<PortfolioBloc, PortfolioState>(
         builder: (context, state) {
           return FutureBuilder(
-            future: DashboardRepository().getDashboard(reqId),
+            future: DashboardRepository().getDashboard(),
             builder: (context, snapData) {
               var v = snapData.data?.data;
               return Padding(

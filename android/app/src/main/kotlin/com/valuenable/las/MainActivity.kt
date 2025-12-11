@@ -1,4 +1,4 @@
-package com.las.app.las_app
+package com.valuenable.las
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine

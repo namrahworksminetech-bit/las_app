@@ -423,9 +423,7 @@ class _DashboardState extends State<Dashboard> {
 
   Widget bodyLayout() {
     return FutureBuilder(
-      future: DashboardRepository().getDashboard(
-        GetIt.I<AppStateProvider>().reqId ?? '',
-      ),
+      future: DashboardRepository().getDashboard(),
       builder: (context, snapData) {
         return Column(
           children: [
@@ -436,7 +434,10 @@ class _DashboardState extends State<Dashboard> {
                 children: [
                   cardLayout(snapData),
                   Gaps.hMd,
-                  if ((int.parse(snapData.data?.data?.availableCreditLimit ?? '0')) < 0)
+                  if ((double.parse(
+                        snapData.data?.data?.availableCreditLimit ?? '0',
+                      )) <
+                      0)
                     Row(
                       children: [
                         Expanded(
@@ -474,6 +475,7 @@ class _DashboardState extends State<Dashboard> {
 
   Widget cardLayout(AsyncSnapshot<DashboardResult> snapData) {
     var v = snapData.data?.data;
+    debugPrint('Data ::: ${v?.availableCreditLimit}');
     return Container(
       padding: EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -533,7 +535,7 @@ class _DashboardState extends State<Dashboard> {
                       ),
                     ),
                     Text(
-                      '₹${v?.withdrawn?.toIndianFormat() ?? 0}',
+                      '₹${v?.withdrawn.toString().toIndianFormat() ?? 0}',
                       style: AppTypography.semiTxt.copyWith(fontSize: 18),
                     ),
                   ],

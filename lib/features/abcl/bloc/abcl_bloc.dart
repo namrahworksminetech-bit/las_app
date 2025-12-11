@@ -5,6 +5,8 @@ import 'package:las_app/core/app_state_provider.dart';
 import 'package:las_app/core/network/api_client.dart';
 import 'package:dio/dio.dart';
 
+import '../../../core/network/api_constants.dart';
+
 part 'abcl_event.dart';
 part 'abcl_state.dart';
 
@@ -48,7 +50,7 @@ class AbclBloc extends Bloc<AbclEvent, AbclState> {
 
     try {
       final response = await GetIt.I<ApiClient>().post(
-        'https://api-uat.valuenable.in/lamf/customer-portal/abcl-eligibility',
+        '${ApiConstants.baseUrl}customer-portal/abcl-eligibility',
         data: body,
       );
 

@@ -32,7 +32,7 @@ class DashboardModel {
 
   final String? name;
   final String? availableCreditLimit;
-  final String? withdrawn;
+  final int? withdrawn;
   final String? interestRate;
   final int? mfPledges;
   final String? accountNumber;

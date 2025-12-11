@@ -5,6 +5,8 @@ import 'package:las_app/core/network/api_client.dart';
 import 'package:las_app/core/utils/location_service.dart';
 import 'package:las_app/core/app_state_provider.dart';
 
+import '../../../core/network/api_constants.dart';
+
 class VideoKycRepository {
   final ApiClient _api;
 
@@ -31,7 +33,7 @@ class VideoKycRepository {
     };
 
     const String endpoint =
-        "https://api-uat.valuenable.in/lamf/customer/apply-vcip-application";
+        "${ApiConstants.baseUrl}customer/apply-vcip-application";
 
     final result = await _api.post(
       endpoint,

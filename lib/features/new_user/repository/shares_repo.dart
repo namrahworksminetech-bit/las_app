@@ -6,6 +6,8 @@ import 'package:las_app/core/network/api_client.dart';
 import 'package:las_app/core/results/result.dart';
 import 'package:las_app/core/app_state_provider.dart';
 
+import '../../../core/network/api_constants.dart';
+
 class SharesRepository {
   final ApiClient _apiClient;
   final AppStateProvider _appState;
@@ -19,7 +21,7 @@ class SharesRepository {
 
   /// 1️⃣ Fetch Upload URL (pre-signed S3 URL)
   Future<Result<bool>> getUploadUrl(String fileType) async {
-    const url = "https://api-uat.valuenable.in/lamf/laip/get-document-url";
+    const url = "${ApiConstants.baseUrl}laip/get-document-url";
 
     try {
       final response = await _apiClient.post(
@@ -91,7 +93,7 @@ class SharesRepository {
     required String dpId,
     required String holdingKey, // 👈 pass key from Bloc
   }) async {
-    const url = "https://api-uat.valuenable.in/lamf/laip/submit-share-detail";
+    const url = "${ApiConstants.baseUrl}laip/submit-share-detail";
 
     try {
       final token = _appState.token;

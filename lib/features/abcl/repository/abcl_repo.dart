@@ -4,6 +4,8 @@ import 'package:las_app/core/network/api_client.dart';
 import 'package:las_app/core/results/result.dart';
 import 'package:las_app/core/app_state_provider.dart';
 
+import '../../../core/network/api_constants.dart';
+
 class AbclRepository {
   final ApiClient _apiClient = GetIt.I<ApiClient>();
   final AppStateProvider _appState = GetIt.I<AppStateProvider>();
@@ -27,7 +29,7 @@ class AbclRepository {
 
     try {
       final response = await _apiClient.post(
-        "https://api-uat.valuenable.in/lamf/customer-portal/abcl-eligibility",
+        "${ApiConstants.baseUrl}customer-portal/abcl-eligibility",
         data: body,
         options: Options(
           validateStatus: (status) => true,      // prevents exception on 400

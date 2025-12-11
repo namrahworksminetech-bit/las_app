@@ -1,3 +1,16 @@
+import java.util.Properties
+import java.io.FileInputStream
+
+// Load keystore ONLY inside a top-level val
+val keystoreProperties: Properties by lazy {
+    Properties().apply {
+        val file = rootProject.file("key.properties")
+        if (file.exists()) {
+            load(FileInputStream(file))
+        }
+    }
+}
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -6,7 +19,7 @@ plugins {
 }
 
 android {
-    namespace = "com.las.app.las_app"
+    namespace = "com.valuenable.las"
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
@@ -20,23 +33,25 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.las.app.las_app"
+        applicationId = "com.valuenable.las"
         minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
-    buildTypes {
-        release {
-            signingConfig = signingConfigs.getByName("debug")
-            isMinifyEnabled = true
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+    signingConfigs {
+        create("release") {
+            storeFile = file(keystoreProperties["storeFile"] as String)
+            storePassword = keystoreProperties["storePassword"] as String
+            keyAlias = keystoreProperties["keyAlias"] as String
+            keyPassword = keystoreProperties["keyPassword"] as String
         }
-        debug {
-            signingConfig = signingConfigs.getByName("debug")
-            isMinifyEnabled = true
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+    }
+
+    buildTypes {
+        getByName("release") {
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 

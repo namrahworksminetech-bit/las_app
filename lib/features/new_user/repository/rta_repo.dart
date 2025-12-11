@@ -5,6 +5,8 @@ import 'package:get_it/get_it.dart';
 import 'package:las_app/core/app_state_provider.dart';
 import 'package:las_app/core/network/api_client.dart';
 
+import '../../../core/network/api_constants.dart';
+
 class RtaRepository {
   final ApiClient _apiClient;
   final AppStateProvider _appState;
@@ -30,7 +32,7 @@ class RtaRepository {
       throw Exception('Missing req_id in AppState');
     }
 
-    final url = 'https://api-uat.valuenable.in/lamf/customer/verify-rta-otp';
+    final url = '${ApiConstants.baseUrl}customer/verify-rta-otp';
 
     final Map<String, dynamic> body = {
       "req_id": reqId,

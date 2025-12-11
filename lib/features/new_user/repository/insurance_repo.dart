@@ -5,6 +5,8 @@ import 'package:las_app/core/network/api_client.dart';
 import 'package:las_app/core/results/result.dart';
 import 'package:las_app/core/app_state_provider.dart';
 
+import '../../../core/network/api_constants.dart';
+
 class InsuranceRepository {
   final ApiClient _apiClient;
   final AppStateProvider _appState;
@@ -18,7 +20,7 @@ class InsuranceRepository {
 
   /// 1️⃣ Fetch insurer list
   Future<Result<List<Map<String, dynamic>>>> getInsurers() async {
-    const url = "https://api-uat.valuenable.in/lamf/laip/get-company";
+    const url = "${ApiConstants.baseUrl}laip/get-company";
 
     try {
       final token = _appState.token;
@@ -47,7 +49,7 @@ class InsuranceRepository {
 
   /// 2️⃣ GET Upload URL for both unit + policy doc
   Future<Result<bool>> getUploadUrl(String fileType) async {
-    const url = "https://api-uat.valuenable.in/lamf/laip/get-document-url";
+    const url = "${ApiConstants.baseUrl}laip/get-document-url";
 
     try {
       final response = await _apiClient.post(url, data: {"fileType": fileType});
@@ -121,7 +123,7 @@ Future<Result<bool>> submitInsurance({
 
   try {
     final response = await _apiClient.post(
-      "https://api-uat.valuenable.in/lamf/laip/submit-policy-detail",
+      "${ApiConstants.baseUrl}laip/submit-policy-detail",
       data: {
         "company_code": insurerCode,
         "name": name,

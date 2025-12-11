@@ -7,6 +7,8 @@ import 'package:las_app/core/network/api_client.dart';
 import 'package:las_app/core/results/result.dart';
 import 'package:las_app/models/funds/mf_details_response_model.dart';
 
+import '../../../core/network/api_constants.dart';
+
 class LenderRepository {
   final ApiClient _apiClient;
 
@@ -93,7 +95,7 @@ class LenderRepository {
       );
 
       final response = await _apiClient.post(
-        "https://api-uat.valuenable.in/lamf/customer/edit-loan-amount",
+        "${ApiConstants.baseUrl}customer/edit-loan-amount",
         data: bodyJson,
         options: Options(
           headers: {

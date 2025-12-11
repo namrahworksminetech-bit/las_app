@@ -9,14 +9,15 @@ import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:universal_html/html.dart' as html;
 
+import '../../../core/network/api_constants.dart';
+
 class StatementRepository {
 
   Future<ClientStatementResponse?> getClientStatement(String reqId) async {
     final body = {"req_id": reqId};
 
-
     final res = await http.post(
-      Uri.parse("https://api-uat.valuenable.in/lamf/customer-portal/client-statement"),
+      Uri.parse("${ApiConstants.baseUrl}customer-portal/client-statement"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode(body),
     );
@@ -28,7 +29,7 @@ class StatementRepository {
     final body = {"req_id": reqId};
 
     final res = await http.post(
-      Uri.parse("https://api-uat.valuenable.in/lamf/customer-portal/holding-statement"),
+      Uri.parse("${ApiConstants.baseUrl}customer-portal/holding-statement"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode(body),
     );
