@@ -51,7 +51,7 @@ void _editFundValue() async {
           onPressed: () {
             Navigator.pop(context, double.tryParse(controller.text));
           },
-          child: const Text("Save"),
+          child: const Text("Proceed"),
         ),
       ],
     ),
@@ -60,9 +60,9 @@ void _editFundValue() async {
   if (newValue != null) {
     widget.onEditAmount(newValue); 
     
-  Future.microtask(() {
-    context.read<EligibilityBloc>().add(ConfirmFundSelection());
-  });
+  // Future.microtask(() {
+  //   context.read<EligibilityBloc>().add(ConfirmFundSelection());
+  // });
 
   }
 }
@@ -101,12 +101,15 @@ void _editFundValue() async {
         ),
       ),
       const SizedBox(width: Gaps.md),
-      CText(
-        formatCurrencyInt.format(widget.fund.fundValue ?? 0.0),
-        style: AppTypography.bodyWhite.copyWith(
-          fontWeight: FontWeight.w500,
-        ),
-      ),
+CText(
+  formatCurrencyInt.format(
+    widget.fund.updatedFundAmount ?? widget.fund.availableAmount,
+  ),
+  style: AppTypography.bodyWhite.copyWith(
+    fontWeight: FontWeight.w500,
+  ),
+),
+
     ],
   ),
 ),

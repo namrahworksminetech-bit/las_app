@@ -147,56 +147,60 @@ class _LenderCardState extends State<LenderCard> {
       ),
     );
   }
+void _stopEditing({required bool save}) {
+  if (!_isEditing) return;
 
-  void _stopEditing({required bool save}) {
-    if (!_isEditing) return;
+  if (!save) {
+    _amountController.text =
+        (widget.lender.loanAmount ?? 0).toStringAsFixed(0);
+    setState(() => _isEditing = false);
+    return;
+  }
 
-    if (!save) {
-      _amountController.text = (widget.lender.loanAmount ?? 0).toStringAsFixed(
-        0,
-      );
-      setState(() => _isEditing = false);
-      return;
-    }
+  double? newAmount = double.tryParse(_amountController.text);
 
-    double? newAmount;
-    if (save) {
-      newAmount = double.tryParse(_amountController.text);
-      if (newAmount == null || newAmount <= 0) {
-        _amountController.text = (widget.lender.loanAmount ?? 0)
-            .toStringAsFixed(0);
-        _showError('Invalid amount entered');
-        newAmount = null;
-      } else {
-        final double allowed = widget.lender.loanAmount ?? 0.0;
-        if (allowed > 0 && newAmount > allowed) {
-          final formattedAllowed = formatCurrency.format(allowed);
-          _amountController.text = (widget.lender.loanAmount ?? 0)
-              .toStringAsFixed(0);
+  
+  if (newAmount != null && newAmount < 25000) {
+    _amountController.text =
+        (widget.lender.loanAmount ?? 0).toStringAsFixed(0);
+    _showError('Amount must be at least ₹25,000');
+    newAmount = null;
+  }
 
-          _showError('Amount cannot exceed the limit of $formattedAllowed');
-          newAmount = null;
-        }
-      }
-    } else {
-      _amountController.text = (widget.lender.loanAmount ?? 0).toStringAsFixed(
-        0,
-      );
-    }
+  // 1️⃣ Invalid / zero / null number
+  else if (newAmount == null || newAmount <= 0) {
+    _amountController.text =
+        (widget.lender.loanAmount ?? 0).toStringAsFixed(0);
+    _showError('Invalid amount entered');
+    newAmount = null;
+  }
 
-    setState(() {
-      _isEditing = false;
-    });
+  // 2️⃣ Max eligible limit check (ONLY FOR valid ≥25k numbers)
+  else {
+    final double allowed = widget.lender.maxEligibleLimit ?? 0.0;
 
-    _focusNode.unfocus();
+    if (allowed > 0 && newAmount > allowed) {
+      final formattedAllowed = formatCurrency.format(allowed);
 
-    if (newAmount != null) {
-      // Notify parent to save — parent / bloc will show the global loader
-      widget.onAmountSaved(newAmount);
-
-      // No local loader here — global overlay (isLoading) will indicate progress
+      _amountController.text =
+          (widget.lender.loanAmount ?? 0).toStringAsFixed(0);
+      _showError('Amount cannot exceed the limit of $formattedAllowed');
+      newAmount = null;
     }
   }
+
+  // STOP editing
+  setState(() {
+    _isEditing = false;
+  });
+
+  _focusNode.unfocus();
+
+  // SAVE only if all checks passed
+  if (newAmount != null) {
+    widget.onAmountSaved(newAmount);
+  }
+}
 
   @override
   Widget build(BuildContext context) {

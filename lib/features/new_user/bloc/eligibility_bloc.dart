@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
@@ -134,7 +133,7 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     on<CheckPledgeStatus>(_onCheckPledgeStatus);
     on<RequestLocationAndStartKyc>(_onRequestLocationAndStartKyc);
     on<KycStepTapped>(_onKycStepTapped);
-    on<PennyDropPollingCompleted>(_onPennyDropPollingCompleted);
+ on<PennyDropPollingCompleted>(_onPennyDropPollingCompleted);
     on<NavigateToNextScreen>(_onNavigateToNextScreen);
     on<FetchPledgePhoneNumber>(_onFetchPledgePhoneNumber);
     on<SubmitPledgeOtp>(_onSubmitPledgeOtp);
@@ -142,32 +141,20 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     on<PledgeOtpChanged>(_onPledgeOtpChanged);
     on<TermsAgreementToggled>(_onTermsAgreementToggled);
     on<UpdateFundAmount>(_onUpdateFundAmount);
-    on<SetKycProcessing>(_onSetKycProcessing);
 
 
   }
 
-
-
-  void _onSetKycProcessing(
-    SetKycProcessing event,
-    Emitter<EligibilityState> emit,
-  ) {
-    try {
-      debugPrint('🔄 Setting KYC processing: ${event.isProcessing}');
-      emit(state.copyWith(kycLoading: event.isProcessing));
-    } catch (e) {
-      debugPrint('❌ Error setting KYC processing state: $e');
-    }
-  }
-
- void _onUpdateFundAmount(
+void _onUpdateFundAmount(
   UpdateFundAmount event,
   Emitter<EligibilityState> emit,
 ) {
   final updatedFunds = state.pledgeableFunds.map((fund) {
     if (fund.fundCode == event.fundCode) {
-      return fund.copyWith(updatedFundAmount: event.amount);
+      return fund.copyWith(
+        updatedFundAmount: event.amount,
+        availableAmount: event.amount, // ⭐ update display value also
+      );
     }
     return fund;
   }).toList();
@@ -198,6 +185,7 @@ void _onTermsAgreementToggled(
     Emitter<EligibilityState> emit,
   ) {
     emit(state.copyWith(isOtpVisible: !state.isOtpVisible));
+   
   }
 
   void _onPanEmailUpdated(
@@ -1464,27 +1452,38 @@ debugPrint('📤 ISIN_MODIFY (${isinModify.length}): $isinModify');
             );
           }).toList();
 // ⭐ Merge backend response with last edited fund's updated amount
-final mergedFunds = updatedData.pledgeableFunds.map((apiFund) {
-  if (apiFund.fundCode == state.lastEditedFundCode) {
-    return apiFund.copyWith(
-      updatedFundAmount: state.lastEditedFundAmount,
-    );
-  }
-  return apiFund;
-}).toList();
+final Map<String, double> existingEdits = {
+    for (var fund in state.pledgeableFunds)
+      if (fund.updatedFundAmount != null) 
+        fund.fundCode: fund.updatedFundAmount!
+  };
 
-          emit(
-            state.copyWith(
-              mfDetailsResponse: updatedData,
-              pledgeableFunds: mergedFunds,
-              lenders: updatedLenders,
-              isLoading: false,
-              hasUnsavedFundChanges: false,
-              generalErrorMessage: null,
-              previousSelectedFundIds: state.selectedFundIds,
-            ),
-          );
-        },
+  // 2. Merge backend response with ALL existing local edits
+  final mergedFunds = updatedData.pledgeableFunds.map((apiFund) {
+    // Check if we have a local edit for this specific fund
+    if (existingEdits.containsKey(apiFund.fundCode)) {
+      return apiFund.copyWith(
+        updatedFundAmount: existingEdits[apiFund.fundCode],
+        // You might want to update availableAmount too if your UI relies on it
+        availableAmount: existingEdits[apiFund.fundCode], 
+      );
+    }
+    // If no local edit, use the fresh data from API
+    return apiFund;
+  }).toList();
+
+  emit(
+    state.copyWith(
+      mfDetailsResponse: updatedData,
+      pledgeableFunds: mergedFunds, // <--- Use the fully merged list
+      lenders: updatedLenders,
+      isLoading: false,
+      hasUnsavedFundChanges: false,
+      generalErrorMessage: null,
+      previousSelectedFundIds: state.selectedFundIds,
+    ),
+  );
+ },
         failure: (error) {
           debugPrint('❌ editLoanAmount failed: $error');
           emit(state.copyWith(isLoading: false, generalErrorMessage: error));
@@ -2200,7 +2199,7 @@ final mergedFunds = updatedData.pledgeableFunds.map((apiFund) {
         );
         print('→ EMIT: success, isSavingLoan = false');
       } else if (result is Failure) {
-        final msg = "Failed to update loan amount";
+        final msg = "Loan amount should be more than 25000";
         emit(
           state.copyWith(
             isEditingLoan: false,
@@ -2747,44 +2746,10 @@ final mergedFunds = updatedData.pledgeableFunds.map((apiFund) {
                 await kycResult.when(
                   success: (result) {
                     debugPrint('✅ KYC Result: $result');
-                    // Check if user cancelled
-                    if (result.contains('User cancelled') || result.contains('cancelled')) {
-                      debugPrint('🚫 User cancelled - not triggering completion');
-                      _digioService.resetProcessingState();
-                      add(DigioKycFailed('User cancelled'));
-                    } else if (result.contains('KYC process completed')) {
-                      debugPrint('✅ KYC completed - starting penny drop polling');
-                      // Extract documentId from result
-                      final docIdMatch = RegExp(r'documentId : ([^,]+)').firstMatch(result);
-                      if (docIdMatch != null) {
-                        final docId = docIdMatch.group(1)?.trim();
-                        if (docId != null && docId.isNotEmpty) {
-                          debugPrint('💰 Starting penny drop polling with docId: $docId');
-                          // Show loader during polling
-                          emit(state.copyWith(isPennyDropPolling: true));
-                          // Start polling until success
-                          _digioRepository.startPollingKycStatus(
-                            null,
-                            docId,
-                            onPollingComplete: () {
-                              debugPrint('✅ Penny drop polling completed');
-                              // Use add() instead of emit() in callback
-                              add(const PennyDropPollingCompleted());
-                            },
-                          );
-                        } else {
-                          add(DigioKycFailed('No documentId found'));
-                        }
-                      } else {
-                        add(DigioKycFailed('Could not extract documentId'));
-                      }
-                    } else {
-                      add(const DigioKycCompleted());
-                    }
+                    add(const DigioKycCompleted());
                   },
                   failure: (error) {
                     debugPrint('❌ KYC failed: $error');
-                    _digioService.resetProcessingState();
                     add(DigioKycFailed(error));
                   },
                 );
@@ -2971,45 +2936,10 @@ final mergedFunds = updatedData.pledgeableFunds.map((apiFund) {
           debugPrint('🔔 WebSocket status received: $status');
 
           if (status == 'kyc_done') {
-            try {
-              debugPrint('✅ kyc_done - closing WebView, updating steps');
-              _webViewCloseController.add(true);
-              add(const UpdateKycStep(0, true));
-              add(const UpdateKycStep(1, true));
-              add(const SetKycProcessing(true));
-              
-              // Schedule state update and Digio trigger
-              Future.delayed(const Duration(milliseconds: 500), () {
-                try {
-                  if (!isClosed) {
-                    debugPrint('🔄 Refreshing pledge status after kyc_done');
-                    add(const CheckPledgeStatus());
-                    if (event.context != null) {
-                      Future.delayed(const Duration(milliseconds: 500), () {
-                        try {
-                          if (!isClosed) {
-                            debugPrint('🚀 Triggering Digio SDK after kyc_done');
-                            add(StartDigioKyc(reqId: reqId, context: event.context));
-                          }
-                        } catch (e) {
-                          debugPrint('❌ Error triggering Digio SDK: $e');
-                          add(const SetKycProcessing(false));
-                        }
-                      });
-                    } else {
-                      debugPrint('⚠️ No context available for Digio trigger');
-                      add(const SetKycProcessing(false));
-                    }
-                  }
-                } catch (e) {
-                  debugPrint('❌ Error in CheckPledgeStatus: $e');
-                  add(const SetKycProcessing(false));
-                }
-              });
-            } catch (e) {
-              debugPrint('❌ Error in kyc_done handler: $e');
-              add(const SetKycProcessing(false));
-            }
+            debugPrint('✅ kyc_done - closing WebView, updating steps');
+            _webViewCloseController.add(true);
+            add(const UpdateKycStep(0, true));
+            add(const UpdateKycStep(1, true));
           } else if (status == 'penny_drop_done') {
             debugPrint('✅ penny_drop_done - updating step 2');
             add(const UpdateKycStep(2, true));
@@ -3306,8 +3236,6 @@ final mergedFunds = updatedData.pledgeableFunds.map((apiFund) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('docId$reqId');
       await prefs.remove('pennydrop_done_$reqId');
-      // Clear cancelled state for manual trigger
-      _digioService.clearCancelledState();
       emit(state.copyWith(hasTriggeredDigio: false));
       add(StartDigioKyc(reqId: reqId, context: event.context));
     }
