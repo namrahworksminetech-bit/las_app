@@ -21,7 +21,9 @@ import 'package:las_app/features/new_user/repository/rta_repo.dart';
 import 'package:las_app/features/new_user/repository/shares_repo.dart';
 import 'package:las_app/features/new_user/repository/pledge_status_repo.dart';
 import 'package:las_app/helper_widgets/fund_utils.dart';
+import 'package:las_app/helper_widgets/funds_merger.dart';
 import 'package:las_app/models/funds/funds_detail_model.dart';
+import 'package:las_app/models/funds/lender_eligible_funds_model.dart';
 import 'package:las_app/models/funds/pledge_mf_response.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -100,7 +102,7 @@ class EligibilityBloc extends Bloc<EligibilityEvent, EligibilityState> {
     on<ViewDetailsToggled>(_onViewDetailsToggled);
     on<RefreshPortfolioPressed>(_onRefreshPortfolioPressed);
     on<BreakdownCategoryTapped>(_onBreakdownCategoryTapped);
-    on<EditLoanAmountPressed>(_onEditLoanAmountPressed);
+     on<EditLoanAmountPressed>(_onEditLoanAmountPressed);
     on<SaveEditedLoanAmount>(_onSaveEditedLoanAmount);
     on<LenderContinuePressed>(_onLenderContinuePressed);
     on<ProceedToLenderSelection>(_onProceedToLenderSelection);
@@ -1150,15 +1152,40 @@ print("Saved Email: ${getIt<AppStateProvider>().email}");
             );
           }).toList();
 
-          emit(
-            state.copyWith(
-              isStep2Loading: false,
-              lenders: lenders,
-              pledgeableFunds: mfResponse.pledgeableFunds,
-              mfDetailsResponse: mfResponse,
-              generalErrorMessage: null,
-            ),
-          );
+        // 1️⃣ Identify eligible funds for selected lender (default = first lender)
+final selectedLenderId = lenders.isNotEmpty ? lenders.first.id : '';
+final lenderItem = mfResponse.lenders.firstWhere(
+  (l) => l.id.toString() == selectedLenderId,
+  orElse: () => mfResponse.lenders.first,
+);
+
+final eligibleFunds = lenderItem.eligibleFunds ?? [];
+
+// 2️⃣ Merge full list
+final merged = FundsMerger.mergeFullList(
+  eligibleFunds: eligibleFunds,
+  fundDetails: mfResponse.fundDetails,
+);
+
+// 3️⃣ Auto-select only enabled (eligible) funds
+final initialSelected = merged
+    .where((f) => f.enabled)
+    .map((f) => f.fundCode)
+    .toSet();
+
+// 4️⃣ Emit updated state
+emit(
+  state.copyWith(
+    isStep2Loading: false,
+    lenders: lenders,
+    pledgeableFunds: merged,
+    selectedFundIds: initialSelected,
+    previousSelectedFundIds: initialSelected,
+    mfDetailsResponse: mfResponse,
+    generalErrorMessage: null,
+  ),
+);
+
 
           print("🟢 Stored lender + MF data successfully (Step 2).");
         },
@@ -1252,7 +1279,7 @@ print("Saved Email: ${getIt<AppStateProvider>().email}");
     final currentSelected = Set<String>.from(state.selectedFundIds);
     final previousSelected = Set<String>.from(state.previousSelectedFundIds);
 
-    // 🪄 Toggle logic: add/remove based on tap
+    // Toggle logic: add/remove based on tap
     if (currentSelected.contains(event.fundId)) {
       currentSelected.remove(event.fundId);
     } else {
@@ -1377,8 +1404,7 @@ print("Saved Email: ${getIt<AppStateProvider>().email}");
       debugPrint(
         '📤 ISIN_REMOVE (${filteredIsinRemove.length}): $filteredIsinRemove',
       );
-      // ⭐ BUILD ISIN_MODIFY LIST FOR EDITED FUND VALUES
-// ⭐ Only include the last edited fund
+
 if (state.lastEditedFundCode != null &&
     state.lastEditedFundAmount != null) {
 
@@ -1398,9 +1424,6 @@ if (state.lastEditedFundCode != null &&
 debugPrint('📤 ISIN_MODIFY (${isinModify.length}): $isinModify');
       if (skipped.isNotEmpty) debugPrint('⚠️ Skipped entries: $skipped');
 
-      // Determine loan_amount to send as nullable double:
-      // - when add/remove present -> send null
-      // - otherwise -> send actual baseLoanAmount
       double? loanAmountToSend;
       if (filteredIsinAdd.isNotEmpty || filteredIsinRemove.isNotEmpty) {
         loanAmountToSend = null;
@@ -1412,7 +1435,6 @@ debugPrint('📤 ISIN_MODIFY (${isinModify.length}): $isinModify');
         );
       }
 
-      // Final body preview for debugging
       final bodyPreview = {
         'req_id': reqId,
         'loan_amount': loanAmountToSend,
@@ -1423,7 +1445,6 @@ debugPrint('📤 ISIN_MODIFY (${isinModify.length}): $isinModify');
       };
       debugPrint('📦 Final request body preview: $bodyPreview');
 
-      // Call repository (new method with named args)
       final result = await lenderRepository.editLoanAmount(
         reqId: reqId,
         loanAmount: loanAmountToSend,
@@ -1451,39 +1472,50 @@ debugPrint('📤 ISIN_MODIFY (${isinModify.length}): $isinModify');
               tag: '',
             );
           }).toList();
-// ⭐ Merge backend response with last edited fund's updated amount
+
+
+// 1️⃣ Get correct eligible funds for the selected lender
+final lenderItem = updatedData.lenders
+    .firstWhere((l) => l.id.toString() == lenderId);
+
+final eligibleFunds = lenderItem.eligibleFunds ?? [];
+
+// 2️⃣ Merge FULL LIST using fundDetails + eligibleFunds
+final mergedFunds = FundsMerger.mergeFullList(
+  eligibleFunds: eligibleFunds,
+  fundDetails: updatedData.fundDetails,
+);
+
+// 3️⃣ Reapply user-edited fund values
 final Map<String, double> existingEdits = {
-    for (var fund in state.pledgeableFunds)
-      if (fund.updatedFundAmount != null) 
-        fund.fundCode: fund.updatedFundAmount!
-  };
+  for (var fund in state.pledgeableFunds)
+    if (fund.updatedFundAmount != null)
+      fund.fundCode: fund.updatedFundAmount!,
+};
 
-  // 2. Merge backend response with ALL existing local edits
-  final mergedFunds = updatedData.pledgeableFunds.map((apiFund) {
-    // Check if we have a local edit for this specific fund
-    if (existingEdits.containsKey(apiFund.fundCode)) {
-      return apiFund.copyWith(
-        updatedFundAmount: existingEdits[apiFund.fundCode],
-        // You might want to update availableAmount too if your UI relies on it
-        availableAmount: existingEdits[apiFund.fundCode], 
-      );
-    }
-    // If no local edit, use the fresh data from API
-    return apiFund;
-  }).toList();
+final updatedMergedFunds = mergedFunds.map((fund) {
+  if (existingEdits.containsKey(fund.fundCode)) {
+    return fund.copyWith(
+      updatedFundAmount: existingEdits[fund.fundCode],
+      availableAmount: existingEdits[fund.fundCode],
+    );
+  }
+  return fund;
+}).toList();
 
-  emit(
-    state.copyWith(
-      mfDetailsResponse: updatedData,
-      pledgeableFunds: mergedFunds, // <--- Use the fully merged list
-      lenders: updatedLenders,
-      isLoading: false,
-      hasUnsavedFundChanges: false,
-      generalErrorMessage: null,
-      previousSelectedFundIds: state.selectedFundIds,
-    ),
-  );
- },
+// 4️⃣ Emit updated state
+emit(
+  state.copyWith(
+    mfDetailsResponse: updatedData,
+    pledgeableFunds: updatedMergedFunds,
+    lenders: updatedLenders,
+    isLoading: false,
+    hasUnsavedFundChanges: false,
+    generalErrorMessage: null,
+    previousSelectedFundIds: state.selectedFundIds,
+  ),
+);
+        },
         failure: (error) {
           debugPrint('❌ editLoanAmount failed: $error');
           emit(state.copyWith(isLoading: false, generalErrorMessage: error));
@@ -1648,8 +1680,8 @@ final Map<String, double> existingEdits = {
       final addedFunds = currentFunds.difference(previousFunds);
       final removedFunds = previousFunds.difference(currentFunds);
 
-      // ✅ Build ISIN lists only if funds changed
-      // ✅ Build ISIN lists only if funds changed
+      //  Build ISIN lists only if funds changed
+  
       final isinAdd = addedFunds.isNotEmpty
           ? addedFunds.map<String>((id) {
               final fund = allFunds.firstWhere(
@@ -1735,125 +1767,7 @@ final Map<String, double> existingEdits = {
     }
   }
 
-  // Future<void> _onSaveEditedLoanAmount(
-  //   SaveEditedLoanAmount event,
-  //   Emitter<EligibilityState> emit,
-  // ) async {
-  //   print('🔔 SaveEditedLoanAmount START for lender ${event.lenderId} amount=${event.amount}');
 
-  //   try {
-  //     // Start a single global loader
-  //     emit(state.copyWith(
-  //       isEditingLoan: true,
-  //       isLoading: true,
-  //       lastSavedLenderId: null,
-  //       lastSaveMessage: null,
-  //       snackbarMessage: null,
-  //     ));
-  //     print('→ EMIT: global loading started for save of ${event.lenderId}');
-
-  //     final reqId = getIt<AppStateProvider>().reqId ?? '';
-
-  //     final List<String> isinAdd = <String>[];
-  //     final List<String> isinRemove = <String>[];
-  //     final List<String> isinModify = <String>[];
-
-  //     final bool hasFundEdits =
-  //         state.editedFundAmounts != null && state.editedFundAmounts.isNotEmpty;
-
-  //     if (hasFundEdits) {
-  //       final selectedFunds = state.pledgeableFunds.where((fund) {
-  //         return state.selectedFundIds.contains(fund.fundCode);
-  //       }).toList();
-
-  //       final builtModify = selectedFunds.map((f) {
-  //         final double editedValue = state.editedFundAmounts[f.fundCode] ?? 0.0;
-  //         final units = editedValue;
-  //         final unitsStr = units == units.roundToDouble()
-  //             ? units.toStringAsFixed(0)
-  //             : units.toStringAsFixed(3).replaceFirst(RegExp(r'\.?0+$'), '');
-  //         return '${f.fundCode}:${f.folioNo}:$unitsStr';
-  //       }).toList();
-
-  //       isinModify.addAll(builtModify);
-  //     }
-
-  //     final double loanAmountToSend = event.amount;
-
-  //     print("📤 Calling editLoanAmount API...");
-  //     print("🧩 reqId: $reqId | lenderId: ${event.lenderId} | loanAmount: $loanAmountToSend");
-  //     print("🔄 ISIN Modify → $isinModify");
-
-  //     final result = await lenderRepository.editLoanAmount(
-  //       reqId: reqId,
-  //       loanAmount: loanAmountToSend,
-  //       lenderId: event.lenderId,
-  //       isinAdd: isinAdd,
-  //       isinRemove: isinRemove,
-  //       isinModify: isinModify,
-  //     );
-
-  //     // SUCCESS
-  //     if (result is Success<MfDetailsResponse>) {
-  //       final updatedResponse = result.value;
-
-  //       final updatedLenders = state.lenders.map((l) {
-  //         if (l.id == event.lenderId) {
-  //           return l.copyWith(loanAmount: event.amount);
-  //         }
-  //         return l;
-  //       }).toList();
-
-  //       print('✅ Save success for lender ${event.lenderId} — updating state');
-
-  //       emit(state.copyWith(
-  //         mfDetailsResponse: updatedResponse,
-  //         lenders: updatedLenders,
-  //         pledgeableFunds: updatedResponse.pledgeableFunds,
-  //         isEditingLoan: false,
-  //         isLoading: false, // stop the global loader
-  //         lastSavedLenderId: event.lenderId,
-  //         lastSaveMessage: "Loan amount updated successfully!",
-  //         snackbarMessage: "Loan amount updated successfully!",
-  //       ));
-  //       print('→ EMIT: save success and global loading stopped for ${event.lenderId}');
-  //     } else if (result is Failure) {
-  //       final msg = "Failed to update loan amount";
-  //       print('⚠️ Save failed for lender ${event.lenderId}: $msg');
-
-  //       emit(state.copyWith(
-  //         isLoading: false,
-  //         isEditingLoan: false,
-  //         lastSavedLenderId: event.lenderId,
-  //         lastSaveMessage: msg,
-  //         snackbarMessage: msg,
-  //       ));
-  //       print('→ EMIT: save failure and global loading stopped for ${event.lenderId}');
-  //     } else {
-  //       print('⚠️ Save returned unexpected result type for lender ${event.lenderId}');
-
-  //       emit(state.copyWith(
-  //         isLoading: false,
-  //         isEditingLoan: false,
-  //         lastSavedLenderId: event.lenderId,
-  //         lastSaveMessage: "Unexpected server response",
-  //         snackbarMessage: "Unexpected server response",
-  //       ));
-  //       print('→ EMIT: unexpected result and global loading stopped for ${event.lenderId}');
-  //     }
-  //   } catch (e, stack) {
-  //     print('💥 Exception during SaveEditedLoanAmount for lender ${event.lenderId}: $e');
-  //     print(stack);
-  //     emit(state.copyWith(
-  //       isLoading: false,
-  //       isEditingLoan: false,
-  //       lastSavedLenderId: event.lenderId,
-  //       lastSaveMessage: "Something went wrong",
-  //       snackbarMessage: "Something went wrong",
-  //     ));
-  //     print('→ EMIT: exception and global loading stopped for ${event.lenderId}');
-  //   }
-  // }
   Future<void> _onSaveEditedLoanAmount(
     SaveEditedLoanAmount event,
     Emitter<EligibilityState> emit,
@@ -2097,9 +2011,7 @@ final Map<String, double> existingEdits = {
         }
       } catch (_) {}
 
-      // -------------------------------
-      // Keep your existing modify logic unchanged
-      // -------------------------------
+
       final bool hasFundEdits =
           state.editedFundAmounts != null && state.editedFundAmounts.isNotEmpty;
 
@@ -2117,14 +2029,8 @@ final Map<String, double> existingEdits = {
           return '${f.fundCode}:${f.folioNo}:$unitsStr';
         }).toList();
 
-        // add the built modify entries
-        // NOTE: this is exactly your existing logic
-        // (we're appending to the local isinModify defined below)
-        // ensure we have a local list to add to:
-        // (declare here)
       }
 
-      // build a fresh modify list (keeping original logic)
       final List<String> isinModify = <String>[];
       final bool hasModify =
           state.editedFundAmounts != null && state.editedFundAmounts.isNotEmpty;
@@ -2172,33 +2078,91 @@ final Map<String, double> existingEdits = {
         isinModify: isinModify,
       );
 
-      // -------------------------------
-      // Result handling (unchanged)
-      // -------------------------------
+     
       if (result is Success<MfDetailsResponse>) {
-        final updatedResponse = result.value;
+  final updatedResponse = result.value;
 
-        final updatedLenders = state.lenders.map((l) {
-          if (l.id == event.lenderId) {
-            return l.copyWith(loanAmount: event.amount);
-          }
-          return l;
-        }).toList();
+  debugPrint("🔄 SAVE SUCCESS → Rebuilding funds from edit response");
 
-        emit(
-          state.copyWith(
-            mfDetailsResponse: updatedResponse,
-            lenders: updatedLenders,
-            pledgeableFunds: updatedResponse.pledgeableFunds,
-            isEditingLoan: false,
-            isSavingLoan: false,
-            lastSavedLenderId: event.lenderId,
-            lastSaveMessage: "Loan amount updated successfully!",
-            snackbarMessage: "Loan amount updated successfully!",
-          ),
+  // -----------------------------------------
+  // 1️⃣ Build map for fast lookup
+  // -----------------------------------------
+  final pledgeableMap = {
+    for (var p in updatedResponse.pledgeableFunds) p.fundCode: p
+  };
+
+  // -----------------------------------------
+  // 2️⃣ Build eligible funds using pledgeableFunds (correct units/amounts)
+  // -----------------------------------------
+  final eligibleFunds = updatedResponse.fundDetails
+      .where((f) => f.isEligible == 1)
+      .map((f) {
+        final p = pledgeableMap[f.fundCode];
+
+        return EligibleFund(
+          fundName: f.fundName,
+          fundCode: f.fundCode,
+          unitsPledge: (p?.availableUnits ?? 0).toString(),
+          folioNo: f.folioNo,
         );
-        print('→ EMIT: success, isSavingLoan = false');
-      } else if (result is Failure) {
+      })
+      .toList();
+
+  debugPrint("🟢 Eligible funds = ${eligibleFunds.length}");
+
+  // -----------------------------------------
+  // 3️⃣ Merge full list (enabled/disabled + amounts)
+  // -----------------------------------------
+  final mergedFunds = FundsMerger.mergeFullList(
+    eligibleFunds: eligibleFunds,
+    fundDetails: updatedResponse.fundDetails,
+  );
+
+  debugPrint("🧪 Merge result → enabled=${mergedFunds.where((f)=>f.enabled).length}, "
+             "disabled=${mergedFunds.where((f)=>!f.enabled).length}");
+
+  // -----------------------------------------
+  // 4️⃣ Determine auto-selected funds
+  // -----------------------------------------
+  final updatedSelectedFunds = mergedFunds
+      .where((f) => f.enabled)
+      .map((f) => f.fundCode)
+      .toSet();
+
+  debugPrint("🎯 Auto-selected = ${updatedSelectedFunds.length}");
+
+  // -----------------------------------------
+  // 5️⃣ Update lenders UI
+  // -----------------------------------------
+  final updatedLenders = state.lenders.map((l) {
+    if (l.id == event.lenderId) {
+      return l.copyWith(loanAmount: event.amount);
+    }
+    return l;
+  }).toList();
+
+  // -----------------------------------------
+  // 6️⃣ Emit updated UI state
+  // -----------------------------------------
+  emit(
+    state.copyWith(
+      mfDetailsResponse: updatedResponse,
+      lenders: updatedLenders,
+      pledgeableFunds: mergedFunds,
+      selectedFundIds: updatedSelectedFunds,
+      previousSelectedFundIds: updatedSelectedFunds,
+      isEditingLoan: false,
+      isSavingLoan: false,
+      hasUnsavedFundChanges: false,
+      lastSavedLenderId: event.lenderId,
+      lastSaveMessage: "Loan amount updated successfully!",
+      snackbarMessage: "Loan amount updated successfully!",
+    ),
+  );
+
+  debugPrint("🎉 UI updated successfully!");
+}
+else if (result is Failure) {
         final msg = "Loan amount should be more than 25000";
         emit(
           state.copyWith(
@@ -2258,7 +2222,7 @@ final Map<String, double> existingEdits = {
   }
 
   //steps pressed
-  //steps pressed
+
   Future<void> _onNextStepPressed(
     NextStepPressed event,
     Emitter<EligibilityState> emit,

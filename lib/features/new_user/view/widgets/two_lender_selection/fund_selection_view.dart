@@ -9,8 +9,7 @@ import 'package:las_app/common_widgets/c_snackbar.dart';
 import 'package:las_app/common_widgets/c_text.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
-import 'package:las_app/core/theme/app_typography.dart';
-import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
+import 'package:las_app/core/theme/app_typography.dart'; import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
 import 'package:las_app/features/new_user/view/widgets/three_kyc_verification/step_checker_view.dart';
 import 'package:las_app/features/new_user/view/widgets/two_lender_selection/fund_list_item.dart';
 
@@ -92,7 +91,6 @@ class FundSelectionView extends StatelessWidget {
                 ),
               );
 
-              // dispatch save event AFTER showing loader
               eligibilityBloc.add(
                 SaveEditedLoanAmount(lender.id, enteredAmount),
               );
@@ -220,13 +218,13 @@ class FundSelectionView extends StatelessWidget {
                   },
                 ),
                 TextButton(
-                  child: CText(
+                  onPressed: _onConfirm,
+                    child: CText(
                     'confirm'.tr,
                     style: AppTypography.bodyWhite.copyWith(
                       color: AppColors.bPrimaryColor,
                     ),
                   ),
-                  onPressed: _onConfirm,
                 ),
               ],
             );
@@ -236,29 +234,24 @@ class FundSelectionView extends StatelessWidget {
     );
   }
 
-  void _goBackToLenderSelection(BuildContext context) {
-    final bloc = context.read<EligibilityBloc>();
-
-    // update bloc state (pageIndex = 2)
-    bloc.add(const JumpToPage(2));
-
-    // pop back to previous screen (Lender Selection)
-    Navigator.of(context).pop();
-  }
-
   @override
   Widget build(BuildContext context) {
     final bloc = context.read<EligibilityBloc>();
     final state = context.watch<EligibilityBloc>().state;
     final eligibilityBloc = context.read<EligibilityBloc>();
 
-    // 🧩 Auto-select all funds on UI load (once)
-    if (state.selectedFundIds.isEmpty && state.pledgeableFunds.isNotEmpty) {
-      final allFundIds = state.pledgeableFunds.map((f) => f.fundCode).toSet();
-      context.read<EligibilityBloc>().add(AutoSelectAllFunds(allFundIds));
-      print('🟢 Auto-selected all ${allFundIds.length} funds on UI load');
-    }
 
+//        if (state.selectedFundIds.isEmpty && state.pledgeableFunds.isNotEmpty) {
+//      final eligibleFundCodes = state.pledgeableFunds
+//     .where((f) => f.enabled == true)   // very important
+//     .map((f) => f.fundCode)
+//     .toSet();
+
+// context.read<EligibilityBloc>().add(
+//   AutoSelectAllFunds(eligibleFundCodes),
+// );
+
+// print("🟢 Auto-selected only eligible funds: ${eligibleFundCodes.length}");}
     final selectedLender = state.lenders.firstWhere(
       (l) => l.id == state.selectedLenderId,
       orElse: () => state.lenders.isNotEmpty
@@ -310,12 +303,12 @@ class FundSelectionView extends StatelessWidget {
             builder: (ctx) => BlocProvider.value(
               value: eligibilityBloc, // pass the existing instance
               child:
-                  KycVerificationScreen(), // no `const` — ensures fresh instance/context
+                  KycVerificationScreen(), 
             ),
           ),
         );
 
-        // Acknowledge navigation so bloc doesn't try again
+
         context.read<EligibilityBloc>().add(AcknowledgeKycNavigation());
       },
       child: LayoutBuilder(
@@ -575,7 +568,6 @@ class FundSelectionView extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    /// 🔥 Show Save Changes button ONLY when there are unsaved changes
                     if (state.hasUnsavedFundChanges)
                       CButton(
                         text: "Save Changes",

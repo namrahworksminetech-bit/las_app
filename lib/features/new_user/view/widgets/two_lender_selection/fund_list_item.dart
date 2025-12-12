@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:las_app/common_widgets/c_text.dart';
 import 'package:las_app/core/theme/app_colors.dart';
 import 'package:las_app/core/theme/app_spacing.dart';
 import 'package:las_app/core/theme/app_typography.dart';
-import 'package:las_app/features/new_user/bloc/eligibility_bloc.dart';
+
 import 'package:las_app/models/funds/pledgeable_model.dart';
 
 class FundListItem extends StatefulWidget {
@@ -77,22 +76,26 @@ void _editFundValue() async {
       child: Column(
         children: [
          InkWell(
-  onTap: () => setState(() => _isExpanded = !_isExpanded),
+onTap: widget.fund.enabled
+    ? () => setState(() => _isExpanded = !_isExpanded)
+    : null,
+
   child: Row(
     children: [
       // ✅ Checkbox separated, so tapping it won't expand/collapse
       GestureDetector(
-        onTap: widget.onToggle, // manually trigger the toggle event
+        onTap: widget.fund.enabled ? widget.onToggle : null, // manually trigger the toggle event
         child: Checkbox(
-          value: widget.isSelected,
-          onChanged: (_) => widget.onToggle(),
-          activeColor: AppColors.borderPrimaryColor,
-          checkColor: AppColors.white,
-          side: const BorderSide(
-            color: AppColors.bSecondaryColor,
-            width: 1.5,
-          ),
-        ),
+  value: widget.isSelected,
+  onChanged: widget.fund.enabled ? (_) => widget.onToggle() : null,
+  activeColor: AppColors.borderPrimaryColor,
+  checkColor: AppColors.white,
+  side: const BorderSide(
+    color: AppColors.bSecondaryColor,
+    width: 1.5,
+  ),
+),
+
       ),
       Expanded(
         child: CText(
@@ -174,15 +177,16 @@ Widget _buildDetailRow(String title, String value, {VoidCallback? onEdit}) {
           ),
           const SizedBox(width: 6),
 
-          if (onEdit != null)
-            GestureDetector(
-              onTap: onEdit,
-              child: const Icon(
-                Icons.edit_outlined,
-                color: AppColors.bSecondaryColor,
-                size: 16,
-              ),
-            ),
+         if (onEdit != null && widget.fund.active && widget.fund.enabled)
+  GestureDetector(
+    onTap: onEdit,
+    child: const Icon(
+      Icons.edit_outlined,
+      color: AppColors.bSecondaryColor,
+      size: 16,
+    ),
+  ),
+
         ],
       ),
     ],

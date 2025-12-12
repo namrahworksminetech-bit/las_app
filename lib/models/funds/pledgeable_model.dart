@@ -13,7 +13,8 @@ class PledgeableFund extends Equatable {
   final String folioNo;
   final String rtaName;
  final double? updatedFundAmount;
-
+  final bool enabled;
+  final bool active;
   const PledgeableFund({
     required this.fundName,
     required this.fundValue,
@@ -27,6 +28,8 @@ class PledgeableFund extends Equatable {
     required this.folioNo,
     required this.rtaName,
     this.updatedFundAmount,
+       this.enabled = false,
+    this.active = false,
   });
 
   /// --- JSON Parsing Helpers ---
@@ -51,6 +54,8 @@ class PledgeableFund extends Equatable {
       folioNo: json['folioNo']?.toString() ?? '',
       rtaName: json['rtaName'] ?? '',
       updatedFundAmount: null,
+        enabled: false,
+      active: false,
     );
   }
 
@@ -82,6 +87,8 @@ class PledgeableFund extends Equatable {
     String? folioNo,
     String? rtaName,
     double? updatedFundAmount,
+        bool? enabled,
+    bool? active,
   }) {
     return PledgeableFund(
       fundName: fundName ?? this.fundName,
@@ -96,6 +103,8 @@ class PledgeableFund extends Equatable {
       folioNo: folioNo ?? this.folioNo,
       rtaName: rtaName ?? this.rtaName,
       updatedFundAmount: updatedFundAmount ?? this.updatedFundAmount,
+        enabled: enabled ?? this.enabled,
+      active: active ?? this.active,
     );
   }
 
@@ -113,6 +122,8 @@ class PledgeableFund extends Equatable {
     folioNo,
     rtaName,
     updatedFundAmount,
+       enabled,
+        active,
   ];
 
   factory PledgeableFund.empty() => const PledgeableFund(
@@ -127,5 +138,7 @@ class PledgeableFund extends Equatable {
     schemeCode: '',
     folioNo: '',
     rtaName: '',
+     enabled: false,
+        active: false,
   );
 }

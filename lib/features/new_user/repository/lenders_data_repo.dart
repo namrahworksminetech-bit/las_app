@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:las_app/core/app_state_provider.dart';
 import 'package:las_app/core/network/api_client.dart';
@@ -107,6 +108,7 @@ class LenderRepository {
 
       print("📥 HTTP code: ${response.statusCode}");
       print("📥 Raw response data: ${response.data}");
+debugPrint("📥 FULL EDIT RESPONSE = ${jsonEncode(response.data)}", wrapWidth: 1024);
 
       // response.data might already be a Map or a JSON string
       Map<String, dynamic> decoded;

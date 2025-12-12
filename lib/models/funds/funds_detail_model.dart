@@ -8,6 +8,7 @@ class FundDetail {
   final String amcCode;
   final String schemeCode;
   final String rtaName;
+final int isEligible;
 
   // NEW: the amount/units user may edit (used for modify entries)
   final double? updatedFundAmount;
@@ -23,6 +24,7 @@ class FundDetail {
     this.schemeCode = '',
     this.rtaName = '',
     this.updatedFundAmount,
+      this.isEligible = 0,  
   });
 
   factory FundDetail.fromJson(Map<String, dynamic> json) {
@@ -38,6 +40,9 @@ class FundDetail {
       amcCode: json['amcCode'] ?? '',
       schemeCode: json['schemeCode'] ?? '',
       rtaName: json['rtaName'] ?? '',
+     isEligible: int.tryParse((json['is_eligible'] ?? '0').toString()) ?? 0,
+
+
       updatedFundAmount: json['updatedFundAmount'] != null
           ? double.tryParse(json['updatedFundAmount'].toString())
           : null,
@@ -54,8 +59,11 @@ class FundDetail {
         'amcCode': amcCode,
         'schemeCode': schemeCode,
         'rtaName': rtaName,
+        'is_eligible': isEligible,
+
         if (updatedFundAmount != null) 'updatedFundAmount': updatedFundAmount,
       };
+
 
   FundDetail copyWith({
     String? fundName,
