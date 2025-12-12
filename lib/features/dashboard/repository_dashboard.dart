@@ -54,6 +54,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'model_dashboard.dart';
 import 'package:las_app/core/app_state_provider.dart';
@@ -73,7 +74,9 @@ class DashboardRepository {
     try {
       /// Get token from AppState (same as RtaRepository)
       final token = _appState.token;
-      final reqId = _appState.reqId;
+      // final reqId = _appState.reqId;
+      final prefs = await SharedPreferences.getInstance();
+      final reqId = prefs.getString("req_id");
 
       if (token == null || token.isEmpty) {
         throw Exception('Missing auth token');

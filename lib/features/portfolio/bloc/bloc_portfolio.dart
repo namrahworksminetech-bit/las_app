@@ -9,6 +9,7 @@ import 'package:las_app/core/utils/enums.dart';
 import 'package:las_app/features/portfolio/model_portfolio.dart';
 import 'package:las_app/features/portfolio/repository/statement_repo.dart';
 import 'package:path_provider/path_provider.dart';
+import '../../../core/utils/file_management.dart';
 import '../repository/repository_portfolio.dart';
 part 'event_portfolio.dart';
 part 'state_portfolio.dart';
@@ -87,7 +88,11 @@ class PortfolioBloc extends Bloc<PortfolioEvent, PortfolioState> {
 
 
   Future<void> _savePdf(String base64String, String filename) async {
+
+
     final bytes = base64Decode(base64String);
+    var pdfResult = await PdfFileConverter.createAndOpenPdf(
+        base64String, 'Transactions-${DateTime.now().millisecondsSinceEpoch}');
 
     final dir = await getApplicationDocumentsDirectory();
     final file = File("${dir.path}/$filename");

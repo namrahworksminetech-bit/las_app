@@ -41,7 +41,7 @@ class _SliqAppState extends State<SliqApp> {
   Widget build(BuildContext context) {
     return AppContainer(
       child: GetMaterialApp(
-        title: 'sliQ'.tr,
+        title: 'SLiQ',
         debugShowCheckedModeBanner: false,
 
         translations: LocalizationService(),

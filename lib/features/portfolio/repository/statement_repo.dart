@@ -7,6 +7,7 @@ import 'package:las_app/models/statement/client_statement_response.dart';
 import 'package:las_app/models/statement/holding_statement_response.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:universal_html/html.dart' as html;
 
 import '../../../core/network/api_constants.dart';
@@ -14,7 +15,9 @@ import '../../../core/network/api_constants.dart';
 class StatementRepository {
 
   Future<ClientStatementResponse?> getClientStatement(String reqId) async {
-    final body = {"req_id": reqId};
+    final prefs = await SharedPreferences.getInstance();
+    final requestId = prefs.getString("req_id");
+    final body = {"req_id": requestId};
 
     final res = await http.post(
       Uri.parse("${ApiConstants.baseUrl}customer-portal/client-statement"),
@@ -26,7 +29,9 @@ class StatementRepository {
   }
 
   Future<HoldingStatementResponse?> getHoldingStatement(String reqId) async {
-    final body = {"req_id": reqId};
+    final prefs = await SharedPreferences.getInstance();
+    final requestId = prefs.getString("req_id");
+    final body = {"req_id": requestId};
 
     final res = await http.post(
       Uri.parse("${ApiConstants.baseUrl}customer-portal/holding-statement"),

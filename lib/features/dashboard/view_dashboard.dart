@@ -425,6 +425,11 @@ class _DashboardState extends State<Dashboard> {
     return FutureBuilder(
       future: DashboardRepository().getDashboard(),
       builder: (context, snapData) {
+        if (snapData.connectionState == ConnectionState.waiting) {
+          return Center(
+            child: CircularProgressIndicator(color: AppColors.kPrimaryColor),
+          );
+        }
         return Column(
           children: [
             appBarLayout(),
@@ -434,31 +439,26 @@ class _DashboardState extends State<Dashboard> {
                 children: [
                   cardLayout(snapData),
                   Gaps.hMd,
-                  if ((double.parse(
-                        snapData.data?.data?.availableCreditLimit ?? '0',
-                      )) <
-                      0)
-                    Row(
-                      children: [
-                        Expanded(
-                          child: CButton(
-                            text: "Continue Application",
-                            type: ButtonType.primary,
-                            onPressed: () =>
-                                _onContinueApplicationPressed(context),
-                          ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CButton(
+                          text: "Continue Application",
+                          type: ButtonType.primary,
+                          onPressed: () =>
+                              _onContinueApplicationPressed(context),
                         ),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: CButton(
-                            text: "Cancel Application",
-                            type: ButtonType.primaryWhite,
-                            onPressed: () =>
-                                _onCancelApplicationPressed(context),
-                          ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: CButton(
+                          text: "Cancel Application",
+                          type: ButtonType.primaryWhite,
+                          onPressed: () => _onCancelApplicationPressed(context),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
+                  ),
 
                   Gaps.hMd,
 

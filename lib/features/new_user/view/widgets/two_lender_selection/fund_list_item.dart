@@ -30,89 +30,95 @@ class FundListItem extends StatefulWidget {
 class _FundListItemState extends State<FundListItem> {
   bool _isExpanded = false;
 
-void _editFundValue() async {
-  final controller = TextEditingController(
-    text: (widget.fund.updatedFundAmount ?? widget.fund.availableAmount)
-        .toString(),
-  );
+  void _editFundValue() async {
+    final controller = TextEditingController(
+      text: (widget.fund.updatedFundAmount ?? widget.fund.availableAmount)
+          .toString(),
+    );
 
-  final newValue = await showDialog<double>(
-    context: context,
-    builder: (_) => AlertDialog(
-      title: Text("Edit Fund Value"),
-      content: TextField(
-        controller: controller,
-        keyboardType: TextInputType.number,
-        decoration: const InputDecoration(hintText: "Enter new fund value"),
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context, double.tryParse(controller.text));
-          },
-          child: const Text("Proceed"),
+    final newValue = await showDialog<double>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text("Edit Fund Value"),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(hintText: "Enter new fund value"),
         ),
-      ],
-    ),
-  );
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context, double.tryParse(controller.text));
+            },
+            child: const Text("Proceed"),
+          ),
+        ],
+      ),
+    );
 
-  if (newValue != null) {
-    widget.onEditAmount(newValue); 
-    
-  // Future.microtask(() {
-  //   context.read<EligibilityBloc>().add(ConfirmFundSelection());
-  // });
+    if (newValue != null) {
+      widget.onEditAmount(newValue);
 
+      // Future.microtask(() {
+      //   context.read<EligibilityBloc>().add(ConfirmFundSelection());
+      // });
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
-    final formatCurrencyInt =
-        NumberFormat.currency(locale: 'en_IN', symbol: '₹ ', decimalDigits: 0);
+    final formatCurrencyInt = NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '₹ ',
+      decimalDigits: 0,
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
         children: [
-         InkWell(
-  onTap: () => setState(() => _isExpanded = !_isExpanded),
-  child: Row(
-    children: [
-      // ✅ Checkbox separated, so tapping it won't expand/collapse
-      GestureDetector(
-        onTap: widget.onToggle, // manually trigger the toggle event
-        child: Checkbox(
-          value: widget.isSelected,
-          onChanged: (_) => widget.onToggle(),
-          activeColor: AppColors.borderPrimaryColor,
-          checkColor: AppColors.white,
-          side: const BorderSide(
-            color: AppColors.bSecondaryColor,
-            width: 1.5,
+          InkWell(
+            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            child: Row(
+              children: [
+                // ✅ Checkbox separated, so tapping it won't expand/collapse
+                GestureDetector(
+                  onTap: widget.onToggle, // manually trigger the toggle event
+                  child: Checkbox(
+                    value: widget.isSelected,
+                    onChanged: (v) {},
+                    // onChanged: (_) => widget.onToggle(),
+                    activeColor: AppColors.borderPrimaryColor,
+                    checkColor: AppColors.white,
+                    side: const BorderSide(
+                      color: AppColors.bSecondaryColor,
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: CText(
+                    widget.fund.fundName ?? '-',
+                    style: AppTypography.bodyWhite,
+                  ),
+                ),
+                const SizedBox(width: Gaps.md),
+                CText(
+                  formatCurrencyInt.format(
+                    widget.fund.updatedFundAmount ??
+                        widget.fund.availableAmount,
+                  ),
+                  style: AppTypography.bodyWhite.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
-      Expanded(
-        child: CText(
-          widget.fund.fundName ?? '-',
-          style: AppTypography.bodyWhite,
-        ),
-      ),
-      const SizedBox(width: Gaps.md),
-CText(
-  formatCurrencyInt.format(
-    widget.fund.updatedFundAmount ?? widget.fund.availableAmount,
-  ),
-  style: AppTypography.bodyWhite.copyWith(
-    fontWeight: FontWeight.w500,
-  ),
-),
-
-    ],
-  ),
-),
 
           AnimatedSize(
             duration: const Duration(milliseconds: 300),
@@ -127,23 +133,23 @@ CText(
                     ),
                     child: Column(
                       children: [
-                        SizedBox(height: 3,),
+                        SizedBox(height: 3),
                         _buildDetailRow(
                           'totalUnits'.tr,
                           '${widget.fund.lienEligibleUnits ?? 0.0}',
                         ),
                         const SizedBox(height: Gaps.md),
-                       _buildDetailRow(
-  'totalFundValue'.trParams({
-    'available': (widget.fund.availableAmount).toStringAsFixed(2),
-  }),
-  formatCurrencyInt.format(
-    widget.fund.updatedFundAmount ?? widget.fund.availableAmount,
-  ),
-  onEdit: _editFundValue, 
-),
-
-                       
+                        _buildDetailRow(
+                          'totalFundValue'.trParams({
+                            'available': (widget.fund.availableAmount)
+                                .toStringAsFixed(2),
+                          }),
+                          formatCurrencyInt.format(
+                            widget.fund.updatedFundAmount ??
+                                widget.fund.availableAmount,
+                          ),
+                          onEdit: _editFundValue,
+                        ),
                       ],
                     ),
                   )
@@ -159,34 +165,33 @@ CText(
     );
   }
 
-Widget _buildDetailRow(String title, String value, {VoidCallback? onEdit}) {
-  return Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      Expanded(child: CText(title, style: AppTypography.bodySecondary)),
-      Row(
-        children: [
-          CText(
-            value,
-            style: AppTypography.bodyWhite.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(width: 6),
-
-          if (onEdit != null)
-            GestureDetector(
-              onTap: onEdit,
-              child: const Icon(
-                Icons.edit_outlined,
-                color: AppColors.bSecondaryColor,
-                size: 16,
+  Widget _buildDetailRow(String title, String value, {VoidCallback? onEdit}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(child: CText(title, style: AppTypography.bodySecondary)),
+        Row(
+          children: [
+            CText(
+              value,
+              style: AppTypography.bodyWhite.copyWith(
+                fontWeight: FontWeight.w500,
               ),
             ),
-        ],
-      ),
-    ],
-  );
-}
+            const SizedBox(width: 6),
 
+            if (onEdit != null)
+              GestureDetector(
+                onTap: onEdit,
+                child: const Icon(
+                  Icons.edit_outlined,
+                  color: AppColors.bSecondaryColor,
+                  size: 16,
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
 }

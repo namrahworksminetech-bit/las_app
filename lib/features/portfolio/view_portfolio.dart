@@ -88,11 +88,16 @@ class _PortfolioState extends State<Portfolio> {
 
   Widget bodyLayout() {
     return SafeArea(
-      child: SingleChildScrollView(
-        child: FutureBuilder(
-          future: DashboardRepository().getDashboard(),
-          builder: (context, snapData) {
-            return Column(
+      child: FutureBuilder(
+        future: DashboardRepository().getDashboard(),
+        builder: (context, snapData) {
+          if (snapData.connectionState == ConnectionState.waiting) {
+            return Center(
+              child: CircularProgressIndicator(color: AppColors.kPrimaryColor),
+            );
+          }
+          return SingleChildScrollView(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 appBarLayout(),
@@ -248,9 +253,9 @@ class _PortfolioState extends State<Portfolio> {
                   ),
                 ),
               ],
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -260,10 +265,6 @@ class _PortfolioState extends State<Portfolio> {
     var progress =
         (double.parse(v?.availableAmount ?? '0') /
         double.parse(v?.availableCreditLimit ?? '0'));
-    debugPrint('availableCreditLimit ::: ${v?.availableCreditLimit}');
-    debugPrint(
-      'Condition ::: ${(int.parse(v?.availableCreditLimit ?? '0')) > 0}',
-    );
     return Container(
       padding: EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -478,247 +479,266 @@ class _PortfolioState extends State<Portfolio> {
 
   Widget repayLayout(BuildContext ctx) {
     final reqId = GetIt.I<AppStateProvider>().reqId ?? '';
-    return FutureBuilder(
-      future: PortfolioRepository().repayment({'reqId': reqId}),
-      builder: (context, snapData) {
-        var v = (snapData.data?.data?.isNotEmpty ?? false)
-            ? (snapData.data?.data?.first ?? RepayModel())
-            : RepayModel();
-        return Padding(
-          padding: EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Repay Funds',
-                style: AppTypography.semiTxt.copyWith(
-                  color: Colors.black,
-                  fontSize: 18,
-                ),
-              ),
-              Text(
-                'Complete your repayment securely through your bank.',
-                style: AppTypography.regularTxt.copyWith(
-                  color: Color(0xFF666666),
-                  fontSize: 14,
-                ),
-              ),
-              Gaps.hMd,
-              // Container(
-              //   decoration: BoxDecoration(
-              //     border: Border.all(color: AppColors.kPrimaryColor),
-              //     borderRadius: BorderRadius.circular(8),
-              //   ),
-              //   child: Row(children: [
-              //     Container(
-              //       height: 40,
-              //       child: Text('Principle Amount'),
-              //     )
-              //   ]),
-              // ),
-              // Container(
-              //   decoration: BoxDecoration(
-              //     borderRadius: BorderRadiusGeometry.circular(4),
-              //   ),
-              // ),
-              Text(
-                'Lender Bank Details (Transfer To)',
-                style: AppTypography.regularTxt.copyWith(
-                  color: Color(0xFF1A1A1A),
-                  fontSize: 14,
-                ),
-              ),
-              Gaps.hXs,
-              Flexible(
-                child: SingleChildScrollView(
-                  child: Container(
-                    padding: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Color(0xFFF2F2F2)),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Bank Name',
-                              style: AppTypography.semiTxt.copyWith(
-                                color: Colors.black,
-                                fontSize: 14,
-                              ),
-                            ),
-                            Text(
-                              '${v.bankName}',
-                              style: AppTypography.regularTxt.copyWith(
-                                color: Colors.black,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 8),
-                        Container(height: 1, color: Color(0xFFE5E5E5)),
-                        SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Account Number',
-                              style: AppTypography.semiTxt.copyWith(
-                                color: Colors.black,
-                                fontSize: 14,
-                              ),
-                            ),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  '${v.accountNumber}',
-                                  style: AppTypography.regularTxt.copyWith(
-                                    color: Colors.black,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                SizedBox(width: 4),
-                                Ast.svg.ic_copy.load(),
-                              ],
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 8),
-                        Container(height: 1, color: Color(0xFFE5E5E5)),
-                        SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'IFSC Code',
-                              style: AppTypography.semiTxt.copyWith(
-                                color: Colors.black,
-                                fontSize: 14,
-                              ),
-                            ),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  '${v.ifscCode}',
-                                  style: AppTypography.regularTxt.copyWith(
-                                    color: Colors.black,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                SizedBox(width: 4),
-                                Ast.svg.ic_copy.load(),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Gaps.hXs,
-              Align(
-                alignment: Alignment.center,
-                child: InkWell(
-                  onTap: () => ctx.read<PortfolioBloc>().add(
-                    OnClickPaymentTutorial(isTutorial: true),
-                  ),
-                  child: Text(
-                    'How to Complete Payment?',
-                    style: AppTypography.regularTxt.copyWith(
-                      color: Color(0xFF666666),
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: 24),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  minimumSize: Size(0, 60),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                onPressed: () => Navigator.of(context).pop(),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+    return BlocProvider(
+      create: (context) => PortfolioBloc(),
+      child: BlocBuilder<PortfolioBloc, PortfolioState>(
+        builder: (context, state) {
+          return FutureBuilder(
+            future: PortfolioRepository().repayment({'reqId': reqId}),
+            builder: (context, snapData) {
+              var v = (snapData.data?.data?.isNotEmpty ?? false)
+                  ? (snapData.data?.data?.first ?? RepayModel())
+                  : RepayModel();
+              return Padding(
+                padding: EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Back to Portfolio',
+                      'Repay Funds',
                       style: AppTypography.semiTxt.copyWith(
-                        color: Colors.white,
+                        color: Colors.black,
+                        fontSize: 18,
+                      ),
+                    ),
+                    Text(
+                      'Complete your repayment securely through your bank.',
+                      style: AppTypography.regularTxt.copyWith(
+                        color: Color(0xFF666666),
                         fontSize: 14,
                       ),
                     ),
-                    SizedBox(width: 8),
-                    Ast.svg.ic_down.load(),
+                    Gaps.hMd,
+                    // Container(
+                    //   decoration: BoxDecoration(
+                    //     border: Border.all(color: AppColors.kPrimaryColor),
+                    //     borderRadius: BorderRadius.circular(8),
+                    //   ),
+                    //   child: Row(children: [
+                    //     Container(
+                    //       height: 40,
+                    //       child: Text('Principle Amount'),
+                    //     )
+                    //   ]),
+                    // ),
+                    // Container(
+                    //   decoration: BoxDecoration(
+                    //     borderRadius: BorderRadiusGeometry.circular(4),
+                    //   ),
+                    // ),
+                    Text(
+                      'Lender Bank Details (Transfer To)',
+                      style: AppTypography.regularTxt.copyWith(
+                        color: Color(0xFF1A1A1A),
+                        fontSize: 14,
+                      ),
+                    ),
+                    Gaps.hXs,
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: Container(
+                          padding: EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Color(0xFFF2F2F2)),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Bank Name',
+                                    style: AppTypography.semiTxt.copyWith(
+                                      color: Colors.black,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${v.bankName}',
+                                    style: AppTypography.regularTxt.copyWith(
+                                      color: Colors.black,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 8),
+                              Container(height: 1, color: Color(0xFFE5E5E5)),
+                              SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Account Number',
+                                    style: AppTypography.semiTxt.copyWith(
+                                      color: Colors.black,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        '${v.accountNumber}',
+                                        style: AppTypography.regularTxt
+                                            .copyWith(
+                                              color: Colors.black,
+                                              fontSize: 14,
+                                            ),
+                                      ),
+                                      SizedBox(width: 4),
+                                      Ast.svg.ic_copy.load(),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 8),
+                              Container(height: 1, color: Color(0xFFE5E5E5)),
+                              SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'IFSC Code',
+                                    style: AppTypography.semiTxt.copyWith(
+                                      color: Colors.black,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        '${v.ifscCode}',
+                                        style: AppTypography.regularTxt
+                                            .copyWith(
+                                              color: Colors.black,
+                                              fontSize: 14,
+                                            ),
+                                      ),
+                                      SizedBox(width: 4),
+                                      Ast.svg.ic_copy.load(),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Gaps.hXs,
+                    Align(
+                      alignment: Alignment.center,
+                      child: InkWell(
+                        onTap: () => ctx.read<PortfolioBloc>().add(
+                          OnClickPaymentTutorial(isTutorial: true),
+                        ),
+                        child: Text(
+                          'How to Complete Payment?',
+                          style: AppTypography.regularTxt.copyWith(
+                            color: Color(0xFF666666),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 24),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        minimumSize: Size(0, 60),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Back to Portfolio',
+                            style: AppTypography.semiTxt.copyWith(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Ast.svg.ic_down.load(),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Powered by',
+                          style: AppTypography.regularTxt.copyWith(
+                            color: Color(0xFF666666),
+                            fontSize: 12,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Ast.svg.ve_logo.load(),
+                      ],
+                    ),
                   ],
                 ),
-              ),
-              SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Powered by',
-                    style: AppTypography.regularTxt.copyWith(
-                      color: Color(0xFF666666),
-                      fontSize: 12,
-                    ),
-                  ),
-                  SizedBox(width: 4),
-                  Ast.svg.ve_logo.load(),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
+              );
+            },
+          );
+        },
+      ),
     );
   }
 
   Widget paymentLayout(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              InkWell(
-                onTap: () => context.read<PortfolioBloc>().add(
-                  OnClickPaymentTutorial(isTutorial: false),
+    return BlocProvider(
+      create: (context) => PortfolioBloc(),
+      child: BlocBuilder<PortfolioBloc, PortfolioState>(
+        builder: (context, state) {
+          return Padding(
+            padding: EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    InkWell(
+                      onTap: () => context.read<PortfolioBloc>().add(
+                        OnClickPaymentTutorial(isTutorial: false),
+                      ),
+                      child: Ast.svg.ic_back.load(),
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      'How to Complete Payment?',
+                      style: AppTypography.semiTxt.copyWith(
+                        fontSize: 18,
+                        color: Color(0xFF1A1A1A),
+                      ),
+                    ),
+                  ],
                 ),
-                child: Ast.svg.ic_back.load(),
-              ),
-              SizedBox(width: 8),
-              Text(
-                'How to Complete Payment?',
-                style: AppTypography.semiTxt.copyWith(
-                  fontSize: 18,
-                  color: Color(0xFF1A1A1A),
+                SizedBox(height: 24),
+                Text(
+                  '''1. Log in to your NetBanking or UPI app\n2. Add the given account as a beneficiary\n3. Transfer the pending amount (₹10,19,600)\n4. Your payment will be verified and reflected in your SLiQ account within 2 hours''',
+                  style: AppTypography.regularTxt.copyWith(
+                    fontSize: 14,
+                    color: Colors.black,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: 24),
-          Text(
-            '''1. Log in to your NetBanking or UPI app\n2. Add the given account as a beneficiary\n3. Transfer the pending amount (₹10,19,600)\n4. Your payment will be verified and reflected in your SLiQ account within 2 hours''',
-            style: AppTypography.regularTxt.copyWith(
-              fontSize: 14,
-              color: Colors.black,
+              ],
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
