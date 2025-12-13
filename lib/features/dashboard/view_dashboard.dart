@@ -425,6 +425,7 @@ class _DashboardState extends State<Dashboard> {
     return FutureBuilder(
       future: DashboardRepository().getDashboard(),
       builder: (context, snapData) {
+        var v = snapData.data?.data;
         if (snapData.connectionState == ConnectionState.waiting) {
           return Center(
             child: CircularProgressIndicator(color: AppColors.kPrimaryColor),
@@ -441,22 +442,25 @@ class _DashboardState extends State<Dashboard> {
                   Gaps.hMd,
                   Row(
                     children: [
-                      Expanded(
-                        child: CButton(
-                          text: "Continue Application",
-                          type: ButtonType.primary,
-                          onPressed: () =>
-                              _onContinueApplicationPressed(context),
+                      if ((v?.isContinued != null && v?.isContinued != ''))
+                        Expanded(
+                          child: CButton(
+                            text: "Continue Application",
+                            type: ButtonType.primary,
+                            onPressed: () =>
+                                _onContinueApplicationPressed(context),
+                          ),
                         ),
-                      ),
                       SizedBox(width: 12),
-                      Expanded(
-                        child: CButton(
-                          text: "Cancel Application",
-                          type: ButtonType.primaryWhite,
-                          onPressed: () => _onCancelApplicationPressed(context),
+                      if (v?.isCancelled != null && v?.isCancelled != '')
+                        Expanded(
+                          child: CButton(
+                            text: "Cancel Application",
+                            type: ButtonType.primaryWhite,
+                            onPressed: () =>
+                                _onCancelApplicationPressed(context),
+                          ),
                         ),
-                      ),
                     ],
                   ),
 

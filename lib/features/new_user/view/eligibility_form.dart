@@ -17,6 +17,7 @@ import 'package:las_app/features/new_user/view/widgets/one_check_eligibility/ste
 import 'package:las_app/helper_widgets/fetched_overlay.dart';
 import 'package:las_app/helper_widgets/fetching_overlay.dart';
 import 'package:percent_indicator/percent_indicator.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../bloc/eligibility_bloc.dart';
 
@@ -160,12 +161,18 @@ class _EligibilityScreenState extends State<EligibilityScreen> {
                     children: [
                       if (state.majorStep == 1) ...[
                         Gaps.hXl,
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: Row(
-                            children: [
-                              Image.asset('assets/images/sliQ.png', height: 50),
-                            ],
+                        GestureDetector(
+                          onTap: (){
+                            final uri = Uri.parse('https://sliqfin.com');
+                            launchUrl(uri, mode: LaunchMode.externalApplication);
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: Row(
+                              children: [
+                                Image.asset('assets/images/sliQ.png', height: 50),
+                              ],
+                            ),
                           ),
                         ),
                         Gaps.hXl,

@@ -10,7 +10,5 @@ void main() async {
   // ✅ Initialize dependencies (GetIt, ApiClient, AppStateProvider)
   await initDependencies();
 
-
-
   runApp(const SliqApp());
 }

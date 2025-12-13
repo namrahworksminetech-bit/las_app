@@ -18,6 +18,7 @@ import 'package:las_app/features/new_user/view/succcess_pledge_view.dart';
 import 'package:las_app/features/new_user/view/widgets/four_pledge_funds/pledge_funds_otp_screen.dart';
 import 'package:las_app/features/new_user/view/widgets/three_kyc_verification/step_checker_view.dart';
 import 'package:las_app/helper_widgets/fetching_overlay.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../common_widgets/webview_screen.dart';
 import '../../../core/network/api_client.dart';
 import '../../home/view_home.dart';
@@ -230,11 +231,17 @@ class _LoginScreenState extends State<LoginScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Gaps.hXl,
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                        child: Image.asset(
-                          'assets/images/sliQ.png',
-                          height: 50,
+                      GestureDetector(
+                        onTap: (){
+                          final uri = Uri.parse('https://sliqfin.com');
+                          launchUrl(uri, mode: LaunchMode.externalApplication);
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                          child: Image.asset(
+                            'assets/images/sliQ.png',
+                            height: 50,
+                          ),
                         ),
                       ),
                       Gaps.hXl,
